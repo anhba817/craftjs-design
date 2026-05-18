@@ -1,13 +1,14 @@
 import { Editor as Craft, Element, Frame } from '@craftjs/core'
 import { AdapterProvider } from '../adapters/AdapterContext'
-import { buildResolver } from '../craft/resolver'
+import { getResolver } from '../craft/resolver'
 import { getComponent } from '../registry/registry'
+import { Hydrator } from './Hydrator'
 import { Inspector } from './Inspector'
 import { SaveLoadBar } from './SaveLoadBar'
 import { Toolbox } from './Toolbox'
 
 export function Editor() {
-  const resolver = buildResolver()
+  const resolver = getResolver()
   const boxDef = getComponent('box')
   if (!boxDef) {
     throw new Error(
@@ -19,6 +20,7 @@ export function Editor() {
   return (
     <AdapterProvider adapterId="shadcn">
       <Craft resolver={resolver}>
+        <Hydrator />
         <div className="flex h-screen flex-col">
           <SaveLoadBar />
           <div className="flex min-h-0 flex-1">

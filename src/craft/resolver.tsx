@@ -6,6 +6,16 @@ import type { CanonicalNodeProps } from './CanonicalNode'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Resolver = Record<string, ComponentType<any>>
 
+let cached: Resolver | null = null
+
+// Lazy singleton — both Editor and Toolbox call this so they share one set of
+// bound component instances (identity matters less than displayName for
+// serialization, but a single instance avoids rebuild churn on re-render).
+export function getResolver(): Resolver {
+  if (!cached) cached = buildResolver()
+  return cached
+}
+
 // One Craft user-component per canonical id. Each is a thin thunk that delegates
 // to CanonicalNode with its canonicalId bound. Keeping the Craft `displayName`
 // equal to the canonical displayName means the serialized JSON references nodes

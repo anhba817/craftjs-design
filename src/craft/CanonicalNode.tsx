@@ -1,4 +1,4 @@
-import { Element, useNode } from '@craftjs/core'
+import { useNode } from '@craftjs/core'
 import type { ReactNode } from 'react'
 import { useActiveAdapter } from '../adapters/AdapterContext'
 import { getComponent } from '../registry/registry'
@@ -33,26 +33,20 @@ export function CanonicalNode({
     connectors: { connect, drag },
   } = useNode()
 
-  // `display: contents` makes the wrapper transparent in the layout tree, so
-  // Craft.js's connectors target the adapter's rendered element directly while
-  // we still get a single ref to attach connect/drag to. Flagged in PHASE1_PLAN.md
-  // risk #2 — swap to forwardRef on impls if selection/drop indicators misalign.
+  // Attach connect/drag directly to the impl's root DOM element via rootRef.
+  // A `display: contents` wrapper would break Craft's drop-target hit-testing
+  // because it has no bounding box — nested instances would all route drops to
+  // the outermost ancestor. See PHASE1_PLAN.md risk #2.
   return (
-    <div
-      ref={(el) => {
+    <Impl
+      canonicalId={canonicalId}
+      props={nodeProps}
+      style={style}
+      rootRef={(el) => {
         if (el) connect(drag(el))
       }}
-      style={{ display: 'contents' }}
     >
-      <Impl canonicalId={canonicalId} props={nodeProps} style={style}>
-        {def.isCanvas ? (
-          <Element id="children" is="div" canvas>
-            {children}
-          </Element>
-        ) : (
-          children
-        )}
-      </Impl>
-    </div>
+      {children}
+    </Impl>
   )
 }
