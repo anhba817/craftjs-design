@@ -1,4 +1,4 @@
-import { cn } from "../../../utils/cn";
+import { cn } from "@/lib/utils";
 import type { AdapterRenderProps } from "../../types";
 
 export function ShadcnBox({ style, children, rootRef }: AdapterRenderProps) {

@@ -16,7 +16,7 @@ registerComponent<BoxProps>({
     props: {},
     style: {
       classes: {
-        root: "min-h-16 p-4 border border-dashed border-canvas-border rounded-md",
+        root: "min-h-16 p-4 border border-dashed border-border rounded-md bg-card",
       },
     },
   },

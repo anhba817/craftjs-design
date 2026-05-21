@@ -1,4 +1,5 @@
 import { useEditor } from '@craftjs/core'
+import { TypographyPanel } from './inspector/TypographyPanel'
 
 export function Inspector() {
   const { selected, isRoot, actions } = useEditor((state, query) => {
@@ -22,25 +23,30 @@ export function Inspector() {
       {!selected ? (
         <div className="mt-2 text-xs text-gray-400">Nothing selected.</div>
       ) : (
-        <div className="mt-3 space-y-3 text-sm">
-          <div>
-            <div className="text-xs text-gray-500">Type</div>
-            <div className="font-medium text-gray-800">{selected.displayName}</div>
+        <>
+          <div className="mt-3 space-y-3 text-sm">
+            <div>
+              <div className="text-xs text-gray-500">Type</div>
+              <div className="font-medium text-gray-800">{selected.displayName}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">Id</div>
+              <code className="text-xs text-gray-700">{selected.id}</code>
+            </div>
+            {!isRoot && (
+              <button
+                type="button"
+                className="text-sm text-red-600 underline hover:text-red-700"
+                onClick={() => actions.delete(selected.id)}
+              >
+                Delete
+              </button>
+            )}
           </div>
-          <div>
-            <div className="text-xs text-gray-500">Id</div>
-            <code className="text-xs text-gray-700">{selected.id}</code>
+          <div className="mt-4 border-t border-gray-200 pt-3">
+            <TypographyPanel nodeId={selected.id} />
           </div>
-          {!isRoot && (
-            <button
-              type="button"
-              className="text-sm text-red-600 underline hover:text-red-700"
-              onClick={() => actions.delete(selected.id)}
-            >
-              Delete
-            </button>
-          )}
-        </div>
+        </>
       )}
     </aside>
   )
