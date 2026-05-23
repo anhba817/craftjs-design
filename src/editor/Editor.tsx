@@ -19,7 +19,7 @@ export function Editor() {
   const Root = resolver[boxDef.displayName]
 
   return (
-    <AdapterProvider adapterId="shadcn">
+    <AdapterProvider>
       <Craft resolver={resolver}>
         <Hydrator />
         <div className="flex h-screen flex-col">

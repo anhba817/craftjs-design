@@ -1,18 +1,19 @@
 import { useEditor } from '@craftjs/core'
 import { useEditorStore } from '@/state/editorStore'
 import { loadDocument, saveDocument } from '@/persistence/storage'
+import { AdapterSwitcher } from './AdapterSwitcher'
 import { ThemeSwitcher } from './ThemeSwitcher'
 
 export function SaveLoadBar() {
   const { actions, query } = useEditor()
 
   const handleSave = () => {
-    // getState() avoids re-rendering this component when activeThemeId changes —
-    // we only need the latest value at click time.
-    const { activeThemeId } = useEditorStore.getState()
+    // getState() avoids re-rendering this component when the store changes —
+    // we only need the latest values at click time.
+    const { activeThemeId, activeAdapterId } = useEditorStore.getState()
     saveDocument({
       version: 1,
-      adapterId: 'shadcn',
+      adapterId: activeAdapterId,
       themeId: activeThemeId,
       craftJson: query.serialize(),
     })
@@ -22,7 +23,9 @@ export function SaveLoadBar() {
     const doc = loadDocument()
     if (!doc) return
     actions.deserialize(doc.craftJson)
-    if (doc.themeId) useEditorStore.getState().setActiveTheme(doc.themeId)
+    const store = useEditorStore.getState()
+    if (doc.themeId) store.setActiveTheme(doc.themeId)
+    store.setActiveAdapter(doc.adapterId)
   }
 
   return (
@@ -31,6 +34,7 @@ export function SaveLoadBar() {
         craftjs-design
       </span>
       <div className="flex-1" />
+      <AdapterSwitcher />
       <ThemeSwitcher />
       <button
         type="button"

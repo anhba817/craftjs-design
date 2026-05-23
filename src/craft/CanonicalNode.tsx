@@ -1,6 +1,7 @@
 import { useNode } from '@craftjs/core'
 import type { ReactNode } from 'react'
 import { useActiveAdapter } from '../adapters/AdapterContext'
+import type { ClassMapResult } from '../adapters/types'
 import { getComponent } from '../registry/registry'
 import type { NodeStyle } from '../registry/types'
 
@@ -23,28 +24,46 @@ export function CanonicalNode({
   }
   const adapter = useActiveAdapter()
   const Impl = adapter.components[canonicalId]
-  if (!Impl) {
-    throw new Error(
-      `adapter '${adapter.id}' missing impl for canonical id '${canonicalId}'`,
-    )
-  }
 
   const {
     connectors: { connect, drag },
   } = useNode()
 
-  // Attach connect/drag directly to the impl's root DOM element via rootRef.
-  // A `display: contents` wrapper would break Craft's drop-target hit-testing
-  // because it has no bounding box — nested instances would all route drops to
-  // the outermost ancestor. See PHASE1_PLAN.md risk #2.
+  const attachRef = (el: HTMLElement | null) => {
+    if (el) connect(drag(el))
+  }
+
+  // Adapter coverage gap: render a labeled placeholder instead of throwing.
+  // Phase 3 ships MUI with only button + input impls; selecting MUI with a Box
+  // on the canvas hits this branch. The placeholder is the user's signal that
+  // the active adapter doesn't render this canonical — they can swap adapters
+  // or replace the node. Phase 5 fills coverage gaps.
+  if (!Impl) {
+    return (
+      <div
+        ref={attachRef}
+        className="inline-block rounded border border-dashed border-destructive/50 bg-destructive/5 px-2 py-1 text-xs text-destructive"
+      >
+        {def.displayName} — no impl in adapter "{adapter.displayName}"
+      </div>
+    )
+  }
+
+  // classMap rewrites canonical Tailwind classes into adapter-native render
+  // props. Adapters without one get a default className passthrough.
+  const styleProps: ClassMapResult = adapter.classMap
+    ? adapter.classMap(style.classes.root, canonicalId)
+    : { className: style.classes.root }
+
   return (
     <Impl
       canonicalId={canonicalId}
       props={nodeProps}
       style={style}
-      rootRef={(el) => {
-        if (el) connect(drag(el))
-      }}
+      rootRef={attachRef}
+      className={styleProps.className}
+      sx={styleProps.sx}
+      inlineStyle={styleProps.inlineStyle}
     >
       {children}
     </Impl>

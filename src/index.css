@@ -152,6 +152,29 @@ body {
   --sidebar-ring: oklch(0.645 0.246 16.439);
 }
 
+/* Phase 3 — MUI palette bridge.
+   MUI's `cssVariables: true` generates --mui-palette-* CSS variables from the
+   color values we pass to createTheme. We override those generated variables
+   here so MUI components read OUR shadcn tokens instead. The chain is:
+     <MUI Button>: background-color: var(--mui-palette-primary-main)
+       → resolves to var(--primary) [via .mui-bridge override]
+         → resolves to whatever the active [data-theme] set --primary to
+   The wrapper `.mui-bridge` lives in src/adapters/mui/Wrapper.tsx. Class
+   specificity beats MUI's :root injection. Variable inheritance is lazy —
+   `var(--primary)` is resolved at the consuming element, so the cascade picks
+   up theme swaps without re-creating the MUI theme. */
+.mui-bridge {
+  --mui-palette-primary-main: var(--primary);
+  --mui-palette-primary-contrastText: var(--primary-foreground);
+  --mui-palette-secondary-main: var(--secondary);
+  --mui-palette-secondary-contrastText: var(--secondary-foreground);
+  --mui-palette-error-main: var(--destructive);
+  --mui-palette-background-default: var(--background);
+  --mui-palette-background-paper: var(--card);
+  --mui-palette-text-primary: var(--foreground);
+  --mui-palette-text-secondary: var(--muted-foreground);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
