@@ -1,4 +1,15 @@
 import { useEditor } from '@craftjs/core'
+import {
+  getApplicablePanels,
+  getComponentByDisplayName,
+} from '@/registry/registry'
+import { AppearancePanel } from './inspector/AppearancePanel'
+import { EffectsPanel } from './inspector/EffectsPanel'
+import { LayoutPanel } from './inspector/LayoutPanel'
+import { PropsPanel } from './inspector/PropsPanel'
+import { ResponsiveBar } from './inspector/ResponsiveBar'
+import { SizePanel } from './inspector/SizePanel'
+import { SpacingPanel } from './inspector/SpacingPanel'
 import { TypographyPanel } from './inspector/TypographyPanel'
 
 export function Inspector() {
@@ -15,39 +26,68 @@ export function Inspector() {
     }
   })
 
+  const def = selected ? getComponentByDisplayName(selected.displayName) : null
+  const panels = def ? getApplicablePanels(def) : []
+
   return (
-    <aside className="w-72 border-l border-gray-200 p-3">
-      <div className="text-xs font-semibold tracking-wide uppercase text-gray-500">
+    <aside className="flex w-72 flex-col border-l border-gray-200">
+      <div className="px-3 py-2 text-xs font-semibold tracking-wide uppercase text-gray-500">
         Inspector
       </div>
       {!selected ? (
-        <div className="mt-2 text-xs text-gray-400">Nothing selected.</div>
+        <div className="px-3 text-xs text-gray-400">Nothing selected.</div>
       ) : (
         <>
-          <div className="mt-3 space-y-3 text-sm">
-            <div>
-              <div className="text-xs text-gray-500">Type</div>
-              <div className="font-medium text-gray-800">{selected.displayName}</div>
+          <ResponsiveBar />
+          <div className="overflow-y-auto px-3 py-3">
+            <div className="space-y-3 text-sm">
+              <div>
+                <div className="text-xs text-gray-500">Type</div>
+                <div className="font-medium text-gray-800">{selected.displayName}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Id</div>
+                <code className="text-xs text-gray-700">{selected.id}</code>
+              </div>
+              {!isRoot && (
+                <button
+                  type="button"
+                  className="text-sm text-red-600 underline hover:text-red-700"
+                  onClick={() => actions.delete(selected.id)}
+                >
+                  Delete
+                </button>
+              )}
             </div>
-            <div>
-              <div className="text-xs text-gray-500">Id</div>
-              <code className="text-xs text-gray-700">{selected.id}</code>
-            </div>
-            {!isRoot && (
-              <button
-                type="button"
-                className="text-sm text-red-600 underline hover:text-red-700"
-                onClick={() => actions.delete(selected.id)}
-              >
-                Delete
-              </button>
+
+            {panels.includes('layout') && (
+              <PanelSection><LayoutPanel nodeId={selected.id} /></PanelSection>
             )}
-          </div>
-          <div className="mt-4 border-t border-gray-200 pt-3">
-            <TypographyPanel nodeId={selected.id} />
+            {panels.includes('size') && (
+              <PanelSection><SizePanel nodeId={selected.id} /></PanelSection>
+            )}
+            {panels.includes('spacing') && (
+              <PanelSection><SpacingPanel nodeId={selected.id} /></PanelSection>
+            )}
+            {panels.includes('typography') && (
+              <PanelSection><TypographyPanel nodeId={selected.id} /></PanelSection>
+            )}
+            {panels.includes('appearance') && (
+              <PanelSection><AppearancePanel nodeId={selected.id} /></PanelSection>
+            )}
+            {panels.includes('effects') && (
+              <PanelSection><EffectsPanel nodeId={selected.id} /></PanelSection>
+            )}
+            {panels.includes('componentProps') && (
+              <PanelSection><PropsPanel nodeId={selected.id} /></PanelSection>
+            )}
           </div>
         </>
       )}
     </aside>
   )
+}
+
+function PanelSection({ children }: { children: React.ReactNode }) {
+  return <div className="mt-4 border-t border-gray-200 pt-3">{children}</div>
 }

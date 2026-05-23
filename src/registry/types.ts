@@ -16,6 +16,16 @@ export interface NodeStyle {
   responsive?: Record<string, Record<string, string>>;
 }
 
+// Inspector panel ids. Each canonical declares (or defaults) which panels apply.
+export type PanelId =
+  | "layout"
+  | "spacing"
+  | "size"
+  | "typography"
+  | "appearance"
+  | "effects"
+  | "componentProps";
+
 export interface CanonicalComponent<Props = Record<string, unknown>> {
   id: CanonicalId;
   category: CanonicalCategory;
@@ -28,4 +38,9 @@ export interface CanonicalComponent<Props = Record<string, unknown>> {
     props: Props;
     style: NodeStyle;
   };
+  // Explicit list of inspector panels that apply to this canonical. If
+  // undefined, getApplicablePanels() in registry.ts derives a sensible default
+  // from category + isCanvas. Use this field to override defaults, e.g., Button
+  // omitting 'typography' because shadcn's flex centering ignores text utils.
+  applicablePanels?: readonly PanelId[];
 }

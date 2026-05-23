@@ -42,8 +42,17 @@ The user-facing chrome. Has no opinion about *what* components exist, only about
 |---|---|
 | `Editor.tsx` | Top-level shell. Builds the resolver, mounts Craft.js, wraps the canvas in `<ThemeProvider>`, lays out the 3-column UI. |
 | `Toolbox.tsx` | Left panel. Reads `listComponents()` from the registry; attaches Craft `connectors.create()` per entry so each is a drag source. |
-| `Inspector.tsx` | Right panel. Reads the selected node from Craft state, shows type/id, exposes Delete (root-guarded), mounts inspector sub-panels for the selected node. |
-| `inspector/TypographyPanel.tsx` | Inspector sub-panel. Reads `style.classes.root` via `useEditor`, parses with `parseTypography`, renders controls (size/weight/align/color), writes via `mergeTypography` + `actions.setProp`. |
+| `Inspector.tsx` | Right panel. Reads the selected node from Craft state, shows type/id, exposes Delete (root-guarded), mounts the `ResponsiveBar` + per-canonical inspector sub-panels. Panel visibility filtered by `getApplicablePanels(canonicalDef)`. |
+| `inspector/ResponsiveBar.tsx` | Six breakpoint pills (`base` / `sm` / `md` / `lg` / `xl` / `2xl`). Active pill = which class slice the panels read/write. Loud "writing to: …" status line warns when an edit will only apply at and above a breakpoint. |
+| `inspector/TypographyPanel.tsx` | Size / Weight / Align / Color. Backed by `parseTypography` + `mergeTypography`. |
+| `inspector/LayoutPanel.tsx` | Display / FlexDir / Items / Justify / Gap. |
+| `inspector/SpacingPanel.tsx` | Padding + Margin via two `BoxSidesEditor` instances (linked-corners / per-side). |
+| `inspector/SizePanel.tsx` | Width / Height / Min-* / Max-*. |
+| `inspector/AppearancePanel.tsx` | Fill / Border (width + style + color) / Radius. Exposes `'default'` sentinel for the bare `border` and `rounded` utilities. |
+| `inspector/EffectsPanel.tsx` | Shadow / Opacity / Blur. |
+| `inspector/PropsPanel.tsx` | Auto-form derived from each canonical's Zod `propsSchema`. Dispatches by Zod kind (`ZodEnum`, `ZodString`, `ZodBoolean`, `ZodNumber`); unsupported kinds render a labeled badge. |
+| `inspector/shared/useNodeClasses.ts` | Read/write the active-breakpoint's class slice for a slot. Funnels all inspector class-string I/O through one place. |
+| `inspector/shared/{ColorSelect,ValueSelect,BoxSidesEditor,PanelRow}.tsx` | Reused controls. |
 | `SaveLoadBar.tsx` | Top bar. Title, adapter switcher, theme switcher, Save/Load buttons. |
 | `ThemeSwitcher.tsx` | Dropdown that flips `activeThemeId` in the editor store. |
 | `AdapterSwitcher.tsx` | Dropdown that flips `activeAdapterId` in the editor store. |
@@ -68,14 +77,16 @@ The abstract palette. A `CanonicalComponent` is a *contract*, not a React compon
 
 Registration is **side-effect based**: each component file imports `registerComponent` and calls it at module load.
 
+A canonical may declare an explicit `applicablePanels: readonly PanelId[]` to opt into a specific subset of inspector panels. When omitted, `getApplicablePanels(c)` derives a sensible default from `category` + `isCanvas`.
+
 | File | Role |
 |---|---|
-| `types.ts` | `CanonicalComponent`, `NodeStyle`, `CanonicalCategory`, `CanonicalId`. |
-| `registry.ts` | `registerComponent`, `getComponent`, `listComponents`. In-memory map. |
+| `types.ts` | `CanonicalComponent`, `NodeStyle`, `CanonicalCategory`, `CanonicalId`, `PanelId`. |
+| `registry.ts` | `registerComponent`, `getComponent`, `getComponentByDisplayName`, `listComponents`, `getApplicablePanels`. In-memory map. |
 | `components/index.ts` | Barrel of side-effect imports. Adding a new canonical = one line here. |
 | `components/box.ts` | Generic container. Default style uses shadcn tokens (`border-border`, `bg-card`). |
 | `components/text.ts` | Text-bearing leaf. `propsSchema = { content: string }`. |
-| `components/button.ts` | `propsSchema = { label, intent, disabled }`. `isCanvas: false`. Adapter-owned visual styling. |
+| `components/button.ts` | `propsSchema = { label, intent, disabled }`. `isCanvas: false`. Adapter-owned visual styling. Explicitly omits the typography panel (shadcn's flex-centered button doesn't respect text utilities). |
 | `components/input.ts` | `propsSchema = { type, placeholder, value, disabled }`. Adapter-owned styling. |
 
 ### Layer 3 — Adapter Layer (`src/adapters/`)
@@ -128,6 +139,8 @@ Adapters are registered by side-effect import. `registerAdapter` validates the m
 
 `rootRef` is how the editor wires Craft's `connect` / `drag` to the *actual rendered DOM*. Without it, nested drop-target hit-testing breaks (see [§ rootRef on the adapter contract](#rootref-on-the-adapter-contract)).
 
+**Adapter impls must consume `className` / `sx` / `inlineStyle` — never read `style.classes.root` directly.** `CanonicalNode` composes the base + responsive breakpoint slices into the final class string before passing it to the impl. An impl that reads `style.classes.root` instead silently drops the breakpoint prefixes (see [§ Adapter impls consume rendered className](#adapter-impls-consume-rendered-classname)).
+
 ### Layer 4 — Craft.js bridge (`src/craft/`)
 
 Craft.js manages the document tree, selection set, drag/drop, and history. The bridge plugs our two-layer abstraction (registry + adapter) into Craft's "resolver" model.
@@ -166,7 +179,7 @@ Editor-side state that lives **outside** the Craft tree.
 
 | File | Role |
 |---|---|
-| `editorStore.ts` | Zustand store — `{ activeThemeId, activeAdapterId }` + setters. |
+| `editorStore.ts` | Zustand store — `{ activeThemeId, activeAdapterId, activeBreakpoint }` + setters. `activeBreakpoint` is UI-only (not persisted; resets to `'base'` on reload). |
 
 Read patterns:
 - **Components** that render based on the value → `useEditorStore((s) => s.activeThemeId)` (subscribes; re-renders on change).
@@ -178,11 +191,17 @@ Single funnel for all class-string editing. **Anything that writes to `style.cla
 
 | File | Role |
 |---|---|
-| `tw-classes.ts` | Typed unions + parser/serializer/merge. Currently typography slice; structured to extend to layout / spacing / fill / border / radius / effects. |
+| `tw-classes.ts` | Typed unions + parser/serializer/merge for six slices: typography, layout, spacing, size, appearance (fill + border + radius), effects. |
+| `responsive.ts` | `composeResponsive(style, slot)` — merges `style.classes[slot]` (base) with each `style.responsive[bp][slot]`, prefixing breakpoint slices with `bp:`. Called by `CanonicalNode` before invoking `adapter.classMap`. |
+| `safelist.generated.css` | Generated output of `scripts/gen-safelist.ts`. Listed in `.gitignore`; regenerated on every `npm run dev` / `npm run build`. |
 
-API contract:
-- `parseTypography(classString)` → `{ slice, unknownClasses }`. Recognized typography utilities populate the slice; unrecognized strings pass through as `unknownClasses`.
-- `mergeTypography(original, partialSlice)` → new class string. Patch-friendly: caller passes only fields they want to change. Unknown classes always pass through.
+Per-slice API contract (parametrized over slice type):
+- `parse<Slice>(classString)` → `{ slice, unknownClasses }`. Recognized utilities populate the slice; unrecognized strings pass through as `unknownClasses`.
+- `merge<Slice>(original, partialSlice)` → new class string. Patch-friendly: caller passes only fields they want to change. Unknown classes (including classes from *other* slices) always pass through.
+
+Slices are independent — `parseTypography` doesn't recognize `bg-card`, `parseSpacing` doesn't recognize `flex`. Each merge function passes classes from other slices through as `unknownClasses`. The inspector panels each operate on one slice; round-trips through multiple panels preserve every class.
+
+The **safelist** is the bridge between this single-funnel parser and Tailwind v4's JIT scanner. The inspector emits class strings via template literals (`text-${size}`, `bg-${color}`, …) that Tailwind can't see in source. `scripts/gen-safelist.ts` reads the slice arrays from `tw-classes.ts` (single source of truth) and emits `@source inline()` directives for every utility × every breakpoint prefix (~250 directives covering thousands of utility-prefix pairs). The result lands in `safelist.generated.css`, imported by `index.css`. Wired via `predev` / `prebuild` npm scripts.
 
 ### shadcn-managed code (`src/lib/`, `src/components/ui/`)
 
@@ -200,56 +219,51 @@ Files that the `shadcn` CLI creates and that subsequent `npx shadcn add <name>` 
 ```
 craftjs-design/
   components.json
+  scripts/
+    gen-safelist.ts             # reads tw-classes.ts slice arrays → emits safelist.generated.css
   src/
-    main.tsx              # ReactDOM root
-    App.tsx               # Boot: side-effect imports for registry/adapters/themes, renders <Editor>
-    index.css             # Tailwind v4 entry + @theme inline bridge + token blocks + .mui-bridge + @source inline() safelist
+    main.tsx                    # ReactDOM root
+    App.tsx                     # Boot: side-effect imports for registry/adapters/themes, renders <Editor>
+    index.css                   # Tailwind v4 entry + @import safelist.generated.css + @theme inline bridge + token blocks + .mui-bridge
     lib/
-      utils.ts            # shadcn's tailwind-merge-backed cn
+      utils.ts                  # shadcn's tailwind-merge-backed cn
     components/
-      ui/                 # shadcn primitives, managed by `npx shadcn add`
+      ui/                       # shadcn primitives, managed by `npx shadcn add`
     registry/
       types.ts
       registry.ts
       components/
-        index.ts          # barrel of side-effect registrations
-        box.ts
-        text.ts
-        button.ts
-        input.ts
+        index.ts                # barrel of side-effect registrations
+        box.ts, text.ts, button.ts, input.ts
     adapters/
       types.ts
       AdapterContext.tsx
       AdapterManifestSchema.ts
       shadcn/
-        index.ts          # registerAdapter
+        index.ts                # registerAdapter
         components/
-          Box.tsx
-          Text.tsx
-          Button.tsx
-          Input.tsx
+          Box.tsx, Text.tsx, Button.tsx, Input.tsx
       mui/
         index.ts
         theme.ts
         Wrapper.tsx
         components/
-          Box.tsx
-          Text.tsx
-          Button.tsx
-          Input.tsx
+          Box.tsx, Text.tsx, Button.tsx, Input.tsx
     themes/
       types.ts
       registry.ts
-      index.ts            # side-effect barrel
-      default.ts
-      rose.ts
+      index.ts                  # side-effect barrel
+      default.ts, rose.ts
       ThemeProvider.tsx
     state/
-      editorStore.ts
+      editorStore.ts            # { activeThemeId, activeAdapterId, activeBreakpoint } + setters
     style/
-      tw-classes.ts
+      tw-classes.ts             # six slices: typography, layout, spacing, size, appearance, effects
+      tw-classes.test.ts        # vitest — all slices + cross-slice isolation
+      responsive.ts             # composeResponsive(style, slot) → Tailwind-prefixed className
+      safelist.generated.css    # gitignored — emitted by scripts/gen-safelist.ts
     craft/
-      CanonicalNode.tsx
+      CanonicalNode.tsx         # invokes composeResponsive + adapter.classMap; placeholder for missing impls
       resolver.tsx
     editor/
       Editor.tsx
@@ -260,13 +274,23 @@ craftjs-design/
       AdapterSwitcher.tsx
       Hydrator.tsx
       inspector/
-        TypographyPanel.tsx
+        ResponsiveBar.tsx
+        TypographyPanel.tsx, LayoutPanel.tsx, SpacingPanel.tsx
+        SizePanel.tsx, AppearancePanel.tsx, EffectsPanel.tsx
+        PropsPanel.tsx
+        shared/
+          useNodeClasses.ts
+          ValueSelect.tsx, ColorSelect.tsx
+          BoxSidesEditor.tsx
+          PanelRow.tsx
     persistence/
-      schema.ts           # Zod envelope around Craft's serialized JSON
-      storage.ts          # localStorage I/O
+      schema.ts                 # Zod envelope around Craft's serialized JSON
+      storage.ts                # localStorage I/O
   docs/
-    ARCHITECTURE.md       # this file
+    ARCHITECTURE.md             # this file
     DEVELOPER_GUIDE.md
+    plans/
+      *.md                      # historical/phased implementation plans
 ```
 
 ---
@@ -293,6 +317,8 @@ main.tsx
 ```
 
 Side-effect imports MUST run before `<Editor />` renders — otherwise the registries are empty when `getResolver()` walks them. `App.tsx` is the only place that boot-orders these.
+
+Before `npm run dev` / `npm run build` even reaches Vite, the `predev` / `prebuild` hook in `package.json` runs `scripts/gen-safelist.ts`, which reads slice arrays from `src/style/tw-classes.ts` and writes `src/style/safelist.generated.css`. The CSS file is gitignored; it's a build artifact that always reflects the current parser's coverage.
 
 ### Drag-create (dropping a new component from the Toolbox)
 
@@ -359,13 +385,23 @@ Either via the Load button (manual) or `Hydrator` (auto, on mount):
 
 ### Typography edit
 
-1. User selects a node. `Inspector` mounts `<TypographyPanel nodeId={id} />`.
-2. `TypographyPanel` reads `style.classes.root` from the node via `useEditor`.
-3. `parseTypography` decomposes the string into `{ slice, unknownClasses }`.
-4. Each `<Select>` is bound to a slice field (`slice.fontSize ?? ''`, etc.).
-5. User picks a value. `update({ fontSize: '2xl' })` runs.
-6. `update` calls `actions.setProp(nodeId, (props) => …)`. Inside the Immer mutator, `mergeTypography(props.style.classes.root, { fontSize: '2xl' })` runs **on the live draft value**, not the render-time closure — protects against rapid-edit races.
-7. The new class string lands on `props.style.classes.root`. Craft re-renders the node. The next `useEditor` selector run picks up the new value; the panel re-renders with the new selection visible.
+1. User selects a node. `Inspector` mounts the applicable panels (filtered by `getApplicablePanels(canonicalDef)`).
+2. Each panel calls `useNodeClasses(nodeId, slot)` which returns `{ classString, writeClasses, activeBreakpoint }`. The hook reads either `style.classes[slot]` (when `activeBreakpoint === 'base'`) or `style.responsive[activeBreakpoint][slot]`.
+3. The panel calls its slice's `parse*` to decompose `classString` into a typed slice, binds controls to slice fields.
+4. User changes a value. The panel calls `writeClasses(mergeSlice(classString, patch))`.
+5. `writeClasses` calls `actions.setProp(nodeId, (props) => …)`. Inside the Immer mutator:
+   - If `activeBreakpoint === 'base'` → writes to `props.style.classes[slot]`.
+   - Else → creates `props.style.responsive[bp]` if absent, writes to that slice.
+6. Craft re-renders the node. `CanonicalNode` reads the new style, calls `composeResponsive(style, 'root')` to merge base + breakpoint slices into a Tailwind-prefixed className, passes it through `adapter.classMap` (or default passthrough), feeds the result to the adapter impl as the `className` prop.
+7. The adapter impl renders `<elt className={cn(className)}>`. Browser's CSS cascade applies base utilities always; breakpoint-prefixed utilities apply via `@media (min-width: …)` rules from Tailwind's compiled output.
+
+### Responsive edit (at a non-base breakpoint)
+
+1. User clicks `md` in `ResponsiveBar`. `setActiveBreakpoint('md')`.
+2. Every component using `useEditorStore((s) => s.activeBreakpoint)` re-renders — `ResponsiveBar` itself and every inspector panel via `useNodeClasses`.
+3. Each panel's `useNodeClasses` re-reads from `style.responsive.md[slot]` (empty for a fresh md edit → `classString = ''`).
+4. User edits a control. The panel writes the new class string to `style.responsive.md[slot]`. `style.classes[slot]` is untouched — the base value survives.
+5. `composeResponsive` now emits `<base classes> md:<class1> md:<class2> …`. The browser applies the md-prefixed utilities only at viewports ≥ 768px.
 
 ---
 
@@ -460,6 +496,26 @@ The user can: swap to an adapter that covers the canonical; delete the offending
 
 This decouples adapter coverage from canonical registration. Without the placeholder, every adapter would need to ship every canonical from day one — a brittle coupling that makes incremental adapter development impossible.
 
+### <a id="adapter-impls-consume-rendered-classname"></a>Adapter impls consume rendered `className`, never `style.classes.root`
+
+`CanonicalNode` composes responsive breakpoint slices into a single Tailwind-prefixed class string before invoking the adapter impl. The composed string lands on the impl's `className` (or `sx` / `inlineStyle`) prop from `AdapterRenderProps`.
+
+```tsx
+// ✅ Right
+export function ShadcnBox({ children, rootRef, className }: AdapterRenderProps) {
+  return <div ref={rootRef} className={cn(className)}>{children}</div>
+}
+
+// ❌ Wrong — bypasses composeResponsive; breakpoint prefixes never reach the DOM
+export function ShadcnBox({ style, children, rootRef }: AdapterRenderProps) {
+  return <div ref={rootRef} className={cn(style.classes.root)}>{children}</div>
+}
+```
+
+The wrong version still works for *base*-only editing — `style.classes.root` is what `composeResponsive` reads as its base input. The bug surfaces only once responsive variants enter play: edits at non-base breakpoints land in `style.responsive[bp][slot]`, the composer prefixes them correctly, but the impl ignores the composed output.
+
+This convention isn't enforced by the type system — `style` is still in `AdapterRenderProps` for impls that need to read individual *slot* classes or other style metadata. Discipline-by-convention only. The developer guide spells it out.
+
 ### Wrappers compose, not switch
 
 A naïve `AdapterProvider` would conditionally render the *active* adapter's Wrapper:
@@ -515,9 +571,11 @@ Stored at `localStorage['craftjs-design:doc:v1']`:
 - **`version`**: literal `1` today. Bump only when the *envelope* shape changes — not when `craftJson`'s internal shape changes (Craft owns that).
 - **`adapterId`**: pinned at save time from `useEditorStore.getState().activeAdapterId`. Hydrator restores via `setActiveAdapter`. Required.
 - **`themeId`**: pinned at save time. Optional — old documents without one default to `'default'` on load.
-- **`craftJson`**: an opaque string. Treat it as a blob; never parse and rewrite it directly.
+- **`craftJson`**: an opaque string. Treat it as a blob; never parse and rewrite it directly. Each canonical node's `props.style` includes `classes` (base slot → class string) and may include `responsive` (breakpoint → slot → class string) once the user has authored breakpoint variants.
 
 The `:v1` suffix on the storage key reserves namespace for a future v2 envelope to coexist during migration.
+
+The `activeBreakpoint` (which breakpoint the user is currently editing) is **not** persisted — it's a UI mode, not a document property. It resets to `'base'` on every reload.
 
 ---
 

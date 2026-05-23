@@ -22,4 +22,10 @@ registerComponent<ButtonProps>({
     // when the user explicitly overrides.
     style: { classes: { root: '' } },
   },
+  // Override the category default — typography panel is omitted because
+  // shadcn's button primitive uses inline-flex centering + fixed `h-*` size
+  // variants that ignore Tailwind text utilities. Component-native sizing
+  // (Button has its own size variant) belongs in PropsPanel via the canonical
+  // schema, not in a typography panel.
+  applicablePanels: ['spacing', 'size', 'appearance', 'effects', 'componentProps'],
 })

@@ -4,6 +4,7 @@ import { useActiveAdapter } from '../adapters/AdapterContext'
 import type { ClassMapResult } from '../adapters/types'
 import { getComponent } from '../registry/registry'
 import type { NodeStyle } from '../registry/types'
+import { composeResponsive } from '../style/responsive'
 
 export interface CanonicalNodeProps {
   canonicalId: string
@@ -49,11 +50,13 @@ export function CanonicalNode({
     )
   }
 
-  // classMap rewrites canonical Tailwind classes into adapter-native render
-  // props. Adapters without one get a default className passthrough.
+  // Compose responsive: base classes + breakpoint slices → Tailwind-prefixed
+  // className. Adapters with classMap receive the composed string and can
+  // transform further; adapters without classMap pass it through directly.
+  const composedClassName = composeResponsive(style, 'root')
   const styleProps: ClassMapResult = adapter.classMap
-    ? adapter.classMap(style.classes.root, canonicalId)
-    : { className: style.classes.root }
+    ? adapter.classMap(composedClassName, canonicalId)
+    : { className: composedClassName }
 
   return (
     <Impl

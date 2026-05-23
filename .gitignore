@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Phase 4 — regenerated from src/style/tw-classes.ts on every dev/build via the
+# `gen-safelist` npm script. See scripts/gen-safelist.ts.
+src/style/safelist.generated.css
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

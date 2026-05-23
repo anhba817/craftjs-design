@@ -185,34 +185,69 @@ The next render of any node with that canonical id picks up the new impl. No fur
 
 ### Adding an inspector panel
 
-The inspector mounts per-node sub-panels under the type/id/delete block. Today there's one: `TypographyPanel`. Adding more follows the same pattern.
+The inspector mounts per-node sub-panels filtered by each canonical's `applicablePanels`. Seven panels ship today (Typography, Layout, Spacing, Size, Appearance, Effects, Props). To add an eighth — say, a custom "Animation" panel — follow this template, copying from `TypographyPanel.tsx` as the canonical example.
 
-1. Create `src/editor/inspector/<Name>Panel.tsx`. Take `nodeId: string` as a prop. Use `useEditor` to read the node's relevant state, and `actions.setProp` to write:
+1. **Add a slice to `src/style/tw-classes.ts`** if your panel edits Tailwind classes. Each slice is a self-contained block: const arrays + slice interface + regex patterns + `parse*` / `serialize*` / `merge*` trio. Slices must be independent — `parseX` should pass through every class that's not in X's prefix family as `unknownClasses`. See the typography block as a template.
+
+   ```ts
+   export const ANIMATIONS = ['none', 'spin', 'pulse', 'bounce'] as const
+   export type Animation = typeof ANIMATIONS[number]
+
+   export interface AnimationSlice { animate?: Animation }
+
+   const ANIMATE_RE = new RegExp(`^animate-(${ANIMATIONS.join('|')})$`)
+
+   export function parseAnimation(classString: string): {
+     slice: AnimationSlice; unknownClasses: string[]
+   } { /* … */ }
+
+   export function serializeAnimation(slice: AnimationSlice): string[] { /* … */ }
+   export function mergeAnimation(original: string, updates: Partial<AnimationSlice>): string { /* … */ }
+   ```
+
+2. **Add a test block** in `src/style/tw-classes.test.ts`. Five tests per slice is typical: extract all fields, unknown passthrough, disambiguation (if applicable), merge patch preserves other slices, round-trip stability.
+
+3. **Add a `PanelId` to `src/registry/types.ts`** and extend `getApplicablePanels` defaults if useful. If the panel applies only to specific canonicals, leave the default rule alone and let canonicals opt in via explicit `applicablePanels`.
+
+4. **Build the panel** in `src/editor/inspector/<Name>Panel.tsx`. Use the shared building blocks:
 
    ```tsx
-   import { useEditor } from '@craftjs/core'
+   import { mergeAnimation, parseAnimation, ANIMATIONS } from '@/style/tw-classes'
+   import type { Animation, AnimationSlice } from '@/style/tw-classes'
+   import { PanelRow } from './shared/PanelRow'
+   import { ValueSelect } from './shared/ValueSelect'
+   import { useNodeClasses } from './shared/useNodeClasses'
 
-   export function MyPanel({ nodeId }: { nodeId: string }) {
-     const { actions, value } = useEditor((_, query) => {
-       const data = query.node(nodeId).get().data
-       return { value: (data.props as { /* shape */ }).whatever }
-     })
-
-     const update = (next: string) => {
-       actions.setProp(nodeId, (props: { /* shape */ }) => {
-         props.whatever = next
-       })
+   export function AnimationPanel({ nodeId }: { nodeId: string }) {
+     const { classString, writeClasses } = useNodeClasses(nodeId)
+     const { slice } = parseAnimation(classString)
+     const update = (patch: Partial<AnimationSlice>) => {
+       writeClasses(mergeAnimation(classString, patch))
      }
-
-     // …render controls, call update() on change
+     return (
+       <section className="space-y-2">
+         <div className="text-xs font-semibold uppercase text-gray-500">Animation</div>
+         <PanelRow label="Animate">
+           <ValueSelect
+             value={slice.animate ?? ''}
+             options={ANIMATIONS}
+             onChange={(v) => update({ animate: v as Animation | undefined })}
+           />
+         </PanelRow>
+       </section>
+     )
    }
    ```
 
-2. If your panel edits classes, route every write through `style/tw-classes.ts`. See [§ Class-string editing](#class-string-editing).
+   `useNodeClasses` is the single I/O funnel — it reads/writes the *active breakpoint's* class slice, branching internally between `style.classes[slot]` (base) and `style.responsive[bp][slot]` (others). Your panel gets responsive support for free; the same panel UI writes to different slices depending on which `ResponsiveBar` pill is active.
 
-3. Mount the panel in `src/editor/Inspector.tsx`'s selected-node branch. Decide whether to gate visibility on canonical category or id — see the existing `TypographyPanel` for the basic pattern.
+   **Read the live class string at write time** by passing the current `classString` into `merge*` — that's the closure-captured value, refreshed on every render via `useNodeClasses`. Don't call `parseAnimation` separately just before writing; the merge function already does it.
 
-   **Recommended:** filter by canonical category. Typography panel applies to `content` and `layout` canonicals; input-category canonicals (Button, Input) generally have library-native controls instead of Tailwind utilities.
+5. **Update `Inspector.tsx`** to mount the panel conditionally based on `panels.includes('animation')`.
+
+6. **Add the slice's utilities to `scripts/gen-safelist.ts`** so Tailwind compiles them. The script reads slice arrays from `tw-classes.ts` — add `expand('animate-', ANIMATIONS)` and Tailwind will see every breakpoint-prefixed combination.
+
+   Without the safelist entry, your classes will land in the DOM but Tailwind won't generate CSS for them. Silent failure.
 
 ### Adding a `shadcn` primitive
 
@@ -230,22 +265,39 @@ This writes to `src/components/ui/<component-name>.tsx`. The adapter impl wraps 
 
 ### Class-string editing
 
-Anything that writes to a node's `style.classes.root` **must go through a merge function in `src/style/tw-classes.ts`**. Direct string concatenation drops classes the parser doesn't recognize on the next round-trip.
+Anything that writes to a node's `style.classes.root` **must go through a merge function in `src/style/tw-classes.ts`** (`mergeTypography`, `mergeLayout`, `mergeSpacing`, `mergeSize`, `mergeAppearance`, `mergeEffects`). Direct string concatenation drops classes the parser doesn't recognize on the next round-trip.
+
+Inspector panels go through `useNodeClasses` rather than calling `actions.setProp` directly — see [§ Adding an inspector panel](#adding-an-inspector-panel).
 
 ```ts
-// ✅ Right
+// ✅ Right — funnel through the slice's merge function
 import { mergeTypography } from '@/style/tw-classes'
-actions.setProp(nodeId, (props) => {
-  props.style.classes.root = mergeTypography(props.style.classes.root, { fontSize: 'lg' })
-})
+const { classString, writeClasses } = useNodeClasses(nodeId)
+writeClasses(mergeTypography(classString, { fontSize: 'lg' }))
 
-// ❌ Wrong — drops unknown classes silently
+// ❌ Wrong — drops classes from other slices silently
 actions.setProp(nodeId, (props) => {
   props.style.classes.root = 'text-lg ' + props.style.classes.root
 })
 ```
 
-Read the live class string **inside the `setProp` mutator**, not from the render-time closure — protects against rapid-edit races.
+### Adapter impls consume `className` — never `style.classes.root` directly
+
+The shape `AdapterRenderProps` has both `style` and `className`. The `className` is the *composed responsive output* from `CanonicalNode`, including breakpoint-prefixed utilities for every active breakpoint slice. Reading `style.classes.root` instead silently drops responsive prefixes.
+
+```tsx
+// ✅ Right — gets base classes AND `md:flex-row` etc.
+export function MyBox({ children, rootRef, className }: AdapterRenderProps) {
+  return <div ref={rootRef} className={cn(className)}>{children}</div>
+}
+
+// ❌ Wrong — never see classes from style.responsive[bp][slot]
+export function MyBox({ children, rootRef, style }: AdapterRenderProps) {
+  return <div ref={rootRef} className={cn(style.classes.root)}>{children}</div>
+}
+```
+
+The `style` prop is still on `AdapterRenderProps` for impls that need to inspect non-className metadata (slot-specific class strings, the raw responsive map, etc.). For 99% of impls: read `className` only.
 
 ### `cn` from `@/lib/utils`
 
@@ -301,14 +353,17 @@ import './themes'                // themes
 
 **Cause:** Tailwind v4's JIT scans source for *literal* class strings. Classes built via template literals (`` `text-${size}` ``) are invisible to the scanner — no CSS is generated.
 
-**Fix:** add the utility family to the `@source inline()` block in `src/index.css`:
+**Fix:** `scripts/gen-safelist.ts` reads the slice arrays from `src/style/tw-classes.ts` and emits `src/style/safelist.generated.css` with `@source inline()` directives for every utility × every breakpoint. Runs automatically via `predev` / `prebuild` hooks. **If you added a new slice or new values to an existing slice, run `npm run gen-safelist` (or just `npm run dev`) — the generated file is gitignored and rebuilt from source on every dev/build cycle.**
 
-```css
-@source inline("text-{xs,sm,base,lg,xl,2xl,3xl,4xl}");
-@source inline("font-{light,normal,medium,semibold,bold}");
-```
+Theme-token utilities (`text-primary`, `bg-card`, …) are auto-generated by `@theme inline` — they don't need to be safelisted, but the generator includes them anyway as a hedge.
 
-Theme-token utilities (`text-primary`, `bg-card`, …) are auto-generated by `@theme inline` — they don't need to be safelisted.
+### `className` lands but doesn't apply
+
+**Symptom:** DevTools shows `md:flex-row` in a node's className, but resizing the browser to ≥ 768px doesn't change layout.
+
+**Cause:** likely your adapter impl is reading `style.classes.root` directly rather than the composed `className` prop from `AdapterRenderProps`. `style.classes.root` only contains the base-breakpoint slice; the prefixed responsive utilities live in `style.responsive[bp][slot]`. `CanonicalNode` merges them into `className` for you — impls must consume that.
+
+**Fix:** see [§ Adapter impls consume `className`](#adapter-impls-consume-className--never-styleclassesroot-directly).
 
 ### shadcn primitives need a ref-forwarding workaround on React 18
 
@@ -378,11 +433,37 @@ If `npx shadcn add` writes a literal `@/` directory at the project root, the roo
 
 `paths` resolves relative to the tsconfig file itself; no `baseUrl` needed. Older shadcn CLI versions emit `baseUrl: "."` — drop it when reconciling.
 
-### Inspector panels showing for canonicals where their controls don't visibly apply
+### Inspector panel visible for a canonical where its controls don't apply
 
-`TypographyPanel`'s controls (text-align, font-size) land in the DOM regardless of canonical, but Button/Input ignore them because shadcn's primitives use flex centering and `h-*` size variants that don't respect Tailwind text utilities.
+The inspector mounts each panel only when `getApplicablePanels(canonicalDef).includes(<panelId>)`. By default, panels are derived from the canonical's `category` + `isCanvas`:
 
-Filter panels by canonical category in `Inspector.tsx` if you add controls that don't apply universally.
+- Containers (`isCanvas: true`) get the Layout panel.
+- `content` / `layout` category canonicals get the Typography panel.
+- Every canonical gets Spacing / Size / Appearance / Effects / Props.
+
+Canonicals can override the default with an explicit `applicablePanels: readonly PanelId[]` field. **Button does this** — it omits Typography because shadcn's button primitive uses `inline-flex` centering and `h-*` size variants that ignore Tailwind text utilities.
+
+If a panel's controls don't visibly affect some canonical, drop that PanelId from that canonical's `applicablePanels` (or extend `getApplicablePanels`'s default rule if multiple canonicals share the issue).
+
+### `useEditor` collector reads stale non-Craft state
+
+**Symptom:** an inspector hook depends on both Craft node state AND non-Craft state (Zustand, props, etc.). When the non-Craft state changes, the hook still reads old values until Craft state changes too.
+
+**Cause:** `useEditor`'s collector only re-runs on Craft state changes. The collector closure captures its other dependencies at the previous Craft state change.
+
+**Fix:** compute the derived value in the hook *body*, not the collector. Use the collector to subscribe to the right slice of Craft state (e.g., return `{ props }` so it re-runs when props change), but compute final outputs in the body where every re-render reads fresh values.
+
+```ts
+const { actions, props } = useEditor((_, q) => ({ props: q.node(id).get().data.props }))
+// activeBreakpoint is fresh on each render via Zustand subscription:
+const activeBreakpoint = useEditorStore((s) => s.activeBreakpoint)
+// classString combines both — body-level computation:
+const classString = activeBreakpoint === 'base'
+  ? props.style.classes[slot] ?? ''
+  : props.style.responsive?.[activeBreakpoint]?.[slot] ?? ''
+```
+
+See `src/editor/inspector/shared/useNodeClasses.ts` for the canonical example.
 
 ---
 
@@ -414,7 +495,24 @@ Or call `clearDocument()` from `persistence/storage.ts`.
 
 ## Testing
 
-No test suite is set up yet. When tests come online, the highest-value first target is `style/tw-classes.ts` — the class parser/serializer/merge. Set up `vitest`, add `tw-classes.test.ts`, and round-trip every utility family the parser knows about.
+Vitest is wired in:
+
+```sh
+npm test              # watch mode
+npm run test -- --run # single-pass (CI-style)
+npm run test:ui       # vitest UI in browser
+```
+
+The test suite currently covers `style/tw-classes.ts` — every parser/serializer/merge across all six slices plus cross-slice isolation. When adding a new slice (see [§ Adding an inspector panel](#adding-an-inspector-panel)), add the matching test block.
+
+The pattern is consistent: for each slice, test
+1. **Extraction** — every recognized field parses correctly.
+2. **Unknown passthrough** — classes from other slices land in `unknownClasses`.
+3. **Disambiguation** (where applicable) — e.g., `text-center` (align) vs `text-foreground` (color).
+4. **Merge patch** — changes only the patched field; other slices' classes survive.
+5. **Round-trip stability** — `merge(input, {})` yields a token-set equal to the input.
+
+UI components and panels aren't covered by unit tests. Verify visually in the browser when adding new panels.
 
 ---
 
@@ -427,7 +525,20 @@ No test suite is set up yet. When tests come online, the highest-value first tar
 
 ### Class lands in the DOM but styling doesn't change
 
-Tailwind safelist — see § Tailwind safelist above.
+Two possible causes:
+
+1. **Tailwind safelist** — class isn't in `safelist.generated.css`. Run `npm run gen-safelist`; check the slice arrays in `tw-classes.ts`. See § Tailwind safelist above.
+2. **Adapter impl reading `style.classes.root` directly** — see § `className` lands but doesn't apply above.
+
+### Responsive variant doesn't apply when the viewport crosses a breakpoint
+
+If `md:flex-row` is in the className but resizing to ≥ 768px doesn't change layout, check that Tailwind compiled CSS for `.md\:flex-row`:
+
+```sh
+curl -s "http://localhost:5173/src/index.css?direct" | grep "md\\\\:flex-row"
+```
+
+If the rule is missing, the safelist's breakpoint multiplier didn't include this utility. If the rule is present, browser DevTools should show it under the `@media (min-width: 48rem)` block in Computed Styles — if `flex-direction: row` isn't applied, there's a specificity conflict with another rule.
 
 ### Theme swap doesn't affect MUI components
 
