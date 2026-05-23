@@ -10,10 +10,15 @@ import type { AdapterRenderProps } from '../../types'
 // Variant defaults to body1 — body text scale. The inspector's Typography
 // panel still drives concrete font-size via Tailwind utilities when the user
 // overrides; otherwise MUI's body1 sizing wins.
-export function MaterialText({ props, className, rootRef }: AdapterRenderProps) {
+export function MaterialText({
+  props,
+  className,
+  rootRef,
+  inlineStyle,
+}: AdapterRenderProps) {
   const { content } = props as { content: string }
   return (
-    <Typography ref={rootRef as never} className={className}>
+    <Typography ref={rootRef as never} className={className} style={inlineStyle}>
       {content}
     </Typography>
   )

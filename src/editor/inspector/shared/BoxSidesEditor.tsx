@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { NumericInput } from './NumericInput'
 import { ValueSelect } from './ValueSelect'
 
 export type Side = 'top' | 'right' | 'bottom' | 'left'
@@ -17,6 +18,9 @@ interface BoxSidesEditorProps {
   //   shorthand:'4' → { p: '4', pt/pr/pb/pl: undefined }
   //   sides:{top:'2',right:'4'} → { p: undefined, pt: '2', pr: '4', pb: …, pl: … }
   onChange: (next: BoxSidesValue) => void
+  // Phase 4.5: when set, linked-mode's NumericInput restricts arbitrary entry.
+  // The unlinked per-side inputs are always token-only.
+  arbitraryDisabledHint?: string
 }
 
 const SIDES: readonly Side[] = ['top', 'right', 'bottom', 'left'] as const
@@ -42,6 +46,7 @@ export function BoxSidesEditor({
   value,
   options,
   onChange,
+  arbitraryDisabledHint,
 }: BoxSidesEditorProps) {
   const hasSides = value.sides && SIDES.some((s) => value.sides?.[s])
   const [linked, setLinked] = useState(!hasSides)
@@ -85,12 +90,18 @@ export function BoxSidesEditor({
         </button>
       </div>
       {linked ? (
-        <ValueSelect
+        <NumericInput
           value={value.shorthand ?? ''}
-          options={options}
-          onChange={(v) => onChange({ shorthand: v, sides: undefined })}
+          tokens={options}
+          onChange={(v) => onChange({ shorthand: v === '' ? undefined : v, sides: undefined })}
+          arbitraryDisabledHint={arbitraryDisabledHint}
         />
       ) : (
+        // Unlinked per-side inputs are token-only in Phase 4.5. Per-side
+        // arbitrary values would require inline `paddingTop`/`paddingRight`/…
+        // mappings that complicate the panel without much UX value (the common
+        // case for arbitrary is "set the same value all four sides"). Phase 5+
+        // expands when the responsive arbitrary pipeline lands.
         <div className="grid grid-cols-2 gap-1.5">
           {SIDES.map((side) => (
             <div key={side} className="flex items-center gap-1">

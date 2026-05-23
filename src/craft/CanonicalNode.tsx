@@ -4,6 +4,7 @@ import { useActiveAdapter } from '../adapters/AdapterContext'
 import type { ClassMapResult } from '../adapters/types'
 import { getComponent } from '../registry/registry'
 import type { NodeStyle } from '../registry/types'
+import { composeInlineStyle } from '../style/inline'
 import { composeResponsive } from '../style/responsive'
 
 export interface CanonicalNodeProps {
@@ -58,6 +59,15 @@ export function CanonicalNode({
     ? adapter.classMap(composedClassName, canonicalId)
     : { className: composedClassName }
 
+  // Compose inline CSS for arbitrary values the user picked via inspector
+  // (hex colors, custom px/% spacing). Phase 4.5 stores these in
+  // style.inline at base only. Merged AFTER classMap's inlineStyle so the
+  // user's explicit picks win over adapter-generated styling.
+  const composedInline = composeInlineStyle(style, 'root')
+  const inlineStyle = composedInline
+    ? { ...styleProps.inlineStyle, ...composedInline }
+    : styleProps.inlineStyle
+
   return (
     <Impl
       canonicalId={canonicalId}
@@ -66,7 +76,7 @@ export function CanonicalNode({
       rootRef={attachRef}
       className={styleProps.className}
       sx={styleProps.sx}
-      inlineStyle={styleProps.inlineStyle}
+      inlineStyle={inlineStyle}
     >
       {children}
     </Impl>

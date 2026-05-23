@@ -17,18 +17,27 @@ type Intent = keyof typeof INTENT_TO_VARIANT
 // Workaround: wrap with a `display: contents` span so the ref attaches cleanly
 // to a real DOM node. This is safe for non-canvas leaves (Button doesn't accept
 // drops), so it doesn't trigger Phase 1 risk #2's nested-hit-testing problem.
-export function ShadcnButton({ props, rootRef, className }: AdapterRenderProps) {
+export function ShadcnButton({
+  props,
+  rootRef,
+  className,
+  inlineStyle,
+}: AdapterRenderProps) {
   const { label, intent, disabled } = props as {
     label: string
     intent: Intent
     disabled: boolean
   }
+  // The wrapper span keeps `display: contents` so it stays layout-transparent;
+  // inlineStyle goes on the actual rendered button where it has a real box to
+  // apply to.
   return (
     <span ref={rootRef} style={{ display: 'contents' }}>
       <ShadcnButtonImpl
         variant={INTENT_TO_VARIANT[intent] ?? 'default'}
         disabled={disabled}
         className={className}
+        style={inlineStyle}
       >
         {label}
       </ShadcnButtonImpl>

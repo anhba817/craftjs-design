@@ -13,7 +13,12 @@ type Intent = keyof typeof INTENT_TO_COLOR
 // can pass `ref` directly without the `display: contents` span workaround.
 // `rootRef as never` casts because MUI's ref type is HTMLButtonElement-specific;
 // our editor-side callback uses the wider HTMLElement parameter.
-export function MaterialButton({ props, rootRef, sx }: AdapterRenderProps) {
+export function MaterialButton({
+  props,
+  rootRef,
+  sx,
+  inlineStyle,
+}: AdapterRenderProps) {
   const { label, intent, disabled } = props as {
     label: string
     intent: Intent
@@ -26,6 +31,7 @@ export function MaterialButton({ props, rootRef, sx }: AdapterRenderProps) {
       color={INTENT_TO_COLOR[intent] ?? 'primary'}
       disabled={disabled}
       sx={sx}
+      style={inlineStyle}
     >
       {label}
     </MuiButton>

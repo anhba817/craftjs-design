@@ -29,9 +29,6 @@ export function EffectsPanel({ nodeId }: { nodeId: string }) {
 
   return (
     <section className="space-y-2">
-      <div className="text-xs font-semibold tracking-wide uppercase text-gray-500">
-        Effects
-      </div>
       <PanelRow label="Shadow">
         <ValueSelect
           value={slice.shadow ?? ''}

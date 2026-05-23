@@ -14,6 +14,14 @@ export type CanonicalCategory =
 export interface NodeStyle {
   classes: Record<string, string>;
   responsive?: Record<string, Record<string, string>>;
+  // Inline CSS for arbitrary values (hex colors, custom spacing).
+  // Slot → CSS-property → value. Always applied at base breakpoint.
+  // Responsive arbitrary values require a per-document safelist build pipeline
+  // (deferred to Phase 5+); at non-base breakpoints the inspector restricts to
+  // token-only picks. Inline styles have higher specificity than Tailwind
+  // utility classes, so picking an arbitrary value cleanly overrides a prior
+  // token pick for the same CSS property.
+  inline?: Record<string, Record<string, string>>;
 }
 
 // Inspector panel ids. Each canonical declares (or defaults) which panels apply.

@@ -1,12 +1,17 @@
 import { cn } from "@/lib/utils";
 import type { AdapterRenderProps } from "../../types";
 
-// `className` comes from CanonicalNode after composeResponsive() merges the
-// base + breakpoint slices into Tailwind-prefixed utilities. Reading
-// style.classes.root directly here would bypass the responsive composition.
-export function ShadcnBox({ children, rootRef, className }: AdapterRenderProps) {
+// `className` is the composed responsive class string; `inlineStyle` holds
+// arbitrary values the user picked via inspector (hex colors, custom px). Both
+// are populated by CanonicalNode; the adapter just forwards them.
+export function ShadcnBox({
+  children,
+  rootRef,
+  className,
+  inlineStyle,
+}: AdapterRenderProps) {
   return (
-    <div ref={rootRef} className={cn(className)}>
+    <div ref={rootRef} className={cn(className)} style={inlineStyle}>
       {children}
     </div>
   );

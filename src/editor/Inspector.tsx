@@ -8,6 +8,7 @@ import { EffectsPanel } from './inspector/EffectsPanel'
 import { LayoutPanel } from './inspector/LayoutPanel'
 import { PropsPanel } from './inspector/PropsPanel'
 import { ResponsiveBar } from './inspector/ResponsiveBar'
+import { CollapsibleSection } from './inspector/shared/CollapsibleSection'
 import { SizePanel } from './inspector/SizePanel'
 import { SpacingPanel } from './inspector/SpacingPanel'
 import { TypographyPanel } from './inspector/TypographyPanel'
@@ -60,34 +61,46 @@ export function Inspector() {
               )}
             </div>
 
-            {panels.includes('layout') && (
-              <PanelSection><LayoutPanel nodeId={selected.id} /></PanelSection>
-            )}
-            {panels.includes('size') && (
-              <PanelSection><SizePanel nodeId={selected.id} /></PanelSection>
-            )}
-            {panels.includes('spacing') && (
-              <PanelSection><SpacingPanel nodeId={selected.id} /></PanelSection>
-            )}
-            {panels.includes('typography') && (
-              <PanelSection><TypographyPanel nodeId={selected.id} /></PanelSection>
-            )}
-            {panels.includes('appearance') && (
-              <PanelSection><AppearancePanel nodeId={selected.id} /></PanelSection>
-            )}
-            {panels.includes('effects') && (
-              <PanelSection><EffectsPanel nodeId={selected.id} /></PanelSection>
-            )}
-            {panels.includes('componentProps') && (
-              <PanelSection><PropsPanel nodeId={selected.id} /></PanelSection>
-            )}
+            <div className="mt-4 space-y-2 border-t border-gray-200 pt-3">
+              {panels.includes('layout') && (
+                <CollapsibleSection title="Layout">
+                  <LayoutPanel nodeId={selected.id} />
+                </CollapsibleSection>
+              )}
+              {panels.includes('size') && (
+                <CollapsibleSection title="Size">
+                  <SizePanel nodeId={selected.id} />
+                </CollapsibleSection>
+              )}
+              {panels.includes('spacing') && (
+                <CollapsibleSection title="Spacing">
+                  <SpacingPanel nodeId={selected.id} />
+                </CollapsibleSection>
+              )}
+              {panels.includes('typography') && (
+                <CollapsibleSection title="Typography">
+                  <TypographyPanel nodeId={selected.id} />
+                </CollapsibleSection>
+              )}
+              {panels.includes('appearance') && (
+                <CollapsibleSection title="Appearance">
+                  <AppearancePanel nodeId={selected.id} />
+                </CollapsibleSection>
+              )}
+              {panels.includes('effects') && (
+                <CollapsibleSection title="Effects">
+                  <EffectsPanel nodeId={selected.id} />
+                </CollapsibleSection>
+              )}
+              {panels.includes('componentProps') && (
+                <CollapsibleSection title="Properties">
+                  <PropsPanel nodeId={selected.id} />
+                </CollapsibleSection>
+              )}
+            </div>
           </div>
         </>
       )}
     </aside>
   )
-}
-
-function PanelSection({ children }: { children: React.ReactNode }) {
-  return <div className="mt-4 border-t border-gray-200 pt-3">{children}</div>
 }

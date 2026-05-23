@@ -8,7 +8,12 @@ import type { AdapterRenderProps } from '../../types'
 // readOnly via slotProps.input silences React's controlled-without-onChange
 // warning AND prevents users from typing into the editor preview. Phase 4's
 // inspector edits the canonical `value` prop directly.
-export function MaterialInput({ props, rootRef, sx }: AdapterRenderProps) {
+export function MaterialInput({
+  props,
+  rootRef,
+  sx,
+  inlineStyle,
+}: AdapterRenderProps) {
   const { type, placeholder, value, disabled } = props as {
     type: 'text' | 'email' | 'password' | 'number'
     placeholder: string
@@ -23,6 +28,7 @@ export function MaterialInput({ props, rootRef, sx }: AdapterRenderProps) {
       value={value}
       disabled={disabled}
       sx={sx}
+      style={inlineStyle}
       slotProps={{ input: { readOnly: true } }}
     />
   )

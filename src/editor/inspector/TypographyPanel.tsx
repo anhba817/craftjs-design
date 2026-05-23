@@ -12,27 +12,42 @@ import type {
   TextColor,
   TypographySlice,
 } from '@/style/tw-classes'
-import { ColorSelect } from './shared/ColorSelect'
+import { ColorPicker, colorValueFromState } from './shared/ColorPicker'
+import type { ColorPickerValue } from './shared/ColorPicker'
 import { PanelRow } from './shared/PanelRow'
 import { ValueSelect } from './shared/ValueSelect'
 import { useNodeClasses } from './shared/useNodeClasses'
 
 export function TypographyPanel({ nodeId }: { nodeId: string }) {
-  const { classString, writeClasses } = useNodeClasses(nodeId)
+  const { classString, inlineStyle, writeClasses, writeInline, activeBreakpoint } =
+    useNodeClasses(nodeId)
   const { slice } = parseTypography(classString)
 
-  // Read the LIVE class string at call time, not the closure capture, to
-  // protect against rapid-edit races. useNodeClasses' writeClasses takes a
-  // complete next-string; we re-parse here and re-merge for each patch.
   const update = (patch: Partial<TypographySlice>) => {
     writeClasses(mergeTypography(classString, patch))
   }
 
+  // Text color is split between a token class (`text-{token}`) and an inline
+  // `color: '#hex'`. Inline wins for display (matches CSS specificity). Writes
+  // either set the token AND clear inline, or set inline AND clear the token —
+  // the two stay mutually exclusive so the user always sees the value they
+  // last picked, not a stale combo.
+  const colorValue = colorValueFromState(slice.textColor, inlineStyle.color)
+  const setColor = (v: ColorPickerValue) => {
+    if (v.kind === 'token') {
+      update({ textColor: v.token as TextColor })
+      writeInline('color', undefined)
+    } else if (v.kind === 'hex') {
+      update({ textColor: undefined })
+      writeInline('color', v.hex)
+    } else {
+      update({ textColor: undefined })
+      writeInline('color', undefined)
+    }
+  }
+
   return (
     <section className="space-y-2">
-      <div className="text-xs font-semibold tracking-wide uppercase text-gray-500">
-        Typography
-      </div>
       <PanelRow label="Size">
         <ValueSelect
           value={slice.fontSize ?? ''}
@@ -55,9 +70,14 @@ export function TypographyPanel({ nodeId }: { nodeId: string }) {
         />
       </PanelRow>
       <PanelRow label="Color">
-        <ColorSelect
-          value={slice.textColor ?? ''}
-          onChange={(v) => update({ textColor: v as TextColor | undefined })}
+        <ColorPicker
+          value={colorValue}
+          onChange={setColor}
+          hexDisabledHint={
+            activeBreakpoint !== 'base'
+              ? 'Arbitrary values supported at base breakpoint only.'
+              : undefined
+          }
         />
       </PanelRow>
     </section>

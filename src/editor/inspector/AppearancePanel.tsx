@@ -10,9 +10,10 @@ import type {
   BorderStyle,
   BorderWidth,
   Radius,
-  TokenColor,
 } from '@/style/tw-classes'
-import { ColorSelect } from './shared/ColorSelect'
+import { ColorPicker, colorValueFromState } from './shared/ColorPicker'
+import type { ColorPickerValue } from './shared/ColorPicker'
+import { NumericInput } from './shared/NumericInput'
 import { PanelRow } from './shared/PanelRow'
 import { ValueSelect } from './shared/ValueSelect'
 import { useNodeClasses } from './shared/useNodeClasses'
@@ -23,22 +24,51 @@ const BORDER_WIDTH_OPTIONS = ['default', ...BORDER_WIDTHS] as const
 const RADIUS_OPTIONS = ['default', ...RADII] as const
 
 export function AppearancePanel({ nodeId }: { nodeId: string }) {
-  const { classString, writeClasses } = useNodeClasses(nodeId)
+  const { classString, inlineStyle, writeClasses, writeInline, activeBreakpoint } =
+    useNodeClasses(nodeId)
   const { slice } = parseAppearance(classString)
   const update = (patch: Partial<AppearanceSlice>) => {
     writeClasses(mergeAppearance(classString, patch))
   }
 
+  const fillValue = colorValueFromState(slice.bg, inlineStyle.backgroundColor)
+  const borderColorValue = colorValueFromState(slice.borderColor, inlineStyle.borderColor)
+
+  const setFill = (v: ColorPickerValue) => {
+    if (v.kind === 'token') {
+      update({ bg: v.token })
+      writeInline('backgroundColor', undefined)
+    } else if (v.kind === 'hex') {
+      update({ bg: undefined })
+      writeInline('backgroundColor', v.hex)
+    } else {
+      update({ bg: undefined })
+      writeInline('backgroundColor', undefined)
+    }
+  }
+
+  const setBorderColor = (v: ColorPickerValue) => {
+    if (v.kind === 'token') {
+      update({ borderColor: v.token })
+      writeInline('borderColor', undefined)
+    } else if (v.kind === 'hex') {
+      update({ borderColor: undefined })
+      writeInline('borderColor', v.hex)
+    } else {
+      update({ borderColor: undefined })
+      writeInline('borderColor', undefined)
+    }
+  }
+
+  const hexHint =
+    activeBreakpoint !== 'base'
+      ? 'Arbitrary values supported at base breakpoint only.'
+      : undefined
+
   return (
     <section className="space-y-2">
-      <div className="text-xs font-semibold tracking-wide uppercase text-gray-500">
-        Appearance
-      </div>
       <PanelRow label="Fill">
-        <ColorSelect
-          value={slice.bg ?? ''}
-          onChange={(v) => update({ bg: v as TokenColor | undefined })}
-        />
+        <ColorPicker value={fillValue} onChange={setFill} hexDisabledHint={hexHint} />
       </PanelRow>
       <PanelRow label="Border">
         <ValueSelect
@@ -55,18 +85,32 @@ export function AppearancePanel({ nodeId }: { nodeId: string }) {
         />
       </PanelRow>
       <PanelRow label="B Color">
-        <ColorSelect
-          value={slice.borderColor ?? ''}
-          onChange={(v) => update({ borderColor: v as TokenColor | undefined })}
+        <ColorPicker
+          value={borderColorValue}
+          onChange={setBorderColor}
+          hexDisabledHint={hexHint}
         />
       </PanelRow>
       <PanelRow label="Radius">
-        <ValueSelect
-          value={slice.rounded ?? ''}
-          options={RADIUS_OPTIONS}
-          onChange={(v) => update({ rounded: v as Radius | undefined })}
+        <NumericInput
+          value={inlineStyle.borderRadius ?? slice.rounded ?? ''}
+          tokens={RADIUS_OPTIONS}
+          arbitraryDisabledHint={hexHint}
+          onChange={(next) => {
+            if (next === '') {
+              update({ rounded: undefined })
+              writeInline('borderRadius', undefined)
+            } else if ((RADIUS_OPTIONS as readonly string[]).includes(next)) {
+              update({ rounded: next as Radius })
+              writeInline('borderRadius', undefined)
+            } else {
+              update({ rounded: undefined })
+              writeInline('borderRadius', next)
+            }
+          }}
         />
       </PanelRow>
     </section>
   )
 }
+

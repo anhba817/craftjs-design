@@ -9,9 +9,14 @@ import type { AdapterRenderProps } from '../../types'
 // The visual divergence between adapters happens at Button/Input where the
 // libraries have genuinely different rendering models. Container components
 // like Box are intentionally near-identical across adapters.
-export function MaterialBox({ children, className, rootRef }: AdapterRenderProps) {
+export function MaterialBox({
+  children,
+  className,
+  rootRef,
+  inlineStyle,
+}: AdapterRenderProps) {
   return (
-    <MuiBox ref={rootRef as never} className={className}>
+    <MuiBox ref={rootRef as never} className={className} style={inlineStyle}>
       {children}
     </MuiBox>
   )

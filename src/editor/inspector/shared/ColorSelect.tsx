@@ -1,6 +1,12 @@
 import { COLORS } from '@/style/tw-classes'
 import type { TokenColor } from '@/style/tw-classes'
 
+/**
+ * @deprecated Use {@link ColorPicker} instead. Phase 4.5 replaced this with a
+ * Popover-based picker supporting both token swatches and arbitrary hex values.
+ * This file remains for any panel still using it during transition; remove it
+ * once every panel has migrated.
+ */
 // Token color picker. A live swatch beside the select reflects the current
 // value — native `<option>` elements can't render swatches reliably across
 // browsers, so the swatch lives outside the dropdown.

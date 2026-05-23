@@ -1,36 +1,51 @@
-// Generic typed select for enum-shaped slice fields. Used by Layout (display,
-// flex-dir, etc.), Spacing (values), Size (values), Appearance (radius),
-// Effects (shadow, opacity, blur). Empty string is the "unset" sentinel —
-// converted to `undefined` so the caller can pass it as a patch field that
-// removes the utility.
+import type { ReactNode } from 'react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+// Radix Select disallows `value=""` on SelectItem (it conflicts with internal
+// "no selection" semantics). We use this sentinel internally and translate at
+// the boundary so callers can keep using empty string for "unset".
+const NONE_SENTINEL = '__none__'
+
+// Typed select for enum-shaped slice fields. Empty string = "unset" sentinel.
+// Optional `renderOption` lets callers inject icons / swatches per item — e.g.,
+// LayoutPanel showing direction arrows beside flex-row / flex-col.
 export function ValueSelect<T extends string>({
   value,
   options,
   onChange,
-  className,
+  placeholder = '—',
+  renderOption,
 }: {
   value: T | ''
   options: readonly T[]
   onChange: (v: T | undefined) => void
-  className?: string
+  placeholder?: string
+  renderOption?: (option: T) => ReactNode
 }) {
   return (
-    <select
-      value={value}
-      onChange={(e) =>
-        onChange(e.target.value === '' ? undefined : (e.target.value as T))
-      }
-      className={
-        className ??
-        'w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-gray-700'
+    <Select
+      value={value === '' ? NONE_SENTINEL : value}
+      onValueChange={(v) =>
+        onChange(v === NONE_SENTINEL ? undefined : (v as T))
       }
     >
-      <option value="">—</option>
-      {options.map((o) => (
-        <option key={o} value={o}>
-          {o}
-        </option>
-      ))}
-    </select>
+      <SelectTrigger className="h-7 w-full text-sm" size="sm">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={NONE_SENTINEL}>{placeholder}</SelectItem>
+        {options.map((o) => (
+          <SelectItem key={o} value={o}>
+            {renderOption ? renderOption(o) : o}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }

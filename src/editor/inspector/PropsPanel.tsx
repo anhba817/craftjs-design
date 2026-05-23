@@ -38,7 +38,6 @@ export function PropsPanel({ nodeId }: { nodeId: string }) {
   if (!(schema instanceof z.ZodObject)) {
     return (
       <section className="space-y-2">
-        <SectionHeader />
         <div className="text-xs text-gray-400">
           {displayName}'s propsSchema isn't a ZodObject — no form generated.
         </div>
@@ -60,7 +59,6 @@ export function PropsPanel({ nodeId }: { nodeId: string }) {
 
   return (
     <section className="space-y-2">
-      <SectionHeader />
       {Object.entries(shape).map(([key, fieldSchema]) => (
         <PanelRow key={key} label={key}>
           <PropField
@@ -71,14 +69,6 @@ export function PropsPanel({ nodeId }: { nodeId: string }) {
         </PanelRow>
       ))}
     </section>
-  )
-}
-
-function SectionHeader() {
-  return (
-    <div className="text-xs font-semibold tracking-wide uppercase text-gray-500">
-      Properties
-    </div>
   )
 }
 
