@@ -1,4 +1,5 @@
 import { useEditor } from '@craftjs/core'
+import { useEffect, useState } from 'react'
 import {
   getApplicablePanels,
   getComponentByDisplayName,
@@ -8,6 +9,7 @@ import { EffectsPanel } from './inspector/EffectsPanel'
 import { LayoutPanel } from './inspector/LayoutPanel'
 import { PropsPanel } from './inspector/PropsPanel'
 import { ResponsiveBar } from './inspector/ResponsiveBar'
+import { SlotPicker } from './inspector/SlotPicker'
 import { CollapsibleSection } from './inspector/shared/CollapsibleSection'
 import { SizePanel } from './inspector/SizePanel'
 import { SpacingPanel } from './inspector/SpacingPanel'
@@ -29,6 +31,20 @@ export function Inspector() {
 
   const def = selected ? getComponentByDisplayName(selected.displayName) : null
   const panels = def ? getApplicablePanels(def) : []
+  const slots = def?.styleSlots ?? ['root']
+
+  // Slot state is per-selection — resets to the first slot when the user
+  // selects a different node. Kept here in component state rather than
+  // editorStore because it's transient UI, not document- or app-level.
+  const [activeSlot, setActiveSlot] = useState<string>(slots[0])
+  useEffect(() => {
+    setActiveSlot(slots[0])
+  }, [selected?.id, slots])
+
+  // Defensive: if slots changed (rare — only on canonical-def hot-reload), the
+  // active slot might no longer exist. Snap back to the first slot.
+  const slot = slots.includes(activeSlot) ? activeSlot : slots[0]
+  const showSlotPicker = slots.length > 1
 
   return (
     <aside className="flex w-72 flex-col border-l border-gray-200">
@@ -40,6 +56,9 @@ export function Inspector() {
       ) : (
         <>
           <ResponsiveBar />
+          {showSlotPicker && (
+            <SlotPicker slots={slots} active={slot} onChange={setActiveSlot} />
+          )}
           <div className="overflow-y-auto px-3 py-3">
             <div className="space-y-3 text-sm">
               <div>
@@ -64,36 +83,37 @@ export function Inspector() {
             <div className="mt-4 space-y-2 border-t border-gray-200 pt-3">
               {panels.includes('layout') && (
                 <CollapsibleSection title="Layout">
-                  <LayoutPanel nodeId={selected.id} />
+                  <LayoutPanel nodeId={selected.id} slot={slot} />
                 </CollapsibleSection>
               )}
               {panels.includes('size') && (
                 <CollapsibleSection title="Size">
-                  <SizePanel nodeId={selected.id} />
+                  <SizePanel nodeId={selected.id} slot={slot} />
                 </CollapsibleSection>
               )}
               {panels.includes('spacing') && (
                 <CollapsibleSection title="Spacing">
-                  <SpacingPanel nodeId={selected.id} />
+                  <SpacingPanel nodeId={selected.id} slot={slot} />
                 </CollapsibleSection>
               )}
               {panels.includes('typography') && (
                 <CollapsibleSection title="Typography">
-                  <TypographyPanel nodeId={selected.id} />
+                  <TypographyPanel nodeId={selected.id} slot={slot} />
                 </CollapsibleSection>
               )}
               {panels.includes('appearance') && (
                 <CollapsibleSection title="Appearance">
-                  <AppearancePanel nodeId={selected.id} />
+                  <AppearancePanel nodeId={selected.id} slot={slot} />
                 </CollapsibleSection>
               )}
               {panels.includes('effects') && (
                 <CollapsibleSection title="Effects">
-                  <EffectsPanel nodeId={selected.id} />
+                  <EffectsPanel nodeId={selected.id} slot={slot} />
                 </CollapsibleSection>
               )}
               {panels.includes('componentProps') && (
                 <CollapsibleSection title="Properties">
+                  {/* PropsPanel edits canonical props, not slot classes — slot doesn't apply. */}
                   <PropsPanel nodeId={selected.id} />
                 </CollapsibleSection>
               )}

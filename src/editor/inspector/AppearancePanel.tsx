@@ -23,9 +23,9 @@ import { useNodeClasses } from './shared/useNodeClasses'
 const BORDER_WIDTH_OPTIONS = ['default', ...BORDER_WIDTHS] as const
 const RADIUS_OPTIONS = ['default', ...RADII] as const
 
-export function AppearancePanel({ nodeId }: { nodeId: string }) {
+export function AppearancePanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
   const { classString, inlineStyle, writeClasses, writeInline, activeBreakpoint } =
-    useNodeClasses(nodeId)
+    useNodeClasses(nodeId, slot)
   const { slice } = parseAppearance(classString)
   const update = (patch: Partial<AppearanceSlice>) => {
     writeClasses(mergeAppearance(classString, patch))

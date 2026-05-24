@@ -103,6 +103,12 @@ const lines: string[] = [
   ...emitBare('blur'),                         // default blur
   ...emit('blur-', BLURS),
   '',
+  '/* Phase 5 — one-off utilities for new canonical defaults */',
+  // Image aspect ratios + Link's underline-offset-4 + object-fit for images.
+  ...emitBare('aspect-auto', 'aspect-square', 'aspect-video'),
+  ...emitBare('underline-offset-4'),
+  ...emitBare('object-cover', 'object-contain'),
+  '',
 ]
 
 writeFileSync(OUTPUT_PATH, lines.join('\n'), 'utf8')

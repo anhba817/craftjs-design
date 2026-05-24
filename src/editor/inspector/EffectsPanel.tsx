@@ -20,8 +20,8 @@ import { useNodeClasses } from './shared/useNodeClasses'
 const SHADOW_OPTIONS = ['default', ...SHADOWS] as const
 const BLUR_OPTIONS = ['default', ...BLURS] as const
 
-export function EffectsPanel({ nodeId }: { nodeId: string }) {
-  const { classString, writeClasses } = useNodeClasses(nodeId)
+export function EffectsPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
+  const { classString, writeClasses } = useNodeClasses(nodeId, slot)
   const { slice } = parseEffects(classString)
   const update = (patch: Partial<EffectsSlice>) => {
     writeClasses(mergeEffects(classString, patch))

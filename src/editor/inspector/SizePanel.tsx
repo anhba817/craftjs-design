@@ -30,9 +30,9 @@ function isSizeToken(v: string): v is SizeValue {
   return (SIZE_VALUES as readonly string[]).includes(v)
 }
 
-export function SizePanel({ nodeId }: { nodeId: string }) {
+export function SizePanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
   const { classString, inlineStyle, writeClasses, writeInline, activeBreakpoint } =
-    useNodeClasses(nodeId)
+    useNodeClasses(nodeId, slot)
   const { slice } = parseSize(classString)
   const update = (patch: Partial<SizeSlice>) => {
     writeClasses(mergeSize(classString, patch))

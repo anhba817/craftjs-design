@@ -41,9 +41,9 @@ function readMargin(slice: SpacingSlice, inline: Record<string, string>): BoxSid
   return {}
 }
 
-export function SpacingPanel({ nodeId }: { nodeId: string }) {
+export function SpacingPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
   const { classString, inlineStyle, writeClasses, writeInline, activeBreakpoint } =
-    useNodeClasses(nodeId)
+    useNodeClasses(nodeId, slot)
   const { slice } = parseSpacing(classString)
 
   const update = (patch: Partial<SpacingSlice>) => {

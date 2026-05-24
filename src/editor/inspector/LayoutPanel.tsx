@@ -69,8 +69,8 @@ function renderWithIcon<T extends string>(icons: Record<T, ReactNode>) {
   )
 }
 
-export function LayoutPanel({ nodeId }: { nodeId: string }) {
-  const { classString, writeClasses } = useNodeClasses(nodeId)
+export function LayoutPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
+  const { classString, writeClasses } = useNodeClasses(nodeId, slot)
   const { slice } = parseLayout(classString)
   const update = (patch: Partial<LayoutSlice>) => {
     writeClasses(mergeLayout(classString, patch))

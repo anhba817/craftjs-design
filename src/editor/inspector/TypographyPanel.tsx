@@ -18,9 +18,9 @@ import { PanelRow } from './shared/PanelRow'
 import { ValueSelect } from './shared/ValueSelect'
 import { useNodeClasses } from './shared/useNodeClasses'
 
-export function TypographyPanel({ nodeId }: { nodeId: string }) {
+export function TypographyPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
   const { classString, inlineStyle, writeClasses, writeInline, activeBreakpoint } =
-    useNodeClasses(nodeId)
+    useNodeClasses(nodeId, slot)
   const { slice } = parseTypography(classString)
 
   const update = (patch: Partial<TypographySlice>) => {

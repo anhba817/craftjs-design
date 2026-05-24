@@ -34,9 +34,16 @@ export interface AdapterRenderProps {
   rootRef?: (el: HTMLElement | null) => void;
 
   // ----- Populated by CanonicalNode from adapter.classMap (or default) -----
+  // For Pattern A (single-slot) canonicals, impls usually just read className +
+  // inlineStyle (the root composition). For Pattern B canonicals with named
+  // sub-slots (Card's header/body/footer, Tabs' tabs/content), impls read from
+  // composedClasses[slot] / composedInlineStyles[slot] to apply per-slot
+  // styling. The root entry of each map equals className / inlineStyle.
   className?: string;
   sx?: Record<string, unknown>;
   inlineStyle?: CSSProperties;
+  composedClasses?: Record<string, string>;
+  composedInlineStyles?: Record<string, CSSProperties>;
 }
 
 export interface Adapter {

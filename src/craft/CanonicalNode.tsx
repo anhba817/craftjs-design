@@ -1,5 +1,5 @@
 import { useNode } from '@craftjs/core'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { useActiveAdapter } from '../adapters/AdapterContext'
 import type { ClassMapResult } from '../adapters/types'
 import { getComponent } from '../registry/registry'
@@ -36,10 +36,8 @@ export function CanonicalNode({
   }
 
   // Adapter coverage gap: render a labeled placeholder instead of throwing.
-  // Phase 3 ships MUI with only button + input impls; selecting MUI with a Box
-  // on the canvas hits this branch. The placeholder is the user's signal that
-  // the active adapter doesn't render this canonical — they can swap adapters
-  // or replace the node. Phase 5 fills coverage gaps.
+  // The placeholder lets users swap adapters or remove the node without
+  // crashing. Phase 5 fills MUI coverage gaps as part of adapter parity.
   if (!Impl) {
     return (
       <div
@@ -51,21 +49,36 @@ export function CanonicalNode({
     )
   }
 
-  // Compose responsive: base classes + breakpoint slices → Tailwind-prefixed
-  // className. Adapters with classMap receive the composed string and can
-  // transform further; adapters without classMap pass it through directly.
-  const composedClassName = composeResponsive(style, 'root')
-  const styleProps: ClassMapResult = adapter.classMap
-    ? adapter.classMap(composedClassName, canonicalId)
-    : { className: composedClassName }
+  // Compose per-slot maps. Every slot the canonical declares gets a full
+  // responsive composition + inline merge. Pattern A canonicals (one slot
+  // named 'root') get a single-entry map; Pattern B canonicals (Card, Tabs)
+  // get entries for each named region.
+  //
+  // The `className` / `inlineStyle` fields below mirror `composedClasses.root`
+  // / `composedInlineStyles.root` for backwards compatibility with Pattern A
+  // impls written before Pattern B existed.
+  const composedClasses: Record<string, string> = {}
+  const composedInlineStyles: Record<string, CSSProperties> = {}
+  for (const slot of def.styleSlots) {
+    composedClasses[slot] = composeResponsive(style, slot)
+    const inline = composeInlineStyle(style, slot)
+    if (inline) composedInlineStyles[slot] = inline
+  }
 
-  // Compose inline CSS for arbitrary values the user picked via inspector
-  // (hex colors, custom px/% spacing). Phase 4.5 stores these in
-  // style.inline at base only. Merged AFTER classMap's inlineStyle so the
-  // user's explicit picks win over adapter-generated styling.
-  const composedInline = composeInlineStyle(style, 'root')
-  const inlineStyle = composedInline
-    ? { ...styleProps.inlineStyle, ...composedInline }
+  // Root-slot classMap output. Adapters with classMap receive the composed
+  // root string; non-root slot composition isn't passed through classMap
+  // because the per-slot adapter-native rewriting isn't well-defined yet
+  // (Phase 6 if any adapter actually needs it).
+  const rootClassString = composedClasses.root ?? ''
+  const styleProps: ClassMapResult = adapter.classMap
+    ? adapter.classMap(rootClassString, canonicalId)
+    : { className: rootClassString }
+
+  // Merge classMap's inlineStyle with user's arbitrary root-slot inline.
+  // User picks win.
+  const rootInline = composedInlineStyles.root
+  const inlineStyle = rootInline
+    ? { ...styleProps.inlineStyle, ...rootInline }
     : styleProps.inlineStyle
 
   return (
@@ -77,6 +90,8 @@ export function CanonicalNode({
       className={styleProps.className}
       sx={styleProps.sx}
       inlineStyle={inlineStyle}
+      composedClasses={composedClasses}
+      composedInlineStyles={composedInlineStyles}
     >
       {children}
     </Impl>

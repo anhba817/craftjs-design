@@ -325,3 +325,31 @@ Extend `tw-classes.test.ts` with one test: parser passes through `bg-[#xxxxxx]` 
 ## Definition of done
 
 Exit-criteria checklist passes. Updated `docs/ARCHITECTURE.md` + `docs/DEVELOPER_GUIDE.md`. Close-out section in this file records: which steps slipped, which Phase 5 items moved earlier or later. Phase 5 (component breadth) starts with a polished inspector.
+
+---
+
+## Close-out
+
+**Shipped at full scope.** No valves pulled. All 15 planned steps + one unplanned addition landed:
+
+- **Data model + adapter flow** (Steps 1–4): `NodeStyle.inline` field, `composeInlineStyle()`, `CanonicalNode` merges base inline into the impl's `inlineStyle` prop, all 8 adapter impls migrated to consume it.
+- **ColorPicker** (Steps 5–7): Popover-based picker with token swatch grid + hex input + visual picker. `colorValueFromState` helper. AppearancePanel and TypographyPanel wired. ColorSelect deprecated.
+- **NumericInput** (Steps 8–10): Hybrid token + arbitrary input + step buttons + dropdown chevron. BoxSidesEditor's linked mode upgraded; per-side mode stays token-only. SizePanel and AppearancePanel-radius wired.
+- **Visual polish** (Steps 11–13): ValueSelect migrated to shadcn Select with `renderOption` for icons. CollapsibleSection with native `<details>`. Layout panel options gained Lucide icons (FlexDir / Items / Justify).
+- **Doc updates** (Step 14): ARCHITECTURE.md and DEVELOPER_GUIDE.md updated with the new inline-style design decision, mutual-exclusion convention, ColorPicker / NumericInput recipes.
+
+**Unplanned addition: `react-colorful` integration.** After Group D landed, you asked for a richer color picker. Installed `react-colorful@5.7.0` (~3KB, zero deps, inlined styles) and embedded its `HexColorPicker` (saturation/lightness + hue slider) into the existing ColorPicker popover between the token grid and the hex text field. Two-way sync via `useEffect([value])` keeps picker, hex input, and parent state aligned. Drag updates commit on every onChange — acceptable for editor-scale node counts; Phase 6 polish could debounce on mouseup if needed at larger scales.
+
+**Bugs surfaced during integration:**
+
+1. **Box and Text impls were reading `style.classes.root` directly** — surfaced by Phase 4's responsive composition but masked by Phase 4.5 since the inline-style addition would also have been dropped. Fix landed in Phase 4 close-out as documented in [`ARCHITECTURE.md` § Adapter impls consume rendered className](../ARCHITECTURE.md#adapter-impls-consume-rendered-classname).
+
+2. **Token + arbitrary coexisting on same property** would have inline silently win via CSS specificity. Resolved by the mutual-exclusion convention in every panel (see [`DEVELOPER_GUIDE.md` § Token + arbitrary mutual exclusion](../DEVELOPER_GUIDE.md#token--arbitrary-mutual-exclusion)).
+
+**Architectural debt deferred to Phase 5+:**
+
+- **Responsive arbitrary values.** Inline `style="..."` can't carry `@media` queries. Phase 4.5 inspector explicitly disables hex / arbitrary entry at non-base breakpoints. Phase 5+ either builds a per-document Tailwind safelist pipeline (`bg-[#hex]` classes regenerated and compiled on save) or finds another mechanism. Significant scope; intentionally punted.
+
+- **Per-side arbitrary spacing values.** BoxSidesEditor's unlinked per-side mode is token-only in 4.5. The 4-side × inline mapping is doable but adds verbose write logic. Phase 5+ when needed.
+
+Phase 5 (component breadth) is unblocked. The inspector is now usable for real design work — only the *components* list is the constraint.
