@@ -50,12 +50,18 @@ export interface CanonicalComponent<Props = Record<string, unknown>> {
   // the outer node is just a wrapper — its named sub-slots are the canvases.
   isCanvas: boolean;
   styleSlots: readonly string[];
-  // Phase 6 — Pattern B multi-canvas. When set, CanonicalNode generates one
+  // Pattern B multi-canvas. When set, CanonicalNode generates one
   // <Element canvas id={slot}/> wrapper per slot and passes them to the
   // adapter impl via `slotChildren`. When unset, behavior derives from
   // `isCanvas`: true → ['root'] (the outer node IS the canvas, children come
   // through the React children prop); false → [] (no drop zones).
-  canvasSlots?: readonly string[];
+  //
+  // Phase 7 — Function form supports dynamic slot counts. Tabs uses this to
+  // expose one canvas per `props.tabs` entry. CanonicalNode calls the function
+  // with the node's current `props` on every render, so add/remove tab via the
+  // PropsPanel array editor immediately reflects in the canvas slot list.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  canvasSlots?: readonly string[] | ((props: any) => readonly string[]);
   propsSchema: z.ZodType<Props>;
   defaults: {
     props: Props;

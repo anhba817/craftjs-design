@@ -1,11 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import {
   __setEditorMountedForTest,
   getComponent,
+  getRegistryVersion,
   listComponents,
   registerCanonical,
   registerComponent,
+  subscribeRegistry,
   unregisterCanonical,
 } from './registry'
 
@@ -67,28 +69,46 @@ describe('registry — Phase 6 lifecycle API', () => {
     expect(getComponent(id)?.id).toBe(id)
   })
 
-  describe('post-mount warning', () => {
-    let warnSpy: ReturnType<typeof vi.spyOn>
-
-    beforeEach(() => {
-      warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    })
-
-    afterEach(() => {
-      warnSpy.mockRestore()
-    })
-
-    it('does not warn during pre-mount registration', () => {
-      registerCanonical(makeDef('phase6-rc-premount'))
-      expect(warnSpy).not.toHaveBeenCalled()
-    })
-
-    it('warns when registering after the editor mounts', () => {
+  describe('Phase 7 — registry version + hot reload subscription', () => {
+    it('getRegistryVersion is monotonic', () => {
+      const v0 = getRegistryVersion()
       __setEditorMountedForTest(true)
-      registerCanonical(makeDef('phase6-rc-postmount'))
-      expect(warnSpy).toHaveBeenCalled()
-      const msg = String(warnSpy.mock.calls[0]?.[0] ?? '')
-      expect(msg).toMatch(/after editor mount/)
+      registerCanonical(makeDef('phase7-version-a'))
+      const v1 = getRegistryVersion()
+      registerCanonical(makeDef('phase7-version-b'))
+      const v2 = getRegistryVersion()
+      expect(v1).toBeGreaterThan(v0)
+      expect(v2).toBeGreaterThan(v1)
+    })
+
+    it('pre-mount registrations do NOT bump the version', () => {
+      const before = getRegistryVersion()
+      registerCanonical(makeDef('phase7-version-premount'))
+      expect(getRegistryVersion()).toBe(before)
+    })
+
+    it('post-mount unregister bumps the version', () => {
+      __setEditorMountedForTest(true)
+      registerCanonical(makeDef('phase7-version-unreg'))
+      const before = getRegistryVersion()
+      expect(unregisterCanonical('phase7-version-unreg')).toBe(true)
+      expect(getRegistryVersion()).toBeGreaterThan(before)
+    })
+
+    it('subscribers fire on registry-version bumps', () => {
+      let calls = 0
+      const unsubscribe = subscribeRegistry(() => {
+        calls += 1
+      })
+      __setEditorMountedForTest(true)
+      registerCanonical(makeDef('phase7-version-sub'))
+      expect(calls).toBe(1)
+      unregisterCanonical('phase7-version-sub')
+      expect(calls).toBe(2)
+      unsubscribe()
+      // After unsubscribe, no more calls.
+      registerCanonical(makeDef('phase7-version-sub-2'))
+      expect(calls).toBe(2)
     })
   })
 

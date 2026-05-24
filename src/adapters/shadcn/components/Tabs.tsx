@@ -1,5 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
+import { TAB_SLOT_PREFIX } from '@/registry/components/tabs'
 import type { AdapterRenderProps } from '../../types'
 
 export function ShadcnTabs({
@@ -7,9 +8,10 @@ export function ShadcnTabs({
   rootRef,
   composedClasses = {},
   composedInlineStyles = {},
+  slotChildren = {},
 }: AdapterRenderProps) {
   const { tabs, defaultValue } = props as {
-    tabs: { value: string; label: string; content: string }[]
+    tabs: { value: string; label: string }[]
     defaultValue: string
   }
   return (
@@ -36,7 +38,7 @@ export function ShadcnTabs({
             className={cn(composedClasses.content)}
             style={composedInlineStyles.content}
           >
-            {t.content}
+            {slotChildren[`${TAB_SLOT_PREFIX}${t.value}`]}
           </TabsContent>
         ))}
       </Tabs>

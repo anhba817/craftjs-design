@@ -286,6 +286,8 @@ The next render of any node with that canonical id picks up the new impl. No fur
 
 The Inspector reads panels from a pluggable registry — built-ins and custom panels register the same way. Seven panels ship today (Layout, Size, Spacing, Typography, Appearance, Effects, Properties); they register themselves at module load via `src/editor/inspector/built-in-panels.ts`. To add an eighth — say, a custom "Animation" panel — follow this template, copying from `TypographyPanel.tsx` as the canonical example.
 
+**Note on array props:** if your panel surfaces an array prop via PropsPanel, the built-in `ArrayField` editor ships with HTML5 drag-and-drop reorder (Phase 7). The drag handle is a `GripVertical` icon on each item card; drop indicator shows whether the dropped item will land before or after the target. ↑/↓ buttons are retained as a keyboard-accessibility fallback. No work required on your end — `ArrayField` handles it.
+
 1. **Add a slice to `src/style/tw-classes.ts`** if your panel edits Tailwind classes. Each slice is a self-contained block: const arrays + slice interface + regex patterns + `parse*` / `serialize*` / `merge*` trio. Slices must be independent — `parseX` should pass through every class that's not in X's prefix family as `unknownClasses`. See the typography block as a template.
 
    ```ts
@@ -513,6 +515,101 @@ localStorage.removeItem('craftjs-design.toolbox')     // clear toolbox prefs (fa
 ```
 
 If you're adding a new piece of user-level UI state, follow the same pattern — its own localStorage key, read/written outside the document envelope. Don't accidentally stuff user preferences into the document.
+
+### Adding a starter template
+
+Templates seed new documents with pre-arranged canvas content. Three ship today (Empty, Landing page, Sign-up form); add more by registering at module load.
+
+1. Build the template via `buildTemplate(NodeSpec)`. The builder consults the canonical registry — so it must be imported after `./registry/components`.
+
+   ```ts
+   // src/persistence/templates/dashboard.ts
+   import { buildTemplate } from './builder'
+   import { registerTemplate } from './registry'
+
+   registerTemplate({
+     id: 'dashboard',
+     name: 'Dashboard',
+     description: 'A header, sidebar, and main content area.',
+     envelope: buildTemplate({
+       root: {
+         canonical: 'stack',
+         nodeProps: { direction: 'vertical', gap: '4' },
+         style: { classes: { root: 'h-screen' } },
+         children: [
+           { canonical: 'heading', nodeProps: { level: '2', content: 'Dashboard' } },
+           // ... more children
+         ],
+       },
+     }),
+   })
+   ```
+
+2. Add a side-effect import to `src/persistence/templates/index.ts`:
+
+   ```ts
+   import './dashboard'
+   ```
+
+3. The template appears in the editor's "New from template…" popover automatically.
+
+**NodeSpec shape**:
+- `canonical: string` — required, the canonical id.
+- `nodeProps?: Record<string, unknown>` — shallow-merged over the canonical's defaults.
+- `style?: Partial<NodeStyle>` — classes merged per-slot; other fields shallow-merged.
+- `children?: NodeSpec[]` — only honored when the canonical is a Pattern A canvas (`isCanvas: true`). Ignored for leaves.
+
+Pattern B multi-canvas templates (Card with header/body/footer children, Tabs with per-tab content) aren't supported by the current builder — that's a Phase 8 polish item. Workaround: ship a Pattern-A-only template; users can drop Card/Tabs and populate the slots manually.
+
+### Adding a document migration
+
+When a canonical's persisted shape changes incompatibly (renamed a prop, dropped a field, changed a type), existing saved documents need a one-shot transformation at load time. Migrations live in `src/persistence/migrations.ts` and run inside `migrateDocument()`.
+
+Example — when Phase 7 moved Tabs content from a string prop into per-tab canvases, the migration stripped the obsolete `content` field:
+
+```ts
+// src/persistence/migrations.ts
+function migrateTabsPropsV7(tree: CraftTree): void {
+  for (const nodeId of Object.keys(tree)) {
+    const node = tree[nodeId]
+    if (node.displayName !== 'Tabs') continue
+    const tabs = node.props?.nodeProps?.tabs
+    if (!Array.isArray(tabs)) continue
+    for (const tab of tabs) {
+      if (tab && typeof tab === 'object' && 'content' in tab) {
+        delete (tab as Record<string, unknown>).content
+      }
+    }
+  }
+}
+
+export function migrateDocument(doc: EditorDocument): EditorDocument {
+  // ... parse craftJson ...
+  migrateCardPropsV6(tree)
+  migrateTabsPropsV7(tree)   // ← add new step here
+  // ... stringify ...
+}
+```
+
+Migration rules:
+- **Idempotent.** Running the migration twice on the same document must produce the same result as running it once. Tests assert this.
+- **Walks the tree directly.** No Craft.js APIs are available at migration time — operate on the raw serialized node map.
+- **Drops, don't transform** for shape changes that can't be losslessly converted. Auto-converting Phase-5 Card `title` strings into child Text canonicals would require synthesizing fresh Craft node ids + linked-parent wiring — that's a different complexity class from the strip-and-go pattern. The phase plan calls out which migrations dropped data; designers export before upgrading.
+- **Add a test case.** Each migration step gets at least three tests in `migrations.test.ts`: happy path, isolation (only affects matching nodes), idempotency.
+
+### Adding a UI control that mutates a node directly
+
+Most node-state mutations go through `useNodeClasses` (for slot classes / inline) or `actions.setProp` (for canonical props). But some controls need to bypass React's render loop for performance — for example, the canvas-overlay drag-resize writes `dom.style.width/height` directly during the drag, then commits the final value via `setProp` on release.
+
+Pattern (see `src/editor/canvas/ResizeOverlay.tsx` for the reference example):
+
+1. Identify the selected node's DOM via `query.node(id).get().dom`.
+2. During the gesture, mutate `dom.style.<prop>` directly. React doesn't track these writes — no re-render per mousemove, smooth 60fps.
+3. On gesture end, commit via `actions.setProp((props) => { ... })`. The next render passes the same value through React's style-prop pipeline; no visible jump.
+
+Things to watch for:
+- If unrelated state changes trigger a Craft re-render mid-gesture (theme change, etc.), React's reconcile may wipe the direct DOM mutation. Designers don't typically operate multiple controls during a single gesture, so acceptable.
+- Stop event propagation on the gesture's mousedown if you're rendering the handles outside the Craft node tree — `e.stopPropagation()` is belt-and-suspenders against any document-level Craft listener.
 
 ### The `@design/sdk` boundary
 

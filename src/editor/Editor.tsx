@@ -4,8 +4,10 @@ import { AdapterProvider } from '../adapters/AdapterContext'
 import { getResolver } from '../craft/resolver'
 import { _markEditorMounted, getComponent } from '../registry/registry'
 import { ThemeProvider } from '../themes/ThemeProvider'
+import { ResizeOverlay } from './canvas/ResizeOverlay'
 import { Hydrator } from './Hydrator'
 import { Inspector } from './Inspector'
+import { ResolverUpdater } from './ResolverUpdater'
 import { SaveLoadBar } from './SaveLoadBar'
 import { Toolbox } from './Toolbox'
 
@@ -29,6 +31,8 @@ export function Editor() {
     <AdapterProvider>
       <Craft resolver={resolver}>
         <Hydrator />
+        <ResolverUpdater />
+        <ResizeOverlay />
         <div className="flex h-screen flex-col">
           <SaveLoadBar />
           <div className="flex min-h-0 flex-1">

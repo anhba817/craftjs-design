@@ -1,8 +1,12 @@
 import { Element, useEditor } from '@craftjs/core'
 import { Search, Star } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { getResolver } from '../craft/resolver'
-import { listComponents } from '../registry/registry'
+import {
+  getRegistryVersion,
+  listComponents,
+  subscribeRegistry,
+} from '../registry/registry'
 import type { CanonicalComponent } from '../registry/types'
 
 const CATEGORY_ORDER: string[] = [
@@ -84,8 +88,15 @@ function groupByCategory(
 
 export function Toolbox() {
   const { connectors } = useEditor()
+  // Phase 7 — re-render on registry-version bumps so hot canonical reload
+  // surfaces new entries in the palette without a page reload.
+  const version = useSyncExternalStore(
+    subscribeRegistry,
+    getRegistryVersion,
+    getRegistryVersion,
+  )
   const resolver = getResolver()
-  const allDefs = useMemo(() => listComponents(), [])
+  const allDefs = useMemo(() => listComponents(), [version])
   const byId = useMemo(() => {
     const m = new Map<string, CanonicalComponent>()
     for (const d of allDefs) m.set(d.id, d)

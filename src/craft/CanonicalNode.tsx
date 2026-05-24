@@ -107,7 +107,10 @@ export function CanonicalNode({
   // Pattern A canvases (the legacy isCanvas:true → ['root'] case) don't get
   // slotChildren — they keep using the `children` prop populated by Craft
   // through React. That path is unchanged.
-  const canvasSlots = getCanvasSlots(def)
+  // Phase 7 — canvasSlots can be a function for dynamic slot counts (Tabs
+  // uses this: one canvas per props.tabs entry). nodeProps flows through so
+  // adding/removing a tab via PropsPanel updates the slot list on next render.
+  const canvasSlots = getCanvasSlots(def, nodeProps)
   const usesSlotChildren = def.canvasSlots !== undefined
   // Each Element wrapper renders as a plain <div> in the DOM (because `is="div"`).
   // We attach `canvas-slot` so global CSS in index.css can:

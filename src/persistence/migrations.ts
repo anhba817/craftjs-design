@@ -49,6 +49,27 @@ function migrateCardPropsV6(tree: CraftTree): void {
   }
 }
 
+// Phase 5/6 Tabs had `tabs: [{ value, label, content: string }]`. Phase 7
+// moves per-tab content into linked Craft canvases (one per tab), so the
+// `content` field on each tab is no longer the source of truth and is
+// stripped. We take the same "drop silently" call as the Card migration —
+// auto-converting strings to Text canonicals requires synthesizing fresh node
+// ids + linked-node wiring that isn't safe to do post-hoc. Designers export
+// before upgrading; the tutorial calls out the behavior.
+function migrateTabsPropsV7(tree: CraftTree): void {
+  for (const nodeId of Object.keys(tree)) {
+    const node = tree[nodeId]
+    if (node.displayName !== 'Tabs') continue
+    const tabs = node.props?.nodeProps?.tabs
+    if (!Array.isArray(tabs)) continue
+    for (const tab of tabs) {
+      if (tab && typeof tab === 'object' && 'content' in tab) {
+        delete (tab as Record<string, unknown>).content
+      }
+    }
+  }
+}
+
 export function migrateDocument(doc: EditorDocument): EditorDocument {
   let tree: CraftTree
   try {
@@ -60,6 +81,7 @@ export function migrateDocument(doc: EditorDocument): EditorDocument {
   }
 
   migrateCardPropsV6(tree)
+  migrateTabsPropsV7(tree)
 
   return { ...doc, craftJson: JSON.stringify(tree) }
 }

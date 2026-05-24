@@ -1,19 +1,10 @@
-import { migrateDocument } from './migrations'
-import { documentSchema, STORAGE_KEY } from './schema'
-import type { EditorDocument } from './schema'
+// The legacy single-document API (saveDocument / loadDocument / clearDocument)
+// is gone in Phase 7. The runtime persistence path now goes through
+// ./documentStore which manages a multi-document index, and the v1 → v2
+// migration happens automatically inside documentRegistry.migrateLegacyV1.
+//
+// This file is kept as a deprecation marker — re-exporting the new entry
+// points under the old names would tempt callers back into a "one active
+// document" mental model. Use useDocumentStore directly instead.
 
-export function saveDocument(doc: EditorDocument): void {
-  const parsed = documentSchema.parse(doc)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed))
-}
-
-export function loadDocument(): EditorDocument | null {
-  const raw = localStorage.getItem(STORAGE_KEY)
-  if (!raw) return null
-  const parsed = documentSchema.parse(JSON.parse(raw))
-  return migrateDocument(parsed)
-}
-
-export function clearDocument(): void {
-  localStorage.removeItem(STORAGE_KEY)
-}
+export {} // intentional empty module

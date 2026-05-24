@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import { listComponents } from '../registry/registry'
+import { getRegistryVersion, listComponents } from '../registry/registry'
 import { CanonicalNode } from './CanonicalNode'
 import type { CanonicalNodeProps } from './CanonicalNode'
 
@@ -7,12 +7,20 @@ import type { CanonicalNodeProps } from './CanonicalNode'
 export type Resolver = Record<string, ComponentType<any>>
 
 let cached: Resolver | null = null
+let cachedAtVersion = -1
 
 // Lazy singleton — both Editor and Toolbox call this so they share one set of
-// bound component instances (identity matters less than displayName for
-// serialization, but a single instance avoids rebuild churn on re-render).
+// bound component instances. Phase 7: the cache is invalidated when the
+// registry version bumps (register / unregister post-mount), so hot canonical
+// reloads pick up new entries without a reload. Identity changes only when
+// the registry actually changes — re-renders with no registry mutation reuse
+// the cached resolver.
 export function getResolver(): Resolver {
-  if (!cached) cached = buildResolver()
+  const v = getRegistryVersion()
+  if (!cached || cachedAtVersion !== v) {
+    cached = buildResolver()
+    cachedAtVersion = v
+  }
   return cached
 }
 

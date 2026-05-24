@@ -2,7 +2,6 @@ import { useEditor } from '@craftjs/core'
 import { useEffect, useState } from 'react'
 import { getComponentByDisplayName } from '@/registry/registry'
 import { getPanelsFor } from './inspector/panel-registry'
-import { ResizeToggle } from './inspector/ResizeToggle'
 import { ResponsiveBar } from './inspector/ResponsiveBar'
 import { SlotPicker } from './inspector/SlotPicker'
 import { CollapsibleSection } from './inspector/shared/CollapsibleSection'
@@ -73,7 +72,6 @@ export function Inspector() {
                   Delete
                 </button>
               )}
-              <ResizeToggle nodeId={selected.id} />
             </div>
 
             <div className="mt-4 space-y-2 border-t border-gray-200 pt-3">

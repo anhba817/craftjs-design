@@ -4,6 +4,7 @@ import './adapters/mui'
 import '../examples/adapter-chakra'
 import './themes'
 import './editor/inspector/built-in-panels'
+import './persistence/templates'
 import { Editor } from './editor/Editor'
 
 export default function App() {

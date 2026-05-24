@@ -5,12 +5,17 @@ import type { CanonicalComponent, CanonicalId, PanelId } from "./types";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const components = new Map<CanonicalId, CanonicalComponent<any>>();
 
-// Phase 6 — post-mount registration tracking. Once the Editor has rendered,
-// registering a new canonical is no longer safe without a reload: Craft.js's
-// resolver was already built from the registry state at mount time, so new
-// canonical ids won't appear in the Toolbox or render correctly. We log a
-// warning so SDK consumers see the gap early.
+// Phase 6 → Phase 7 — post-mount registration tracking.
+//
+// Phase 6 logged a warning when registerCanonical fired post-mount, because
+// Craft's resolver was captured at mount time and new canonicals wouldn't
+// appear without a reload. Phase 7 swaps the warning for a version counter:
+// editor subscribers (Toolbox, the ResolverUpdater inside <Craft>) watch the
+// version and re-resolve when it bumps, so registrations land in the live
+// editor without a reload.
 let editorMounted = false;
+let registryVersion = 0;
+const registryListeners = new Set<() => void>();
 
 /** @internal Editor.tsx calls this from useEffect on mount. */
 export function _markEditorMounted(): void {
@@ -22,17 +27,36 @@ export function __setEditorMountedForTest(v: boolean): void {
   editorMounted = v;
 }
 
+/**
+ * Monotonically-increasing counter incremented on every registry mutation
+ * (register OR unregister) that happens AFTER editor mount. Consumed via
+ * useSyncExternalStore inside the Editor to drive hot canonical reload.
+ */
+export function getRegistryVersion(): number {
+  return registryVersion;
+}
+
+/** Subscribe to registry-version bumps. Returns an unsubscribe function. */
+export function subscribeRegistry(cb: () => void): () => void {
+  registryListeners.add(cb);
+  return () => {
+    registryListeners.delete(cb);
+  };
+}
+
+function bumpVersion(): void {
+  registryVersion += 1;
+  for (const cb of registryListeners) cb();
+}
+
 export function registerComponent<P>(def: CanonicalComponent<P>): void {
-  if (editorMounted) {
-    console.warn(
-      `[craftjs-design] '${def.id}' registered after editor mount. ` +
-        `Reload to pick up the new canonical — hot canonical reload is a Phase 7 item.`,
-    );
-  }
   if (components.has(def.id)) {
     throw new Error(`duplicate canonical id: ${def.id}`);
   }
   components.set(def.id, def);
+  // Only bump after mount — pre-mount registrations are part of the initial
+  // resolver build, so notifying subscribers (none yet) would be wasted work.
+  if (editorMounted) bumpVersion();
 }
 
 /**
@@ -59,7 +83,9 @@ export const registerCanonical = registerComponent;
  * with the same id). Returns true if a canonical was removed.
  */
 export function unregisterCanonical(id: CanonicalId): boolean {
-  return components.delete(id);
+  const had = components.delete(id);
+  if (had && editorMounted) bumpVersion();
+  return had;
 }
 
 export function getComponent<P = Record<string, unknown>>(
@@ -87,10 +113,18 @@ export function listComponents(): CanonicalComponent<any>[] {
 }
 
 // Derives the canvas-slot list for a canonical. When canvasSlots is explicit,
-// it wins (multi-canvas Pattern B). Otherwise the legacy rule holds:
+// it wins (multi-canvas Pattern B). Function form (Phase 7) is called with
+// the current node's props for dynamic counts (e.g., Tabs: one slot per tab).
+// Otherwise the legacy rule holds:
 // isCanvas=true → ['root'] (Pattern A single canvas), false → [].
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getCanvasSlots(c: CanonicalComponent<any>): readonly string[] {
+export function getCanvasSlots(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  c: CanonicalComponent<any>,
+  nodeProps?: Record<string, unknown>,
+): readonly string[] {
+  if (typeof c.canvasSlots === "function") {
+    return c.canvasSlots(nodeProps ?? {});
+  }
   if (c.canvasSlots !== undefined) return c.canvasSlots;
   return c.isCanvas ? ["root"] : [];
 }

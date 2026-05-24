@@ -42,10 +42,15 @@ The user-facing chrome. Has no opinion about *what* components exist, only about
 |---|---|
 | `Editor.tsx` | Top-level shell. Builds the resolver, mounts Craft.js, wraps the canvas in `<ThemeProvider>`, lays out the 3-column UI. On mount, calls `_markEditorMounted()` so the registry can warn about post-mount canonical registrations. |
 | `Toolbox.tsx` | Left panel. Reads `listComponents()` from the registry; renders entries grouped by `category` with a search input, a "Favorites" section (toggle via star icon), and a "Recently used" section. Favorites + recents persist to `localStorage['craftjs-design.toolbox']` — user-level state, separate from the document envelope. Attaches Craft `connectors.create()` per entry; mousedown on a button records use into the recents LRU. |
-| `Inspector.tsx` | Right panel. Reads the selected node from Craft state, shows type/id, exposes Delete (root-guarded) + the resize toggle, mounts the `ResponsiveBar`, mounts a `SlotPicker` when the canonical declares more than one style slot, and renders panels from the panel registry (`getPanelsFor(def)`). Tracks `activeSlot` (`'root'` by default). |
+| `Inspector.tsx` | Right panel. Reads the selected node from Craft state, shows type/id, exposes Delete (root-guarded), mounts the `ResponsiveBar`, mounts a `SlotPicker` when the canonical declares more than one style slot, and renders panels from the panel registry (`getPanelsFor(def)`). Tracks `activeSlot` (`'root'` by default). Resize handles are rendered as a canvas overlay (see `canvas/ResizeOverlay.tsx`), not inside the inspector. |
+| `canvas/ResizeOverlay.tsx` | Phase 7 — fixed-position overlay rendered over the selected node's bounding rect. Four corner handles. Mutates `dom.style.width/height` directly during drag (60fps), commits final px to `style.inline.root.{width,height}` via `setProp` on release. Tracks node position on selection change, scroll (capture phase), window resize, and `ResizeObserver` ticks. |
+| `documents/DocumentMenu.tsx` | Phase 7 — top-bar dropdown showing the active document's name + chevron. Inline rename, duplicate, delete actions for the active doc; "New blank document", nested `<TemplatePicker />`, and a "Switch to" list of other documents. |
+| `documents/TemplatePicker.tsx` | Nested popover listing registered starter templates (name + description). Clicking a template invokes the supplied `onPick` and closes. |
+| `documents/useDocumentSwitcher.ts` | Hook orchestrating runtime document switches. `switchTo(id)` / `createBlank(name)` / `createFromTemplate(id, name)`. Each one snapshots the current canvas via `query.serialize()`, persists to the active doc, swaps `activeId`, loads the target's blob (or the Empty template seed), calls `actions.deserialize`, and applies theme + adapter. |
+| `ResolverUpdater.tsx` | Phase 7 — side-effect component rendered inside `<Craft>`. Subscribes to the registry version counter via `useSyncExternalStore` and calls `actions.setOptions((opts) => { opts.resolver = getResolver() })` on every bump. Powers hot canonical reload — `registerCanonical` at runtime updates Craft's internal resolver without remounting. |
+| `ShareButton.tsx` | Toolbar Share button. Popover renders the encoded URL ready to copy. Over the 30 KB cap, switches to "Copy as JSON" with a paste-into-importer message. |
 | `inspector/ResponsiveBar.tsx` | Six breakpoint pills (`base` / `sm` / `md` / `lg` / `xl` / `2xl`). Active pill = which class slice the panels read/write. Loud "writing to: …" status line warns when an edit will only apply at and above a breakpoint. |
 | `inspector/SlotPicker.tsx` | Pill bar above the panels for Pattern B canonicals (`styleSlots.length > 1`). Switches `activeSlot` (`'root'`, `'header'`, `'body'`, `'footer'`, etc.). Resets to `'root'` on selection change. |
-| `inspector/ResizeToggle.tsx` | Inspector control that activates native CSS `resize: both` on the selected node. While active, the user drags the corner handle; toggling off commits the rendered px to `style.inline.root.width / .height`. |
 | `inspector/panel-registry.ts` | Pluggable panel registry. `registerPanel` / `unregisterPanel` / `listPanels` / `getPanelsFor`. Inspector reads from this — both built-ins and SDK-authored panels live here. |
 | `inspector/built-in-panels.ts` | Side-effect module that registers the 7 built-in panels (Layout / Size / Spacing / Typography / Appearance / Effects / Properties) via `registerPanel` at module load. Imported from `App.tsx`. |
 | `inspector/{Typography,Layout,Spacing,Size,Appearance,Effects}Panel.tsx` | The 6 class-editing panels. Each accepts `{ nodeId, slot }`. Backed by the matching `tw-classes` slice parse/merge pair. |
@@ -62,11 +67,11 @@ The user-facing chrome. Has no opinion about *what* components exist, only about
 | `inspector/shared/ValueSelect.tsx` | Generic typed Select (Radix-backed shadcn Select) for closed enums. Supports per-item `renderOption` for icons/swatches. |
 | `inspector/shared/ColorSelect.tsx` | **Deprecated** — superseded by ColorPicker. Token-only native `<select>` retained for transition; remove once nothing imports it. |
 | `inspector/shared/PanelRow.tsx` | Label-on-left layout helper for consistent row rhythm. |
-| `SaveLoadBar.tsx` | Top bar. Title, undo/redo buttons (via `<UndoRedo>`), adapter switcher, theme switcher, Save/Load buttons. |
+| `SaveLoadBar.tsx` | Top bar. Mounts `<DocumentMenu />` (replaces the static title), undo/redo, adapter switcher, theme switcher, Share, Import, Export, Save, Load. |
 | `UndoRedo.tsx` | Undo/redo toolbar buttons wired to `actions.history.undo/redo`. Subscribes to `query.history.canUndo/canRedo` for disabled state. Installs a global Cmd/Ctrl+Z, Cmd/Ctrl+Shift+Z keyboard handler (skipped when target is an editable element). |
 | `ThemeSwitcher.tsx` | Dropdown that flips `activeThemeId` in the editor store. |
 | `AdapterSwitcher.tsx` | Dropdown that flips `activeAdapterId` in the editor store. |
-| `Hydrator.tsx` | Renders `null`. On mount, restores tree + theme + adapter from `localStorage`. Module-level `hydrated` flag prevents re-restore on any future remount. Load passes through `migrateDocument` so Phase-5 documents work after Phase 6's Card shape change. |
+| `Hydrator.tsx` | Renders `null`. On mount: if the URL has `#doc=…`, decodes the shared document and creates a new "Shared document" entry; otherwise loads the active document from `documentStore`. Module-level `hydrated` flag prevents re-restore on any future remount. Load passes through `migrateDocument` (Phase-5 Card props, Phase-6/7 Tabs content). |
 
 ### Layer 2 — Canonical Component Registry (`src/registry/`)
 
@@ -104,14 +109,14 @@ A canonical may declare an explicit `applicablePanels: readonly PanelId[]` to op
 Most are **Pattern A** (one slot, named `'root'`). Two are **Pattern B** with named sub-slots:
 
 - **Card** — `styleSlots: ['root', 'header', 'body', 'footer']`, `canvasSlots: ['header', 'body', 'footer']`. Outer Card is NOT a canvas; each named sub-slot is an independently droppable region. Phase 6 ships this multi-canvas model; old documents are migrated on load.
-- **Tabs** — `styleSlots: ['root', 'tabs', 'content']`, props-driven (each tab's content is a string in the `tabs` prop array). Multi-canvas Tabs (per-tab content as canvas) deferred to Phase 7 — the dynamic canvas count tied to `props.tabs.length` is a different complexity class.
+- **Tabs** — `styleSlots: ['root', 'tabs', 'content']`, `canvasSlots: (props) => props.tabs.map(t => `tab-${t.value}`)`. Phase 7 — dynamic canvas count via the function form of `canvasSlots`. Each tab has its own linked Craft canvas keyed by tab value; adapter impls render `slotChildren[`tab-${t.value}`]` per tab. Caveat: renaming a tab's `value` orphans its previous canvas (stable per-tab ids are a Phase 8 polish item).
 
 The Inspector's `SlotPicker` exposes the named slots as pills above the class-editing panels; the `activeSlot` mode routes every panel write into `style.classes[slot]` (or `style.responsive[bp][slot]`).
 
 | File | Role |
 |---|---|
-| `types.ts` | `CanonicalComponent` (with optional `canvasSlots` for Pattern B multi-canvas), `NodeStyle` (with optional `responsive` + `inline` + `responsiveInline`), `CanonicalCategory`, `CanonicalId`, `PanelId`. |
-| `registry.ts` | `registerComponent` / `registerCanonical` (aliases), `unregisterCanonical`, `getComponent`, `getComponentByDisplayName`, `listComponents`, `getApplicablePanels`, `getCanvasSlots`, `_markEditorMounted` (internal, called from Editor.tsx — post-mount registrations log a warning). In-memory map. |
+| `types.ts` | `CanonicalComponent` (with optional `canvasSlots: readonly string[] \| ((props) => readonly string[])`), `NodeStyle` (with optional `responsive` + `inline` + `responsiveInline`), `CanonicalCategory`, `CanonicalId`, `PanelId`. |
+| `registry.ts` | `registerComponent` / `registerCanonical` (aliases), `unregisterCanonical`, `getComponent`, `getComponentByDisplayName`, `listComponents`, `getApplicablePanels`, `getCanvasSlots(def, nodeProps?)`, `getRegistryVersion`, `subscribeRegistry`, `_markEditorMounted`. Phase 7 — post-mount registrations bump the version counter; Editor subscribers re-resolve. In-memory map. |
 | `components/index.ts` | Barrel of side-effect imports. Adding a new canonical = one line here. |
 | `components/{box,text,button,input}.ts` | Phase 3 canonicals. Button explicitly omits the typography panel (shadcn's flex-centered primitive doesn't respect text utilities). |
 | `components/{heading,link,image,stack,divider,icon,badge,avatar,alert}.ts` | Phase 5 Pattern A breadth — content, navigation, media, display, and feedback canonicals. |
@@ -180,7 +185,8 @@ Craft.js manages the document tree, selection set, drag/drop, and history. The b
 
 | File | Role |
 |---|---|
-| `CanonicalNode.tsx` | Generic React component. Given `canonicalId` + `nodeProps` + `style`, looks up the canonical def from the registry, the impl from the active adapter, and iterates `def.styleSlots`: for each slot, calls `composeResponsive(style, slot)` + `composeInlineStyle(style, slot)` and stores the result in `composedClasses[slot]` / `composedInlineStyles[slot]`. When `def.canvasSlots` is set, also generates one `<Element id={slot} is="div" canvas/>` wrapper per slot and passes them via `slotChildren`. When `style.responsiveInline` has entries for a slot, calls `composeResponsiveInline` to generate a hash-keyed CSS class with `@media` rules, appends the class to `composedClasses[slot]`, and renders an inline `<style>` block sibling to the impl. The root-slot results are mirrored to `className` / `inlineStyle` for Pattern A backwards compat. Attaches Craft's `connect/drag` via `rootRef`. Renders a labeled placeholder if the active adapter has no impl for the canonical. |
+| `CanonicalNode.tsx` | Generic React component. Given `canonicalId` + `nodeProps` + `style`, looks up the canonical def from the registry, the impl from the active adapter, and iterates `def.styleSlots`: for each slot, calls `composeResponsive(style, slot)` + `composeInlineStyle(style, slot)` and stores the result in `composedClasses[slot]` / `composedInlineStyles[slot]`. When `def.canvasSlots` is set, calls `getCanvasSlots(def, nodeProps)` (passes the node's current props so the function form of `canvasSlots` can return a dynamic slot list — e.g., Tabs returns one per tab), then generates one `<Element id={slot} is="div" canvas/>` wrapper per slot and passes them via `slotChildren`. When `style.responsiveInline` has entries for a slot, calls `composeResponsiveInline` to generate a hash-keyed CSS class with `@media` rules, appends the class to `composedClasses[slot]`, and renders an inline `<style>` block sibling to the impl. The root-slot results are mirrored to `className` / `inlineStyle` for Pattern A backwards compat. Attaches Craft's `connect/drag` via `rootRef`. Renders a labeled placeholder if the active adapter has no impl for the canonical. |
+| `resolver.tsx` | Builds and caches the Craft.js resolver — one user-component per canonical id. Phase 7 — cache is keyed by `getRegistryVersion()`; calls after a `registerCanonical` / `unregisterCanonical` post-mount return a freshly-built resolver. Identity stays stable when no registry mutation has happened. |
 | `resolver.tsx` | `buildResolver()` walks `listComponents()` and produces one Craft user-component per canonical id, each delegating to `CanonicalNode`. `getResolver()` is the cached singleton accessor. |
 
 ---
@@ -261,6 +267,33 @@ User-facing docs:
 - `docs/TUTORIAL_ADAPTER.md` — Chakra walkthrough.
 - `docs/TUTORIAL_CANONICAL.md` — adding a Stepper canonical.
 - `docs/TUTORIAL_PANEL.md` — adding a custom inspector panel.
+
+### Persistence (`src/persistence/`)
+
+Phase 7 reshaped this layer from a single-active-doc store into a multi-document index with import/export/share affordances.
+
+| File | Role |
+|---|---|
+| `schema.ts` | Zod-validated `EditorDocument` envelope: `{ version, adapterId, themeId?, craftJson }`. Opaque `craftJson` — Craft owns its serialization. |
+| `migrations.ts` | `migrateDocument(doc)` walks the Craft JSON and applies idempotent migration steps. Phase 6 added Card-prop strip; Phase 7 added Tabs `content`-field strip. New canonical shape changes add a step here. |
+| `documentRegistry.ts` | Pure storage layer over `localStorage`. CRUD + the v1 → v2 migration. No module state — tests stub `localStorage` per-case. |
+| `documentStore.ts` | Zustand wrapper exposing `createDocument` / `renameDocument` / `duplicateDocument` / `deleteDocument` / `saveActiveDocument` / `loadActiveDocument` / `setActiveId`. UI subscribers re-render on changes. |
+| `exportDocument.ts` | `exportDocument(doc): Blob` (pure) + `downloadDocument(doc, name): void` (synthesizes a `<a download>` click). |
+| `importDocument.ts` | `parseDocumentJson(raw): EditorDocument` (pure) + `importDocumentFromFile(file): Promise<EditorDocument>`. Typed `ImportError` for the two failure modes (invalid JSON, schema mismatch). |
+| `share.ts` | URL-fragment encoding via lz-string. `encodeDocument(doc)` / `decodeDocument(encoded)` / `shareUrlFor(doc, baseUrl)` / `readSharedFragment(hash)` / `clearSharedFragment()`. `SHARE_URL_MAX_PAYLOAD = 30_000` is the conservative threshold for "fits in a browser URL." |
+| `templates/registry.ts` | Template registry: `registerTemplate` / `getTemplate` / `listTemplates`. |
+| `templates/builder.ts` | `buildTemplate({ root, adapterId?, themeId? })` walks a `NodeSpec` tree and emits a Craft-shaped serialized envelope. Reads canonical defaults from the registry; deterministic node ids (`node-0`, `node-1`, …) for reproducible JSON. |
+| `templates/{empty,landing-page,form}.ts` | Three starter templates shipped Phase 7. Pattern-A-only — multi-canvas templates are a Phase 8 item. |
+| `templates/index.ts` | Side-effect barrel importing all template modules so they register at boot. |
+
+Storage shape (v2):
+
+```
+craftjs-design:doc-index:v2  → { documents: [{ id, name, created, updated }], activeId }
+craftjs-design:doc:<id>:v2   → EditorDocument
+```
+
+Plus the user-level Toolbox preferences (favorites / recents) at `craftjs-design.toolbox` — separate namespace.
 
 ### shadcn-managed code (`src/lib/`, `src/components/ui/`)
 
@@ -345,10 +378,17 @@ craftjs-design/
       AdapterSwitcher.tsx
       Hydrator.tsx
       UndoRedo.tsx                # toolbar buttons + Cmd+Z global handler
+      ShareButton.tsx             # Phase 7 — toolbar Share popover (URL or copy-as-JSON)
+      ResolverUpdater.tsx         # Phase 7 — hot canonical reload bridge
+      canvas/
+        ResizeOverlay.tsx         # Phase 7 — fixed-position resize handles overlay
+      documents/
+        DocumentMenu.tsx          # Phase 7 — top-bar dropdown (replaces title)
+        TemplatePicker.tsx        # Phase 7 — nested popover for starter templates
+        useDocumentSwitcher.ts    # Phase 7 — switchTo/createBlank/createFromTemplate
       inspector/
         ResponsiveBar.tsx
         SlotPicker.tsx              # Pattern B canonicals only (>1 slot)
-        ResizeToggle.tsx            # native CSS resize:both toggle for selected node
         panel-registry.ts           # registerPanel / unregisterPanel / getPanelsFor
         built-in-panels.ts          # side-effect — registers the 7 built-ins
         TypographyPanel.tsx, LayoutPanel.tsx, SpacingPanel.tsx
@@ -356,10 +396,12 @@ craftjs-design/
         PropsPanel.tsx              # top-level Zod schema → form
         fields/
           PropField.tsx             # recursive Zod-kind dispatcher
-          ArrayField.tsx            # z.array(...) editor with add/remove/reorder
+          ArrayField.tsx            # z.array(...) editor — DnD reorder + add/remove
           ObjectField.tsx           # z.object recursion for nested element schemas
           defaults.ts               # defaultValueFor(schema) for seeded "Add" items
           defaults.test.ts
+          arrayOps.ts               # Phase 7 — pure helpers (reorder/swap/removeAt/setAt)
+          arrayOps.test.ts
         shared/
           useNodeClasses.ts       # reads/writes classes + inline; subscribes to activeBreakpoint
           ColorPicker.tsx         # tokens + react-colorful visual picker + hex input
@@ -371,9 +413,25 @@ craftjs-design/
           PanelRow.tsx
     persistence/
       schema.ts                 # Zod envelope around Craft's serialized JSON
-      storage.ts                # localStorage I/O (loadDocument runs migrateDocument)
       migrations.ts             # walk-the-tree migrations applied on load
       migrations.test.ts
+      documentRegistry.ts       # pure localStorage CRUD + v1→v2 migration
+      documentRegistry.test.ts
+      documentStore.ts          # Zustand wrapper exposing the multi-doc API
+      exportDocument.ts         # Blob/download helpers
+      exportDocument.test.ts
+      importDocument.ts         # file/JSON parse + ImportError
+      importDocument.test.ts
+      share.ts                  # lz-string URL-fragment encoding
+      share.test.ts
+      storage.ts                # empty marker — legacy single-doc API removed
+      templates/
+        registry.ts             # registerTemplate / listTemplates / getTemplate
+        registry.test.ts
+        builder.ts              # buildTemplate(NodeSpec) → EditorDocument
+        builder.test.ts
+        index.ts                # side-effect barrel
+        empty.ts, landing-page.ts, form.ts
     sdk/                          # Public boundary — see § SDK boundary
       index.ts                  # re-export entry
       adapter.ts, canonical.ts, style.ts, hooks.ts, panel.ts
@@ -690,6 +748,54 @@ Resolution (`getPanelsFor(def)`):
 
 Inspector iterates the resolved list, sorts by `order`, and renders each via `<panel.component nodeId={...} slot={activeSlot} />` wrapped in a `CollapsibleSection`. The PropsPanel passes `slot` but ignores it (it edits canonical props, not slot classes).
 
+### <a id="document-lifecycle"></a>Document lifecycle (Phase 7)
+
+The Phase-6 editor had one document. Phase 7 turned that into a vocabulary — designers create, name, switch, duplicate, share, import, export.
+
+**Storage.** Two key shapes:
+- `craftjs-design:doc-index:v2` — the index. `{ documents: [{id,name,created,updated}], activeId }`.
+- `craftjs-design:doc:<id>:v2` — one envelope per document.
+
+Old Phase-5/6 documents stored at `:doc:v1` migrate to a single "Untitled" entry in the v2 index on first read. The legacy key is removed after migration; subsequent reads see the v2 state.
+
+**Boot flow:** `Hydrator` runs once on mount. Two branches:
+1. **Shared URL** — if `window.location.hash` matches `#doc=<encoded>`, decode via `share.decodeDocument`, create a new "Shared document" entry via `documentStore.createDocument`, deserialize into Craft, clear the fragment. Non-destructive: the user's previous active doc stays in the index.
+2. **Active doc** — otherwise `documentStore.loadActiveDocument()` returns the active blob; `actions.deserialize` replaces the Craft tree; theme + adapter restore from the envelope.
+
+**Switch flow:** `useDocumentSwitcher.switchTo(id)` snapshots the current canvas via `query.serialize()` + `saveActiveDocument`, swaps `activeId`, loads the target's blob (or falls back to the Empty template seed for never-saved docs), and `deserialize`s. Auto-save before switch means in-progress changes never vanish silently.
+
+**Import / Export.** `exportDocument(env)` returns a Blob; `downloadDocument(env, name)` triggers a download. `importDocumentFromFile(file)` reads + validates + migrates. The SaveLoadBar Import button overwrites the active doc; the Hydrator's shared-URL branch creates a new doc. Two gestures, two defaults — see the close-out section in `PHASE7_PLAN.md`.
+
+**Share.** `share.shareUrlFor(env, baseUrl)` produces a URL with the lz-string-compressed envelope in the fragment. The `ShareButton` popover renders the URL ready to copy. Encoded payloads over `SHARE_URL_MAX_PAYLOAD` (30 KB) flip to a "Copy as JSON" fallback — the user pastes into another editor's Import. Documents shared via URL are visible to anyone with the link AND to anyone with browser history access; documented as a privacy note in the popover.
+
+**Templates.** Three starter templates ship: Empty, Landing page, Sign-up form. Each is built via `buildTemplate({ root: NodeSpec })` which produces a valid Craft envelope from a TS-authored spec (better than hand-typed JSON — type-checked against the live canonical registry). Templates register at module load via `App.tsx`'s side-effect import.
+
+**Hot canonical reload (Phase 7 polish).** `registerCanonical` post-mount bumps `registryVersion`. The Toolbox subscribes via `useSyncExternalStore` and re-renders to show the new entry. A side-effect `<ResolverUpdater />` inside `<Craft>` calls `actions.setOptions((opts) => { opts.resolver = getResolver() })` on every bump, so Craft's internal resolver picks up new canonical ids for dragging + deserialization. Existing canvases that reference a *removed* canonical fall back to the missing-impl placeholder.
+
+### <a id="drag-resize-overlay"></a>Drag-resize via canvas overlay
+
+Phase 6 shipped resize as an Inspector toggle (CSS `resize: both` on the selected node's DOM, captured on toggle-off). Phase 7 replaced it with a fixed-position canvas overlay (`<ResizeOverlay />`).
+
+The overlay sits outside the Craft `<Frame>` tree, positioned over the selected node's bounding rect. Four corner handles. The position recomputes on selection change, window resize, scroll (capture phase, to catch the canvas `<main>`'s independent scroller), and `ResizeObserver` ticks on the node DOM.
+
+Mousedown on a handle stops propagation (defense against any document-level Craft listener) and starts a drag loop: mousemove writes directly to `dom.style.width/height` (no React render → smooth 60fps), mouseup commits the final px to `style.inline.root.{width,height}` via `actions.setProp`. The setProp re-render passes the same value back through React's style prop pipeline, so there's no visible jump.
+
+Craft drag-connector conflict: the handles aren't inside any Craft node's DOM (the overlay is its own subtree, rendered as a sibling of `<Frame>`), so Craft's per-node mousedown listeners never see the handle's pointer events. `e.stopPropagation()` is belt-and-suspenders for future Craft versions.
+
+### <a id="hot-canonical-reload"></a>Hot canonical reload — version counter + setOptions
+
+`registry.ts` exposes a monotonic `registryVersion` counter that increments on every `registerCanonical` / `unregisterCanonical` *after the Editor has mounted* (`editorMounted` flag flipped by `Editor.tsx`'s `useEffect`). Pre-mount registrations don't bump — they're part of the initial resolver build and there are no subscribers yet.
+
+Two consumers subscribe via `subscribeRegistry`:
+- **Toolbox** — `useSyncExternalStore` triggers a re-render → `listComponents()` returns the new set → palette updates.
+- **ResolverUpdater** — same `useSyncExternalStore` pattern → `actions.setOptions((opts) => { opts.resolver = getResolver() })` swaps Craft's internal resolver to a fresh build. New canonical ids are now resolvable for drag-create + deserialization.
+
+The cached resolver in `craft/resolver.tsx` is keyed by `cachedAtVersion`; renders that don't move the version reuse the cache.
+
+Caveats documented in the SDK:
+- Existing nodes referencing a *removed* canonical render the missing-impl placeholder (same path as cross-adapter coverage gaps).
+- Hot-replacing a canonical (same id, different `propsSchema`) doesn't re-validate existing node props. Old props on the new schema can produce unexpected behavior.
+
 ### Form components are non-interactive in editor mode
 
 Select, Checkbox, Radio, Switch, and Textarea would be unusable in the editor if they responded to clicks: every click on a checkbox during *editing* would toggle the prop's stored value, and the user can't actually edit the prop visibly. The adapter impls render them with `onChange` / `onCheckedChange` / `onValueChange` set to no-ops (`() => {}`), and Textarea uses native `readOnly`. The canonical's stored `checked` / `value` / `defaultValue` props drive what's shown; the user edits them via PropsPanel.
@@ -848,7 +954,7 @@ The `:v1` suffix on the storage key reserves namespace for a future v2 envelope 
 
 The `activeBreakpoint` (which breakpoint the user is currently editing) is **not** persisted — it's a UI mode, not a document property. It resets to `'base'` on every reload.
 
-**Migrations (`src/persistence/migrations.ts`).** `loadDocument` pipes the deserialized envelope through `migrateDocument` before handing back. Each migration step walks the opaque Craft JSON and mutates node shapes in place. Steps are idempotent; running them on an already-current document is a no-op. Phase 6 ships one step: stripping the Phase-5 Card prop set (`title` / `description` / `showFooter` / `footerText`) and flipping persisted `isCanvas: true` on Card nodes to `false` so the new multi-canvas model doesn't compete with the outer Card for drops. Add a new migration step when bumping the envelope shape OR when changing a canonical's persisted shape in a way the current code can't read.
+**Migrations (`src/persistence/migrations.ts`).** `documentRegistry.readDocument` pipes the deserialized envelope through `migrateDocument` before handing back. Each migration step walks the opaque Craft JSON and mutates node shapes in place. Steps are idempotent; running them on an already-current document is a no-op. Phase 6 added one step (Card-prop strip + `isCanvas` flip). Phase 7 added one step (Tabs `content`-field strip per tab). Add a new migration step when bumping the envelope shape OR when changing a canonical's persisted shape in a way the current code can't read.
 
 ---
 

@@ -91,3 +91,72 @@ describe('migrateDocument — Phase 6 Card props strip', () => {
     expect(migrateDocument(doc)).toEqual(doc)
   })
 })
+
+describe('migrateDocument — Phase 7 Tabs content strip', () => {
+  it('strips the `content` field from each tab entry on Tabs nodes', () => {
+    const tree = {
+      'node-tabs': {
+        displayName: 'Tabs',
+        props: {
+          nodeProps: {
+            tabs: [
+              { value: 'a', label: 'A', content: 'A content' },
+              { value: 'b', label: 'B', content: 'B content' },
+            ],
+            defaultValue: 'a',
+          },
+        },
+      },
+    }
+    const doc = {
+      version: 1 as const,
+      adapterId: 'shadcn',
+      craftJson: JSON.stringify(tree),
+    }
+    const out = JSON.parse(migrateDocument(doc).craftJson)
+    expect(out['node-tabs'].props.nodeProps.tabs).toEqual([
+      { value: 'a', label: 'A' },
+      { value: 'b', label: 'B' },
+    ])
+  })
+
+  it('leaves non-Tabs nodes alone', () => {
+    const tree = {
+      'node-other': {
+        displayName: 'Box',
+        props: { nodeProps: { tabs: [{ value: 'a', content: 'should stay' }] } },
+      },
+    }
+    const doc = {
+      version: 1 as const,
+      adapterId: 'shadcn',
+      craftJson: JSON.stringify(tree),
+    }
+    const out = JSON.parse(migrateDocument(doc).craftJson)
+    // Box doesn't have a `tabs` prop in real life, but the migration must
+    // only fire on Tabs.displayName — verify it didn't touch other nodes.
+    expect(out['node-other'].props.nodeProps.tabs[0]).toHaveProperty('content')
+  })
+
+  it('is idempotent on already-current Tabs nodes', () => {
+    const tree = {
+      'node-tabs': {
+        displayName: 'Tabs',
+        props: {
+          nodeProps: {
+            tabs: [{ value: 'a', label: 'A' }],
+            defaultValue: 'a',
+          },
+        },
+      },
+    }
+    const doc = {
+      version: 1 as const,
+      adapterId: 'shadcn',
+      craftJson: JSON.stringify(tree),
+    }
+    const once = migrateDocument(doc)
+    const twice = migrateDocument(once)
+    expect(twice).toEqual(once)
+  })
+})

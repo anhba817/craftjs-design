@@ -1,7 +1,13 @@
 import { useEditor } from '@craftjs/core'
 import { useEffect } from 'react'
 import { useEditorStore } from '@/state/editorStore'
-import { loadDocument } from '@/persistence/storage'
+import { useDocumentStore } from '@/persistence/documentStore'
+import {
+  clearSharedFragment,
+  decodeDocument,
+  readSharedFragment,
+} from '@/persistence/share'
+import type { EditorDocument } from '@/persistence/schema'
 
 // Module-level flag, not useRef. AdapterProvider's tree shape changes when the
 // active adapter has a Wrapper (MUI) vs. not (shadcn), which unmounts and
@@ -18,17 +24,46 @@ export function Hydrator() {
     if (hydrated) return
     hydrated = true
     try {
-      const doc = loadDocument()
+      // Shared URL fragment takes precedence over local state — opening a
+      // shared link creates a new document and makes it active. The previous
+      // active document is preserved in the index, just no longer active.
+      const sharedDoc = loadFromSharedFragment()
+      if (sharedDoc) {
+        useDocumentStore.getState().createDocument('Shared document', sharedDoc)
+        applyEnvelope(actions, sharedDoc)
+        clearSharedFragment()
+        return
+      }
+
+      const doc = useDocumentStore.getState().loadActiveDocument()
       if (!doc) return
-      actions.deserialize(doc.craftJson)
-      const store = useEditorStore.getState()
-      if (doc.themeId) store.setActiveTheme(doc.themeId)
-      store.setActiveAdapter(doc.adapterId)
+      applyEnvelope(actions, doc)
     } catch (err) {
-      // Corrupt or stale localStorage shouldn't brick boot — log and start fresh.
-      console.error('[Hydrator] failed to load saved document:', err)
+      console.error('[Hydrator] boot failed:', err)
     }
   }, [actions])
 
   return null
+}
+
+function loadFromSharedFragment(): EditorDocument | null {
+  if (typeof window === 'undefined') return null
+  const encoded = readSharedFragment(window.location.hash)
+  if (!encoded) return null
+  try {
+    return decodeDocument(encoded)
+  } catch (err) {
+    console.warn('[Hydrator] shared fragment decode failed:', err)
+    return null
+  }
+}
+
+function applyEnvelope(
+  actions: ReturnType<typeof useEditor>['actions'],
+  doc: EditorDocument,
+): void {
+  actions.deserialize(doc.craftJson)
+  const store = useEditorStore.getState()
+  if (doc.themeId) store.setActiveTheme(doc.themeId)
+  store.setActiveAdapter(doc.adapterId)
 }

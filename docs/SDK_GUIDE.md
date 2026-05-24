@@ -102,7 +102,8 @@ interface CanonicalComponent<Props = Record<string, unknown>> {
   tags: readonly string[]
   isCanvas: boolean
   styleSlots: readonly string[]
-  canvasSlots?: readonly string[]      // Phase 6 — multi-canvas Pattern B
+  canvasSlots?: readonly string[] | ((props: Props) => readonly string[])
+                                       // Phase 6/7 — multi-canvas Pattern B
   propsSchema: z.ZodType<Props>
   defaults: { props: Props; style: NodeStyle }
   applicablePanels?: readonly PanelId[]
@@ -116,7 +117,10 @@ interface CanonicalComponent<Props = Record<string, unknown>> {
   more for Pattern B.
 - `canvasSlots` — when set, CanonicalNode generates one `<Element canvas>`
   wrapper per slot and passes them via `slotChildren`. Outer is NOT a
-  canvas; inner slots are.
+  canvas; inner slots are. **Function form** (Phase 7): supply
+  `(props) => readonly string[]` for dynamic counts — Tabs uses this to
+  expose one canvas per `props.tabs` entry. Adding/removing entries via
+  PropsPanel updates the canvas list on next render.
 
 #### `NodeStyle`
 
@@ -151,8 +155,14 @@ interface NodeStyle {
 | `getApplicablePanels(def)` | Legacy helper returning panel ids; prefer `getPanelsFor` for new code. |
 | `getCanvasSlots(def)` | Resolves canvas slots (explicit `canvasSlots`, or `['root']` if `isCanvas`, else `[]`). |
 
-Post-mount registration logs a warning — hot canonical reload is not yet
-supported. Register canonicals before `<Editor />` mounts.
+**Hot canonical reload** (Phase 7): `registerCanonical` / `unregisterCanonical`
+called AFTER the editor mounts bump an internal version counter; the Toolbox
++ Craft's internal resolver pick up the change without a reload. Existing
+canvas content keeps rendering — unaffected canonicals stay live; nodes
+referencing a *removed* canonical fall back to the missing-impl placeholder.
+Hot-replacing a canonical (`unregister` → `register` with the same id +
+different `propsSchema`) does NOT re-validate existing node props —
+documents may carry stale prop shapes.
 
 ---
 

@@ -38,5 +38,10 @@ describe('SDK public boundary', () => {
     // buildResolver / getResolver are internal Craft resolver plumbing.
     expect('buildResolver' in sdk).toBe(false)
     expect('getResolver' in sdk).toBe(false)
+    // Phase 7 — registry version + subscribe are internal hot-reload plumbing
+    // for the Editor's ResolverUpdater. SDK consumers don't subscribe directly;
+    // their registerCanonical calls drive the bump for them.
+    expect('getRegistryVersion' in sdk).toBe(false)
+    expect('subscribeRegistry' in sdk).toBe(false)
   })
 })
