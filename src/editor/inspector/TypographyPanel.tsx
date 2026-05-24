@@ -1,3 +1,5 @@
+import { useMemo } from 'react'
+import { listFontTokens } from '@/registry/fonts'
 import {
   FONT_SIZES,
   FONT_WEIGHTS,
@@ -27,6 +29,19 @@ export function TypographyPanel({ nodeId, slot = 'root' }: { nodeId: string; slo
     writeClasses(mergeTypography(classString, patch))
   }
 
+  // Phase 8 — Font dropdown options come from the runtime font-token registry.
+  // Built-ins (sans, heading, mono) are registered at module load by
+  // src/registry/fonts.ts; SDK consumers can registerFontToken({...}) to add
+  // more. The list is captured at render time, so post-render registrations
+  // don't appear until the panel re-renders (selection change, prop edit).
+  // Hot-reload of fonts is a Phase 9 polish item.
+  const fontOptions = useMemo(
+    () => listFontTokens().map((t) => t.id),
+    // Recompute when the active node changes — gives a natural refresh point
+    // for SDK consumers that register fonts after the editor mounts.
+    [nodeId],
+  )
+
   // Text color is split between a token class (`text-{token}`) and an inline
   // `color: '#hex'`. Inline wins for display (matches CSS specificity). Writes
   // either set the token AND clear inline, or set inline AND clear the token —
@@ -48,6 +63,15 @@ export function TypographyPanel({ nodeId, slot = 'root' }: { nodeId: string; slo
 
   return (
     <section className="space-y-2">
+      <PanelRow label="Font">
+        <ValueSelect
+          value={slice.fontFamily ?? ''}
+          options={fontOptions}
+          onChange={(v) =>
+            update({ fontFamily: v === '' ? undefined : v })
+          }
+        />
+      </PanelRow>
       <PanelRow label="Size">
         <ValueSelect
           value={slice.fontSize ?? ''}

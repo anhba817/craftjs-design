@@ -44,23 +44,32 @@ const COLOR_ALT = COLORS.join('|')
 export const FONT_SIZES = ['xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl'] as const
 export const FONT_WEIGHTS = ['light', 'normal', 'medium', 'semibold', 'bold'] as const
 export const TEXT_ALIGNS = ['left', 'center', 'right', 'justify'] as const
+// Phase 8 — built-in font-family ids. User-registered fonts via
+// registerFontToken add to this set at runtime; the parser accepts any
+// `font-<slug>` that doesn't match a weight, so the value space is open.
+export const BUILTIN_FONT_FAMILIES = ['sans', 'heading', 'mono'] as const
 
 export type FontSize = typeof FONT_SIZES[number]
 export type FontWeight = typeof FONT_WEIGHTS[number]
 export type TextAlign = typeof TEXT_ALIGNS[number]
 export type TextColor = TokenColor
+export type FontFamily = string // open-ended — matches any registered font id
 
 export interface TypographySlice {
   fontSize?: FontSize
   fontWeight?: FontWeight
   textAlign?: TextAlign
   textColor?: TextColor
+  fontFamily?: FontFamily
 }
 
 // Disambiguation note: `text-center` (align) and `text-foreground` (color) both
-// share the `text-*` prefix but their value sets are disjoint.
+// share the `text-*` prefix but their value sets are disjoint. Likewise
+// `font-bold` (weight) vs `font-sans` (family) — weights are a closed set so
+// they're tried first; anything else under the `font-` prefix is family.
 const FONT_SIZE_RE = new RegExp(`^text-(${FONT_SIZES.join('|')})$`)
 const FONT_WEIGHT_RE = new RegExp(`^font-(${FONT_WEIGHTS.join('|')})$`)
+const FONT_FAMILY_RE = /^font-([a-z0-9-]+)$/
 const TEXT_ALIGN_RE = new RegExp(`^text-(${TEXT_ALIGNS.join('|')})$`)
 const TEXT_COLOR_RE = new RegExp(`^text-(${COLOR_ALT})$`)
 
@@ -77,6 +86,10 @@ export function parseTypography(classString: string): ParsedTypography {
     if (sizeMatch) { slice.fontSize = sizeMatch[1] as FontSize; continue }
     const weightMatch = FONT_WEIGHT_RE.exec(cls)
     if (weightMatch) { slice.fontWeight = weightMatch[1] as FontWeight; continue }
+    // Weight is matched first (closed set); anything else with the font-
+    // prefix is treated as a family. User-registered font ids land here.
+    const familyMatch = FONT_FAMILY_RE.exec(cls)
+    if (familyMatch) { slice.fontFamily = familyMatch[1]; continue }
     const alignMatch = TEXT_ALIGN_RE.exec(cls)
     if (alignMatch) { slice.textAlign = alignMatch[1] as TextAlign; continue }
     const colorMatch = TEXT_COLOR_RE.exec(cls)
@@ -90,6 +103,7 @@ export function serializeTypography(slice: TypographySlice): string[] {
   const out: string[] = []
   if (slice.fontSize) out.push(`text-${slice.fontSize}`)
   if (slice.fontWeight) out.push(`font-${slice.fontWeight}`)
+  if (slice.fontFamily) out.push(`font-${slice.fontFamily}`)
   if (slice.textAlign) out.push(`text-${slice.textAlign}`)
   if (slice.textColor) out.push(`text-${slice.textColor}`)
   return out

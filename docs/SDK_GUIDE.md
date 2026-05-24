@@ -200,6 +200,80 @@ whitelist — only panels with those ids render. Otherwise each panel's
 
 ---
 
+## Font tokens (Phase 8)
+
+The Typography panel's Font dropdown reads from a registry. Built-ins
+(`sans`, `heading`, `mono`) seed at boot; SDK consumers add more.
+
+### Types
+
+#### `FontToken`
+
+```ts
+interface FontToken {
+  id: string         // lowercase + digits + hyphens; used as `font-<id>` class
+  name: string       // display name in the Typography dropdown
+  family: string     // CSS font-family value
+  url?: string       // optional @font-face source for hosted webfonts
+}
+```
+
+### Functions
+
+| Name | Purpose |
+|---|---|
+| `registerFontToken(token)` | Add a font. URL-backed tokens inject `@font-face`; all tokens inject `.font-<id> { font-family: ... }` into `document.head`. |
+| `unregisterFontToken(id)` | Remove. Returns true if a token was removed. |
+
+`registerFontToken` validates the id (lowercase, digits, hyphens only) —
+throws on invalid input. Re-registering the same id overwrites.
+
+```ts
+import { registerFontToken } from '@design/sdk'
+
+registerFontToken({
+  id: 'inter',
+  name: 'Inter',
+  family: '"Inter Variable", sans-serif',
+  url: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap',
+})
+```
+
+After registration, "Inter" appears in the Typography panel's Font
+dropdown on next render (the panel re-captures the registry on selection
+change — full hot-reload is a Phase 9 polish item).
+
+## ColorPicker gradient values (Phase 8)
+
+The `ColorPickerValue` discriminated union extended with a `gradient`
+variant. Adapters / custom panels that render the color picker can opt in
+to gradients via the `allowGradient` prop.
+
+```ts
+type ColorPickerValue =
+  | { kind: 'token'; token: TokenColor }
+  | { kind: 'hex'; hex: string }
+  | { kind: 'gradient'; gradient: Gradient }  // Phase 8
+  | { kind: 'unset' }
+
+interface Gradient {
+  type: 'linear' | 'radial'
+  angle: number                             // linear only: 0–360°
+  position: { x: number; y: number }        // radial only: 0–100 (%)
+  stops: GradientStop[]                     // 2–8 entries
+}
+
+interface GradientStop {
+  color: string                             // hex
+  position: number                          // 0–100
+}
+```
+
+Gradient values serialize via `gradientToCss(g)` and persist to
+`style.inline[slot].background` (CSS longhand). The Phase-8 AppearancePanel
+demonstrates the routing — `Fill` accepts gradients, `Border Color`
+doesn't (border-image would require a different rendering path).
+
 ## Hooks
 
 #### `useNodeClasses(nodeId, slot = 'root')`

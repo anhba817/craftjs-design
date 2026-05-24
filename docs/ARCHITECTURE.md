@@ -314,8 +314,9 @@ craftjs-design/
   scripts/
     gen-safelist.ts             # reads tw-classes.ts slice arrays → emits safelist.generated.css
   src/
-    main.tsx                    # ReactDOM root
-    App.tsx                     # Boot: side-effect imports for registry/adapters/themes, renders <Editor>
+    main.tsx                    # ReactDOM root (dev — Vite app)
+    App.tsx                     # Dev boot: side-effect imports + top-shell ErrorBoundary
+    main-app.tsx                # Phase 8 dist entry — same side-effects + re-exports for integration consumers
     index.css                   # Tailwind v4 entry + @import safelist.generated.css + @theme inline bridge + token blocks + .mui-bridge
     lib/
       utils.ts                  # shadcn's tailwind-merge-backed cn
@@ -365,6 +366,8 @@ craftjs-design/
       inline.ts                 # composeInlineStyle(style, slot) → React.CSSProperties from style.inline
       responsive-inline.ts      # composeResponsiveInline(style, slot) → CSS class + @media rules
       responsive-inline.test.ts
+      safelist-extract.ts       # Phase 8 — pure extractArbitraryClasses(tree) helper
+      safelist-extract.test.ts
       safelist.generated.css    # gitignored — emitted by scripts/gen-safelist.ts
     craft/
       CanonicalNode.tsx         # invokes composeResponsive + adapter.classMap; placeholder for missing impls
@@ -382,6 +385,12 @@ craftjs-design/
       ResolverUpdater.tsx         # Phase 7 — hot canonical reload bridge
       canvas/
         ResizeOverlay.tsx         # Phase 7 — fixed-position resize handles overlay
+        snap.ts                   # Phase 8 — snapToSizeToken(px) helper
+        snap.test.ts
+      errors/                     # Phase 8 — 4-layer error boundaries
+        ErrorBoundary.tsx         # generic class component (componentDidCatch)
+        ErrorBoundary.test.tsx
+        fallbacks.tsx             # TopShell / Canvas / Panel / Toolbox typed fallbacks
       documents/
         DocumentMenu.tsx          # Phase 7 — top-bar dropdown (replaces title)
         TemplatePicker.tsx        # Phase 7 — nested popover for starter templates
@@ -402,6 +411,14 @@ craftjs-design/
           defaults.test.ts
           arrayOps.ts               # Phase 7 — pure helpers (reorder/swap/removeAt/setAt)
           arrayOps.test.ts
+        shared/
+          color-conversions.ts    # Phase 8 — hex / rgb / hsl pure helpers
+          color-conversions.test.ts
+          RgbSliders.tsx, HslSliders.tsx
+          EyedropperButton.tsx    # Phase 8 — feature-gated EyeDropper API
+          gradient.ts             # Phase 8 — Gradient types + parse / serialize
+          gradient.test.ts
+          GradientEditor.tsx      # Phase 8 — popover-rendered gradient editor
         shared/
           useNodeClasses.ts       # reads/writes classes + inline; subscribes to activeBreakpoint
           ColorPicker.tsx         # tokens + react-colorful visual picker + hex input

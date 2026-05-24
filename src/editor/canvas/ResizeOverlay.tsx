@@ -1,12 +1,53 @@
 import { useEditor } from '@craftjs/core'
 import { useCallback, useEffect, useState } from 'react'
+import { mergeSize } from '@/style/tw-classes'
+import type { SizeValue } from '@/style/tw-classes'
 import type { NodeStyle } from '@/registry/types'
+import { snapToSizeToken } from './snap'
 
 type NodeProps = { style: NodeStyle }
 
-type Corner = 'tl' | 'tr' | 'bl' | 'br'
+// 8 handles — 4 corners (both axes) + 4 edges (single axis). Axis vectors
+// drive both the drag math and the snap dispatch: 0 = "this axis doesn't
+// change on this handle"; ±1 = "drag in this direction increases the
+// dimension." Top/left handles invert because dragging up/left extends the
+// element backwards from the user's perspective.
+type HandleKind = 'tl' | 't' | 'tr' | 'l' | 'r' | 'bl' | 'b' | 'br'
 
-// Phase 7 — canvas-overlay drag-resize. Replaces the Inspector ResizeToggle.
+const HANDLE_AXES: Record<HandleKind, { x: -1 | 0 | 1; y: -1 | 0 | 1 }> = {
+  tl: { x: -1, y: -1 },
+  t: { x: 0, y: -1 },
+  tr: { x: 1, y: -1 },
+  l: { x: -1, y: 0 },
+  r: { x: 1, y: 0 },
+  bl: { x: -1, y: 1 },
+  b: { x: 0, y: 1 },
+  br: { x: 1, y: 1 },
+}
+
+const HANDLE_POSITION: Record<HandleKind, React.CSSProperties> = {
+  tl: { left: -5, top: -5, cursor: 'nwse-resize' },
+  t: { left: 'calc(50% - 5px)', top: -5, cursor: 'ns-resize' },
+  tr: { right: -5, top: -5, cursor: 'nesw-resize' },
+  l: { left: -5, top: 'calc(50% - 5px)', cursor: 'ew-resize' },
+  r: { right: -5, top: 'calc(50% - 5px)', cursor: 'ew-resize' },
+  bl: { left: -5, bottom: -5, cursor: 'nesw-resize' },
+  b: { left: 'calc(50% - 5px)', bottom: -5, cursor: 'ns-resize' },
+  br: { right: -5, bottom: -5, cursor: 'nwse-resize' },
+}
+
+const ALL_HANDLES: readonly HandleKind[] = [
+  'tl',
+  't',
+  'tr',
+  'l',
+  'r',
+  'bl',
+  'b',
+  'br',
+]
+
+// Phase 7 + 8 — canvas-overlay drag-resize.
 //
 // Architecture:
 //   - Subscribes to Craft's selection state. When a node is selected, fetches
@@ -15,10 +56,16 @@ type Corner = 'tl' | 'tr' | 'bl' | 'br'
 //   - getBoundingClientRect() is re-read on selection change, window resize,
 //     scroll (capture phase to catch nested scrollers), and ResizeObserver
 //     ticks on the node's DOM.
-//   - Four corner handles. Mousedown on a handle captures pointer coords +
-//     starting width/height; mousemove mutates `dom.style.width/height`
-//     directly (no React render → smooth 60fps); mouseup commits the final
-//     size via setProp into style.inline.root.
+//   - 8 handles (Phase 8): 4 corners (both axes) + 4 edges (single axis).
+//     Each handle's axis vector drives the drag math AND the snap dispatch.
+//   - Mousedown captures pointer coords + starting width/height; mousemove
+//     mutates `dom.style.width/height` directly (no React render → smooth
+//     60fps); mouseup commits the final size.
+//   - Snap-to-token (Phase 8): if the final rendered size is within 4px of
+//     a Tailwind size token (w-32 = 128px, w-48 = 192px, etc.), the commit
+//     writes a `w-<token>` / `h-<token>` class AND clears the inline px.
+//     Otherwise inline px persists. Only axes the handle controls get
+//     touched — dragging a vertical edge handle never touches width.
 //
 // Craft drag-connector conflict: handles live in their own React subtree
 // outside the Craft <Frame>, so Craft's per-node mousedown listeners never
@@ -55,8 +102,6 @@ export function ResizeOverlay() {
     const observer = new ResizeObserver(recompute)
     observer.observe(selectedDom)
 
-    // Capture phase catches scroll on nested scrollers (the canvas <main>
-    // scrolls independently of window). Passive: we don't preventDefault.
     window.addEventListener('scroll', recompute, { capture: true, passive: true })
     window.addEventListener('resize', recompute, { passive: true })
 
@@ -69,32 +114,29 @@ export function ResizeOverlay() {
 
   if (!rect || !selectedDom || !selectedId) return null
 
-  const startResize = (corner: Corner) => (e: React.MouseEvent) => {
-    // Belt-and-suspenders: block bubble + any per-document capture listener
-    // Craft might own. The handle isn't inside a Craft node, so this is
-    // defensive rather than load-bearing.
+  const startResize = (handle: HandleKind) => (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
 
+    const axes = HANDLE_AXES[handle]
     const startX = e.clientX
     const startY = e.clientY
     const startW = selectedDom.offsetWidth
     const startH = selectedDom.offsetHeight
 
-    // Direction: positive when dragging a right/bottom edge; negative for
-    // left/top (so dragging the left handle to the LEFT increases width).
-    const dirX = corner.includes('r') ? 1 : -1
-    const dirY = corner.includes('b') ? 1 : -1
-
     const onMouseMove = (mv: MouseEvent) => {
-      const newW = Math.max(20, startW + (mv.clientX - startX) * dirX)
-      const newH = Math.max(20, startH + (mv.clientY - startY) * dirY)
+      const newW =
+        axes.x === 0
+          ? startW
+          : Math.max(20, startW + (mv.clientX - startX) * axes.x)
+      const newH =
+        axes.y === 0
+          ? startH
+          : Math.max(20, startH + (mv.clientY - startY) * axes.y)
       // Direct DOM mutation during drag. React doesn't track these inline
-      // style writes; the final value is committed via setProp on mouseup,
-      // and React's next render re-applies the same value through its style
-      // prop pipeline.
-      selectedDom.style.width = `${Math.round(newW)}px`
-      selectedDom.style.height = `${Math.round(newH)}px`
+      // style writes; the final value is committed via setProp on mouseup.
+      if (axes.x !== 0) selectedDom.style.width = `${Math.round(newW)}px`
+      if (axes.y !== 0) selectedDom.style.height = `${Math.round(newH)}px`
     }
 
     const onMouseUp = () => {
@@ -104,11 +146,42 @@ export function ResizeOverlay() {
       const finalW = selectedDom.offsetWidth
       const finalH = selectedDom.offsetHeight
 
+      // Snap dispatch — per axis the handle controlled. Token match wins
+      // (writes the size class, clears inline px); no match → inline px.
+      const widthToken = axes.x !== 0 ? snapToSizeToken(finalW) : null
+      const heightToken = axes.y !== 0 ? snapToSizeToken(finalH) : null
+
       actions.setProp(selectedId, (props: NodeProps) => {
         if (!props.style.inline) props.style.inline = {}
         if (!props.style.inline.root) props.style.inline.root = {}
-        props.style.inline.root.width = `${finalW}px`
-        props.style.inline.root.height = `${finalH}px`
+        const classRoot = props.style.classes.root ?? ''
+        let nextClasses = classRoot
+
+        if (axes.x !== 0) {
+          if (widthToken !== null) {
+            delete props.style.inline.root.width
+            nextClasses = mergeSize(nextClasses, {
+              w: widthToken as SizeValue,
+            })
+          } else {
+            props.style.inline.root.width = `${finalW}px`
+            nextClasses = mergeSize(nextClasses, { w: undefined })
+          }
+        }
+        if (axes.y !== 0) {
+          if (heightToken !== null) {
+            delete props.style.inline.root.height
+            nextClasses = mergeSize(nextClasses, {
+              h: heightToken as SizeValue,
+            })
+          } else {
+            props.style.inline.root.height = `${finalH}px`
+            nextClasses = mergeSize(nextClasses, { h: undefined })
+          }
+        }
+        if (nextClasses !== classRoot) {
+          props.style.classes.root = nextClasses
+        }
       })
     }
 
@@ -116,8 +189,6 @@ export function ResizeOverlay() {
     document.addEventListener('mouseup', onMouseUp)
   }
 
-  // The outer overlay has pointer-events:none so it doesn't block clicks on
-  // anything beneath it. Handles individually opt back in.
   return (
     <div
       aria-hidden
@@ -131,33 +202,25 @@ export function ResizeOverlay() {
         outlineOffset: '2px',
       }}
     >
-      <Handle corner="tl" onMouseDown={startResize('tl')} />
-      <Handle corner="tr" onMouseDown={startResize('tr')} />
-      <Handle corner="bl" onMouseDown={startResize('bl')} />
-      <Handle corner="br" onMouseDown={startResize('br')} />
+      {ALL_HANDLES.map((kind) => (
+        <Handle key={kind} kind={kind} onMouseDown={startResize(kind)} />
+      ))}
     </div>
   )
 }
 
-const CORNER_POSITION: Record<Corner, React.CSSProperties> = {
-  tl: { left: -5, top: -5, cursor: 'nwse-resize' },
-  tr: { right: -5, top: -5, cursor: 'nesw-resize' },
-  bl: { left: -5, bottom: -5, cursor: 'nesw-resize' },
-  br: { right: -5, bottom: -5, cursor: 'nwse-resize' },
-}
-
 function Handle({
-  corner,
+  kind,
   onMouseDown,
 }: {
-  corner: Corner
+  kind: HandleKind
   onMouseDown: (e: React.MouseEvent) => void
 }) {
   return (
     <div
       onMouseDown={onMouseDown}
       className="pointer-events-auto absolute h-2.5 w-2.5 rounded-sm border border-primary bg-background"
-      style={CORNER_POSITION[corner]}
+      style={HANDLE_POSITION[kind]}
     />
   )
 }

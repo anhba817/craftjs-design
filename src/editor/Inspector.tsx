@@ -1,6 +1,8 @@
 import { useEditor } from '@craftjs/core'
 import { useEffect, useState } from 'react'
 import { getComponentByDisplayName } from '@/registry/registry'
+import { ErrorBoundary } from './errors/ErrorBoundary'
+import { PanelErrorFallback } from './errors/fallbacks'
 import { getPanelsFor } from './inspector/panel-registry'
 import { ResponsiveBar } from './inspector/ResponsiveBar'
 import { SlotPicker } from './inspector/SlotPicker'
@@ -77,7 +79,11 @@ export function Inspector() {
             <div className="mt-4 space-y-2 border-t border-gray-200 pt-3">
               {panels.map((panel) => (
                 <CollapsibleSection key={panel.id} title={panel.displayName}>
-                  <panel.component nodeId={selected.id} slot={slot} />
+                  {/* Phase 8 — each panel renders inside its own boundary so a
+                      buggy custom panel doesn't drop the entire inspector. */}
+                  <ErrorBoundary fallback={PanelErrorFallback}>
+                    <panel.component nodeId={selected.id} slot={slot} />
+                  </ErrorBoundary>
                 </CollapsibleSection>
               ))}
             </div>

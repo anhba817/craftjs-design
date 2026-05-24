@@ -611,6 +611,103 @@ Things to watch for:
 - If unrelated state changes trigger a Craft re-render mid-gesture (theme change, etc.), React's reconcile may wipe the direct DOM mutation. Designers don't typically operate multiple controls during a single gesture, so acceptable.
 - Stop event propagation on the gesture's mousedown if you're rendering the handles outside the Craft node tree — `e.stopPropagation()` is belt-and-suspenders against any document-level Craft listener.
 
+### Adding a font token
+
+Phase 8 ships a font-token registry that drives the Typography panel's Font
+dropdown. Built-ins (`sans`, `heading`, `mono`) seed at module load; add more
+by calling `registerFontToken` at app boot.
+
+1. **Decide on an id.** Lowercase, digits, hyphens only. Used as both the
+   class suffix (`font-<id>`) and — for URL-backed fonts — the `@font-face`
+   family name.
+
+2. **Register:**
+
+   ```ts
+   // src/your-fonts.ts
+   import { registerFontToken } from '@design/sdk'
+
+   registerFontToken({
+     id: 'inter',
+     name: 'Inter',                              // appears in the dropdown
+     family: '"Inter Variable", sans-serif',     // CSS font-family value
+     url: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap',
+   })
+   ```
+
+3. **Side-effect import:**
+
+   ```ts
+   // src/App.tsx — alongside the other side-effects
+   import './your-fonts'
+   ```
+
+4. The dropdown re-captures the registry on selection change — pick a node
+   and "Inter" appears in the Font dropdown.
+
+**URL vs no-url:** with `url`, the runtime injects an `@font-face`
+declaration loading the font + a class rule using the font. Without `url`,
+only the class rule is injected — your font has to already be available
+(via host-provided CSS, system fallback, etc.).
+
+**Built-ins overlap with Tailwind utilities.** `font-sans` and `font-heading`
+are already Tailwind utilities via `@theme inline` in `index.css`; the
+registry injects them anyway for consistency (same lookup path for all
+tokens). Redundant but harmless.
+
+**Hot reload caveat:** the dropdown captures `listFontTokens()` keyed by
+`[nodeId]`. Post-mount registrations appear when the user selects a
+different node. Phase 9 polish ports the Phase-7 `registryVersion` pattern
+for instant refresh.
+
+### Adding an error boundary fallback
+
+Phase 8 ships four error-boundary layers; integration consumers (or this
+project's contributors adding new editor regions) plug new ones the same
+way.
+
+1. **Author a fallback component** that matches `ErrorFallbackProps`:
+
+   ```tsx
+   import type { ErrorFallbackProps } from '@/editor/errors/ErrorBoundary'
+   import { AlertTriangle, RefreshCcw } from 'lucide-react'
+
+   export function MyToolFallback({ error, reset }: ErrorFallbackProps) {
+     return (
+       <div className="rounded border border-destructive p-2">
+         <div className="flex items-center gap-1.5 text-xs">
+           <AlertTriangle size={12} className="text-destructive" />
+           My tool failed
+         </div>
+         <p className="text-[11px] text-gray-600">{error.message}</p>
+         <button onClick={reset} className="text-[11px] text-primary hover:underline">
+           <RefreshCcw size={10} /> Retry
+         </button>
+       </div>
+     )
+   }
+   ```
+
+2. **Wrap your subtree:**
+
+   ```tsx
+   import { ErrorBoundary } from '@/editor/errors/ErrorBoundary'
+   import { MyToolFallback } from './MyToolFallback'
+
+   <ErrorBoundary fallback={MyToolFallback} onError={(err, info) => myTelemetry(err, info)}>
+     <YourComponent />
+   </ErrorBoundary>
+   ```
+
+3. **`reset()` clears `state.error` and re-mounts children.** If the
+   underlying bug is still there, the fallback re-renders — same outcome,
+   no infinite loop. The user gets a path out of transient failures.
+
+**Caveat:** error boundaries don't catch async errors. A component that
+throws in a `useEffect` won't trigger `componentDidCatch`. Document the
+async error path separately (e.g., via `window.onerror` listener) if your
+tool can throw async.
+
 ### The `@design/sdk` boundary
 
 Phase 6 carved out a public boundary at `src/sdk/`. Files under `src/sdk/` are the contract for external SDK consumers (adapters / canonicals / panels authored outside the editor's core). Internal code can import either way; new code outside `src/adapters/`, `src/registry/`, `src/editor/inspector/`, and `src/style/` should prefer the SDK path.

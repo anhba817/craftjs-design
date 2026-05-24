@@ -22,7 +22,7 @@ import { resolve } from 'node:path'
 
 import {
   // typography
-  FONT_SIZES, FONT_WEIGHTS, TEXT_ALIGNS,
+  FONT_SIZES, FONT_WEIGHTS, TEXT_ALIGNS, BUILTIN_FONT_FAMILIES,
   // shared
   COLORS,
   // layout
@@ -71,6 +71,10 @@ const lines: string[] = [
   '/* Typography */',
   ...emit('text-', FONT_SIZES),
   ...emit('font-', FONT_WEIGHTS),
+  // Phase 8 — built-in font-family ids (sans, heading, mono). User-registered
+  // ids inject their own .font-<id> rule at runtime, so they don't need to
+  // be in the safelist.
+  ...emit('font-', BUILTIN_FONT_FAMILIES),
   ...emit('text-', TEXT_ALIGNS),
   ...emit('text-', COLORS),
   '',

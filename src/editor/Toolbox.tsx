@@ -212,9 +212,14 @@ export function Toolbox() {
     <aside className="flex w-56 flex-col border-r border-gray-200">
       <div className="border-b border-gray-200 p-2">
         <label className="relative block">
+          {/* Visually-hidden accessible name. The placeholder doubles as a
+              visual hint but isn't reliable as the input's accessible name
+              for screen readers. */}
+          <span className="sr-only">Search components</span>
           <Search
             size={14}
             className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"
+            aria-hidden
           />
           <input
             type="text"

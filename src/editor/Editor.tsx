@@ -5,6 +5,12 @@ import { getResolver } from '../craft/resolver'
 import { _markEditorMounted, getComponent } from '../registry/registry'
 import { ThemeProvider } from '../themes/ThemeProvider'
 import { ResizeOverlay } from './canvas/ResizeOverlay'
+import { ErrorBoundary } from './errors/ErrorBoundary'
+import {
+  CanvasErrorFallback,
+  ToolboxErrorFallback,
+  TopShellErrorFallback,
+} from './errors/fallbacks'
 import { Hydrator } from './Hydrator'
 import { Inspector } from './Inspector'
 import { ResolverUpdater } from './ResolverUpdater'
@@ -27,6 +33,11 @@ export function Editor() {
   }
   const Root = resolver[boxDef.displayName]
 
+  // Phase 8 — three boundary layers below the top shell. The outermost
+  // (TopShellErrorFallback) is mounted by App.tsx so it catches anything
+  // that bubbles out of <Editor /> itself, including a thrown getResolver()
+  // or AdapterProvider failure. Inner boundaries (Canvas, Toolbox) handle
+  // localized failures so the rest of the editor stays alive.
   return (
     <AdapterProvider>
       <Craft resolver={resolver}>
@@ -36,17 +47,21 @@ export function Editor() {
         <div className="flex h-screen flex-col">
           <SaveLoadBar />
           <div className="flex min-h-0 flex-1">
-            <Toolbox />
+            <ErrorBoundary fallback={ToolboxErrorFallback}>
+              <Toolbox />
+            </ErrorBoundary>
             <ThemeProvider>
               <main className="flex-1 overflow-auto bg-muted p-8">
-                <Frame>
-                  <Element
-                    is={Root}
-                    canvas
-                    nodeProps={boxDef.defaults.props}
-                    style={boxDef.defaults.style}
-                  />
-                </Frame>
+                <ErrorBoundary fallback={CanvasErrorFallback}>
+                  <Frame>
+                    <Element
+                      is={Root}
+                      canvas
+                      nodeProps={boxDef.defaults.props}
+                      style={boxDef.defaults.style}
+                    />
+                  </Frame>
+                </ErrorBoundary>
               </main>
             </ThemeProvider>
             <Inspector />
@@ -56,3 +71,6 @@ export function Editor() {
     </AdapterProvider>
   )
 }
+
+// Re-export for App.tsx to wrap the entire editor in a top-shell boundary.
+export { ErrorBoundary, TopShellErrorFallback }

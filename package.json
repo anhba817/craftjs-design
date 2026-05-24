@@ -6,13 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:dist": "tsc -b && vite build --config vite.config.dist.ts",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "gen-safelist": "tsx scripts/gen-safelist.ts",
     "predev": "npm run gen-safelist",
-    "prebuild": "npm run gen-safelist"
+    "prebuild": "npm run gen-safelist",
+    "prebuild:dist": "npm run gen-safelist"
   },
   "dependencies": {
     "@craftjs/core": "^0.2.12",
