@@ -178,3 +178,29 @@ body {
     @apply font-sans;
   }
 }
+
+/* Phase 6 — Pattern B canvas slots. Each named canvas slot rendered by
+   CanonicalNode is a <div class="canvas-slot"> created by Craft's <Element>
+   wrapper. The slot has no intrinsic dimensions; shadcn's CardHeader /
+   CardContent only have horizontal padding, so an empty slot would collapse
+   to 0 height and become impossible to drop on. We give every slot a
+   min-height and surface a "Drop here" hint when empty via :empty. */
+.canvas-slot {
+  min-height: 2.5rem;
+}
+
+.canvas-slot:empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  outline: 1.5px dashed var(--border);
+  outline-offset: -1.5px;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.canvas-slot:empty::before {
+  content: "Drop here";
+}

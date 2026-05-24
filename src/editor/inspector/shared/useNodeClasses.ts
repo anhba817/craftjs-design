@@ -18,10 +18,12 @@ type NodeProps = { style: NodeStyle }
 //     closure captures activeBreakpoint at the previous Craft state change,
 //     and edits at non-base breakpoints read stale data.
 //
-// Inline (arbitrary values) is read/written at base level only in Phase 4.5 —
-// non-base breakpoints don't have an inline storage shape. The ColorPicker /
-// NumericInput disable arbitrary entry at non-base via the `activeBreakpoint`
-// return value, so writeInline is only called when activeBreakpoint === 'base'.
+// Phase 6 — inline arbitrary values now read/write per-breakpoint:
+//   - base → style.inline[slot][cssProp]
+//   - non-base → style.responsiveInline[bp][slot][cssProp]
+// CanonicalNode picks up entries from BOTH locations and emits them either as
+// React style props (base-only fast path) or as a generated CSS class with
+// @media rules (when any responsive entry exists for the slot).
 export function useNodeClasses(nodeId: string, slot: string = 'root') {
   const activeBreakpoint = useEditorStore((s) => s.activeBreakpoint)
 
@@ -34,7 +36,10 @@ export function useNodeClasses(nodeId: string, slot: string = 'root') {
     activeBreakpoint === 'base'
       ? style.classes?.[slot] ?? ''
       : style.responsive?.[activeBreakpoint]?.[slot] ?? ''
-  const inlineStyle: Record<string, string> = style.inline?.[slot] ?? {}
+  const inlineStyle: Record<string, string> =
+    activeBreakpoint === 'base'
+      ? (style.inline?.[slot] ?? {})
+      : (style.responsiveInline?.[activeBreakpoint]?.[slot] ?? {})
 
   const writeClasses = (next: string) => {
     actions.setProp(nodeId, (props: NodeProps) => {
@@ -53,24 +58,76 @@ export function useNodeClasses(nodeId: string, slot: string = 'root') {
 
   const writeInline = (cssProperty: string, value: string | undefined) => {
     actions.setProp(nodeId, (props: NodeProps) => {
-      if (value === undefined) {
-        // Clear: walk the nested objects backward, deleting empty containers.
-        const slotMap = props.style.inline?.[slot]
-        if (!slotMap) return
-        delete slotMap[cssProperty]
-        if (Object.keys(slotMap).length === 0) {
-          delete props.style.inline![slot]
-          if (Object.keys(props.style.inline!).length === 0) {
-            delete props.style.inline
-          }
-        }
-        return
+      if (activeBreakpoint === 'base') {
+        writeBaseInline(props, slot, cssProperty, value)
+      } else {
+        writeResponsiveInline(
+          props,
+          activeBreakpoint,
+          slot,
+          cssProperty,
+          value,
+        )
       }
-      if (!props.style.inline) props.style.inline = {}
-      if (!props.style.inline[slot]) props.style.inline[slot] = {}
-      props.style.inline[slot][cssProperty] = value
     })
   }
 
   return { classString, inlineStyle, writeClasses, writeInline, activeBreakpoint }
+}
+
+// Base-breakpoint inline writes walk style.inline[slot][cssProp]. On clear,
+// peel back empty containers so the saved document stays compact.
+function writeBaseInline(
+  props: NodeProps,
+  slot: string,
+  cssProperty: string,
+  value: string | undefined,
+): void {
+  if (value === undefined) {
+    const slotMap = props.style.inline?.[slot]
+    if (!slotMap) return
+    delete slotMap[cssProperty]
+    if (Object.keys(slotMap).length === 0) {
+      delete props.style.inline![slot]
+      if (Object.keys(props.style.inline!).length === 0) {
+        delete props.style.inline
+      }
+    }
+    return
+  }
+  if (!props.style.inline) props.style.inline = {}
+  if (!props.style.inline[slot]) props.style.inline[slot] = {}
+  props.style.inline[slot][cssProperty] = value
+}
+
+// Non-base inline writes walk style.responsiveInline[bp][slot][cssProp]. Same
+// container-peel discipline as the base path.
+function writeResponsiveInline(
+  props: NodeProps,
+  bp: string,
+  slot: string,
+  cssProperty: string,
+  value: string | undefined,
+): void {
+  if (value === undefined) {
+    const slotMap = props.style.responsiveInline?.[bp]?.[slot]
+    if (!slotMap) return
+    delete slotMap[cssProperty]
+    if (Object.keys(slotMap).length === 0) {
+      delete props.style.responsiveInline![bp][slot]
+      if (Object.keys(props.style.responsiveInline![bp]).length === 0) {
+        delete props.style.responsiveInline![bp]
+        if (Object.keys(props.style.responsiveInline!).length === 0) {
+          delete props.style.responsiveInline
+        }
+      }
+    }
+    return
+  }
+  if (!props.style.responsiveInline) props.style.responsiveInline = {}
+  if (!props.style.responsiveInline[bp]) props.style.responsiveInline[bp] = {}
+  if (!props.style.responsiveInline[bp][slot]) {
+    props.style.responsiveInline[bp][slot] = {}
+  }
+  props.style.responsiveInline[bp][slot][cssProperty] = value
 }

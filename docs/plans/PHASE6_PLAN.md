@@ -326,3 +326,93 @@ The editor's main app adds a one-line conditional import to register the example
 ## Definition of done
 
 Exit-criteria checklist passes. `examples/adapter-chakra/` works end-to-end. SDK docs are accurate. Close-out section in this file records which valves were pulled and any items that slipped to Phase 7. Phase 7 (lifecycle: docs / import-export / templates / color depth) is unblocked.
+
+---
+
+## Close-out (2026-05-24)
+
+### Status: Complete
+
+All 9 groups (A–I) shipped. `tsc -b` clean, **101 tests pass** (up from 48 at end of Phase 5 — 53 new tests across the new modules).
+
+### Group-by-group summary
+
+- **A — ZodArray editor**: PropsPanel handles `z.array(z.object/scalar)` with add / remove / reorder. Recursive `PropField` dispatcher extracted from `PropsPanel.tsx`; ZodObject case also added for nested fields. Nested arrays (`z.array(z.array)`) render an "unsupported deep nesting" badge.
+- **B — Multi-canvas Card** (partial V1 pull): Card's `canvasSlots: ['header','body','footer']` ships; Tabs stays props-driven. Dynamic-canvas Tabs deferred to Phase 7 because the count varies with `props.tabs.length` and requires linked-node-id management — different complexity class. Migration drops Phase-5 Card props (title/description/showFooter/footerText) and flips persisted `isCanvas: true` on Card nodes to false.
+- **C — Responsive arbitrary inline**: per-slot CSS class generation via content hash + `@media` rules, rendered as `<style>` inline next to the impl. When a slot has any responsive entry, base inline is promoted into the class so specificity doesn't beat the `@media` rule. All `arbitraryDisabledHint` / `hexDisabledHint` plumbing removed — arbitrary works at every breakpoint.
+- **D — Polish bundle**: Select dropdown click-blocked in editor mode (`open={false}`). Undo/redo toolbar buttons + Cmd/Ctrl+Z & Cmd/Ctrl+Shift+Z global shortcuts (skipped when target is an editable element). Drag-resize implemented as an explicit "Resize" toggle in the Inspector that activates native CSS `resize: both` + outline; toggling off captures rendered px and writes to `style.inline.root`.
+- **E — SDK boundary**: `src/sdk/{adapter,canonical,style,hooks,panel}.ts` re-exports the public surface. `@design/sdk` path alias wired in tsconfig + vite. Internal adapter `index.ts` files dogfood the alias. Boundary test asserts the 16 expected exports.
+- **F — Canonical lifecycle**: `registerCanonical` (alias for `registerComponent`), `unregisterCanonical`, post-mount registration warning flipped by Editor.tsx's useEffect.
+- **G — Panel registration**: `PanelDefinition` contract + `registerPanel` / `unregisterPanel` / `listPanels` / `getPanelsFor`. Inspector refactored to render from the registry. All 7 built-ins migrated to `registerPanel` calls in `built-in-panels.ts`.
+- **H — Chakra example**: `examples/adapter-chakra/` ships with 5 canonical impls (Box, Heading, Button, Stack, Card) and a mock primitive library (`lib.tsx`) so the example compiles without installing real Chakra. README explains how to swap for `@chakra-ui/react`. Auto-loaded from App.tsx — adapter switcher gains a third option. Three tutorial docs (TUTORIAL_ADAPTER, TUTORIAL_CANONICAL, TUTORIAL_PANEL) + SDK_GUIDE reference all shipped.
+- **I — Verification**: coverage script confirms 20/20 canonicals registered, 20/20 in shadcn, 20/20 in MUI, 5/20 in Chakra example (MVP, documented).
+
+### Valves pulled
+
+- **V1 (multi-canvas)** — *partial pull on Tabs only.* Card multi-canvas shipped; Tabs deferred to Phase 7. Card's three fixed slots were tractable; Tabs' dynamic count needed more design work than the week budget afforded.
+- **V2, V3, V4** — *not pulled.*
+
+### Deferred to Phase 7
+
+| Item | Reason |
+|---|---|
+| Tabs multi-canvas (per-tab content as canvas) | Dynamic canvas count tied to `props.tabs.length`; requires linked-node-id management. |
+| Hot canonical reload | Requires Craft.js resolver invalidation. Today we warn and ask for a reload. |
+| Drag-and-drop reorder of ZodArray items | Currently uses ↑/↓ buttons. |
+| Resize handles on canvas overlay (vs. toggle in Inspector) | Avoids the Craft drag-connector conflict; toggle is the simpler MVP. |
+| Real Chakra impls + per-document Tailwind safelist | Both intentionally out of scope. |
+
+### Notable Phase 6 design decisions
+
+1. **Pattern B multi-canvas uses an additive `canvasSlots` field.** Existing Pattern A canvases (`isCanvas: true`) keep working unchanged — `canvasSlots` is only consulted when explicitly set. `getCanvasSlots(def)` is the single resolution point.
+2. **Responsive arbitrary lives in runtime `<style>` tags, not the safelist.** Per-node hash-keyed class id + inline `<style>` injection. No Vite plugin, no per-document safelist generation. Content hash naturally deduplicates identical styling across nodes.
+3. **Drag-resize is a toggle, not always-on.** Mousedown on a native `resize: both` corner would race with Craft's drag connector — the toggle gives clean mode separation. Trade-off: one extra click before resizing.
+4. **Panel registry is the new source of truth for inspector composition.** `getApplicablePanels` kept as a legacy helper but Inspector reads via `getPanelsFor`. Canonicals' `applicablePanels` whitelist still wins when set; otherwise each panel's `applicableTo` predicate decides.
+5. **Chakra example uses mock primitives.** A real `@chakra-ui/react` install would add ~30MB of node_modules for a documentation artifact. The mock library demonstrates the adapter pattern; README explains how to swap.
+6. **The SDK boundary is mostly social.** TypeScript paths + the `src/sdk/` directory help, but discipline-by-convention is the actual enforcement. The boundary test catches accidental export removal; ongoing review catches "would an SDK consumer reach for this?"
+
+### Files added this phase
+
+```
+src/editor/inspector/fields/{defaults,defaults.test,PropField,ObjectField,ArrayField}.ts(x)
+src/editor/inspector/{ResizeToggle,panel-registry,panel-registry.test,built-in-panels}.ts(x)
+src/editor/UndoRedo.tsx
+src/persistence/migrations.ts + migrations.test.ts
+src/style/responsive-inline.ts + responsive-inline.test.ts
+src/sdk/{index,adapter,canonical,style,hooks,panel,boundary.test}.ts
+src/registry/registry.test.ts
+examples/adapter-chakra/{index.ts,lib.tsx,README.md}
+examples/adapter-chakra/components/{Box,Button,Heading,Stack,Card}.tsx
+docs/SDK_GUIDE.md
+docs/TUTORIAL_{ADAPTER,CANONICAL,PANEL}.md
+```
+
+### Files materially changed
+
+```
+src/registry/types.ts                  (+canvasSlots, +responsiveInline shape)
+src/registry/registry.ts               (+getCanvasSlots, +registerCanonical, +unregisterCanonical, +_markEditorMounted, post-mount warning)
+src/adapters/types.ts                  (+slotChildren on AdapterRenderProps)
+src/craft/CanonicalNode.tsx            (multi-canvas Element wrappers, per-slot responsive inline CSS generation, <style> injection)
+src/editor/Inspector.tsx               (panel-registry-driven render, ResizeToggle mount)
+src/editor/Editor.tsx                  (post-mount flag flip)
+src/editor/inspector/PropsPanel.tsx    (extracted to fields/PropField, much simpler)
+src/editor/inspector/shared/{ColorPicker,NumericInput,BoxSidesEditor}.tsx
+                                       (-arbitraryDisabledHint, -hexDisabledHint)
+src/editor/inspector/{Appearance,Size,Spacing,Typography}Panel.tsx
+                                       (-hexHint, panels now accept slot)
+src/editor/inspector/shared/useNodeClasses.ts
+                                       (responsiveInline read/write at non-base)
+src/editor/SaveLoadBar.tsx             (UndoRedo toolbar slot)
+src/registry/components/card.ts        (Pattern B multi-canvas, propsSchema collapsed)
+src/adapters/{shadcn,mui}/components/Card.tsx
+                                       (consume slotChildren per region)
+src/persistence/storage.ts             (load runs migrateDocument)
+src/App.tsx                            (+examples/adapter-chakra import, +built-in-panels)
+src/index.css                          (+.canvas-slot empty-state styling)
+tsconfig.json / tsconfig.app.json / vite.config.ts
+                                       (+@design/sdk path alias; +examples include)
+```
+
+Phase 7 — the deferred polish bag (Tabs multi-canvas, real Chakra adapter, HSL color picker, document import/export, templates) is unblocked.
+

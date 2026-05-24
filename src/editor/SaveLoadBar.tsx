@@ -3,6 +3,7 @@ import { useEditorStore } from '@/state/editorStore'
 import { loadDocument, saveDocument } from '@/persistence/storage'
 import { AdapterSwitcher } from './AdapterSwitcher'
 import { ThemeSwitcher } from './ThemeSwitcher'
+import { UndoRedo } from './UndoRedo'
 
 export function SaveLoadBar() {
   const { actions, query } = useEditor()
@@ -33,6 +34,7 @@ export function SaveLoadBar() {
       <span className="text-xs font-semibold tracking-wide uppercase text-gray-500">
         craftjs-design
       </span>
+      <UndoRedo />
       <div className="flex-1" />
       <AdapterSwitcher />
       <ThemeSwitcher />

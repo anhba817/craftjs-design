@@ -8,11 +8,9 @@ import { cn } from '@/lib/utils'
 //
 // The component is presentation-only: it emits raw strings via onChange. The
 // parent panel classifies the value (token vs arbitrary) and writes to either
-// `style.classes` (via a tw-classes merge function) or `style.inline`.
-//
-// arbitraryDisabledHint locks the text field to token entry only — used at
-// non-base breakpoints where Phase 4.5's inline-style storage can't apply
-// (responsive arbitrary lands in Phase 5+).
+// `style.classes` (via a tw-classes merge function) or `style.inline` /
+// `style.responsiveInline` (Phase 6 — arbitrary values now work at every
+// breakpoint).
 
 const ARBITRARY_RE = /^-?\d+(\.\d+)?(px|%|em|rem|vh|vw|ch|fr)$/
 
@@ -20,7 +18,6 @@ interface NumericInputProps {
   value: string
   tokens: readonly string[]
   onChange: (next: string) => void
-  arbitraryDisabledHint?: string
   placeholder?: string
 }
 
@@ -28,11 +25,9 @@ export function NumericInput({
   value,
   tokens,
   onChange,
-  arbitraryDisabledHint,
   placeholder,
 }: NumericInputProps) {
   const [localValue, setLocalValue] = useState(value)
-  const arbitraryDisabled = !!arbitraryDisabledHint
 
   // Sync local state with prop when prop changes (e.g., theme swap, undo).
   useEffect(() => {
@@ -53,11 +48,11 @@ export function NumericInput({
       onChange(next)
       return
     }
-    if (!arbitraryDisabled && ARBITRARY_RE.test(next)) {
+    if (ARBITRARY_RE.test(next)) {
       onChange(next)
       return
     }
-    // Invalid OR arbitrary blocked at this breakpoint — revert to prop value.
+    // Invalid input — revert to prop value.
     setLocalValue(value)
   }
 
@@ -78,7 +73,6 @@ export function NumericInput({
         }}
         placeholder={placeholder ?? '—'}
         className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-gray-700"
-        title={arbitraryDisabledHint}
       />
       <button
         type="button"

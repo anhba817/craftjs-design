@@ -1,7 +1,8 @@
 import { Editor as Craft, Element, Frame } from '@craftjs/core'
+import { useEffect } from 'react'
 import { AdapterProvider } from '../adapters/AdapterContext'
 import { getResolver } from '../craft/resolver'
-import { getComponent } from '../registry/registry'
+import { _markEditorMounted, getComponent } from '../registry/registry'
 import { ThemeProvider } from '../themes/ThemeProvider'
 import { Hydrator } from './Hydrator'
 import { Inspector } from './Inspector'
@@ -9,6 +10,12 @@ import { SaveLoadBar } from './SaveLoadBar'
 import { Toolbox } from './Toolbox'
 
 export function Editor() {
+  // Phase 6 — flip the registry's post-mount flag so any registerCanonical
+  // calls after this point warn instead of silently failing to appear.
+  useEffect(() => {
+    _markEditorMounted()
+  }, [])
+
   const resolver = getResolver()
   const boxDef = getComponent('box')
   if (!boxDef) {

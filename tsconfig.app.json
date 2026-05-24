@@ -23,8 +23,9 @@
 
     /* Path aliases (mirror vite.config.ts resolve.alias) */
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@design/sdk": ["./src/sdk/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "examples"]
 }

@@ -1,21 +1,18 @@
 import { z } from 'zod'
 import { registerComponent } from '../registry'
 
-// Pattern B canonical: declares four style slots (root + header + body +
-// footer). Inspector's SlotPicker exposes them as a pill bar; the active
-// slot's class string flows into style.classes[slot] and gets composed by
-// CanonicalNode into composedClasses[slot].
+// Pattern B canonical with three CANVAS slots (header / body / footer) plus
+// the styling-only `root` slot. Each canvas is independently droppable; users
+// compose by dropping Text / Heading / Button etc. into the appropriate slot.
 //
-// isCanvas: true — children dropped on the Card land inside `body`. The
-// header and footer are props-driven (text only) for Phase 5 simplicity;
-// Phase 6+ can introduce multi-canvas regions if richer composition becomes
-// a real requirement.
-export const cardPropsSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-  showFooter: z.boolean(),
-  footerText: z.string(),
-})
+// `isCanvas` is FALSE — the outer Card is just a styled wrapper. Setting it
+// true would create a competing drop target for the inner Element wrappers
+// (the "competing drop targets break hit-testing" trap from Pattern A → B).
+//
+// `canvasSlots` only lists droppable regions; `root` is styling-only and is
+// not a canvas. The inspector's SlotPicker exposes all four styleSlots for
+// per-slot class editing.
+export const cardPropsSchema = z.object({})
 export type CardProps = z.infer<typeof cardPropsSchema>
 
 registerComponent<CardProps>({
@@ -23,16 +20,12 @@ registerComponent<CardProps>({
   category: 'layout',
   displayName: 'Card',
   tags: ['container', 'panel', 'box'],
-  isCanvas: true,
+  isCanvas: false,
   styleSlots: ['root', 'header', 'body', 'footer'],
+  canvasSlots: ['header', 'body', 'footer'],
   propsSchema: cardPropsSchema,
   defaults: {
-    props: {
-      title: 'Card title',
-      description: 'Card description',
-      showFooter: false,
-      footerText: 'Footer',
-    },
+    props: {},
     style: {
       classes: { root: '', header: '', body: '', footer: '' },
     },

@@ -44,6 +44,14 @@ export interface AdapterRenderProps {
   inlineStyle?: CSSProperties;
   composedClasses?: Record<string, string>;
   composedInlineStyles?: Record<string, CSSProperties>;
+  // Pattern B multi-canvas (Phase 6). When the canonical declares
+  // `canvasSlots`, CanonicalNode generates one `<Element canvas id={slot}/>`
+  // wrapper per slot and exposes them here keyed by slot name. The impl
+  // places each wrapper inside its corresponding DOM region (e.g., Card puts
+  // slotChildren.header inside <CardHeader>). For single-canvas Pattern A
+  // canonicals (Box, Stack, etc.), this is undefined — those impls keep
+  // reading the legacy `children` prop instead.
+  slotChildren?: Record<string, ReactNode>;
 }
 
 export interface Adapter {

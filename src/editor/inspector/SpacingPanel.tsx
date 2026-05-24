@@ -42,18 +42,13 @@ function readMargin(slice: SpacingSlice, inline: Record<string, string>): BoxSid
 }
 
 export function SpacingPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
-  const { classString, inlineStyle, writeClasses, writeInline, activeBreakpoint } =
+  const { classString, inlineStyle, writeClasses, writeInline } =
     useNodeClasses(nodeId, slot)
   const { slice } = parseSpacing(classString)
 
   const update = (patch: Partial<SpacingSlice>) => {
     writeClasses(mergeSpacing(classString, patch))
   }
-
-  const hexHint =
-    activeBreakpoint !== 'base'
-      ? 'Arbitrary values supported at base breakpoint only.'
-      : undefined
 
   // Handles a BoxSidesValue → slice + inline writes for padding OR margin.
   // shorthand can be token (→ slice.p / slice.m) or arbitrary (→ inline.padding /
@@ -113,7 +108,6 @@ export function SpacingPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?:
         label="Padding"
         value={readPad(slice, inlineStyle)}
         options={SPACING_VALUES}
-        arbitraryDisabledHint={hexHint}
         onChange={(next) =>
           applyTo(next, 'padding', 'p', 'px', 'py', {
             top: 'pt', right: 'pr', bottom: 'pb', left: 'pl',
@@ -124,7 +118,6 @@ export function SpacingPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?:
         label="Margin"
         value={readMargin(slice, inlineStyle)}
         options={SPACING_VALUES}
-        arbitraryDisabledHint={hexHint}
         onChange={(next) =>
           applyTo(next, 'margin', 'm', 'mx', 'my', {
             top: 'mt', right: 'mr', bottom: 'mb', left: 'ml',

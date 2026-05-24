@@ -40,30 +40,33 @@ The user-facing chrome. Has no opinion about *what* components exist, only about
 
 | File | Role |
 |---|---|
-| `Editor.tsx` | Top-level shell. Builds the resolver, mounts Craft.js, wraps the canvas in `<ThemeProvider>`, lays out the 3-column UI. |
+| `Editor.tsx` | Top-level shell. Builds the resolver, mounts Craft.js, wraps the canvas in `<ThemeProvider>`, lays out the 3-column UI. On mount, calls `_markEditorMounted()` so the registry can warn about post-mount canonical registrations. |
 | `Toolbox.tsx` | Left panel. Reads `listComponents()` from the registry; renders entries grouped by `category` with a search input, a "Favorites" section (toggle via star icon), and a "Recently used" section. Favorites + recents persist to `localStorage['craftjs-design.toolbox']` — user-level state, separate from the document envelope. Attaches Craft `connectors.create()` per entry; mousedown on a button records use into the recents LRU. |
-| `Inspector.tsx` | Right panel. Reads the selected node from Craft state, shows type/id, exposes Delete (root-guarded), mounts the `ResponsiveBar`, mounts a `SlotPicker` when the canonical declares more than one style slot, and mounts per-canonical inspector sub-panels. Tracks `activeSlot` (`'root'` by default). Panel visibility filtered by `getApplicablePanels(canonicalDef)`; every class-editing panel receives `slot` as a prop. |
+| `Inspector.tsx` | Right panel. Reads the selected node from Craft state, shows type/id, exposes Delete (root-guarded) + the resize toggle, mounts the `ResponsiveBar`, mounts a `SlotPicker` when the canonical declares more than one style slot, and renders panels from the panel registry (`getPanelsFor(def)`). Tracks `activeSlot` (`'root'` by default). |
 | `inspector/ResponsiveBar.tsx` | Six breakpoint pills (`base` / `sm` / `md` / `lg` / `xl` / `2xl`). Active pill = which class slice the panels read/write. Loud "writing to: …" status line warns when an edit will only apply at and above a breakpoint. |
 | `inspector/SlotPicker.tsx` | Pill bar above the panels for Pattern B canonicals (`styleSlots.length > 1`). Switches `activeSlot` (`'root'`, `'header'`, `'body'`, `'footer'`, etc.). Resets to `'root'` on selection change. |
-| `inspector/TypographyPanel.tsx` | Size / Weight / Align / Color. Backed by `parseTypography` + `mergeTypography`. |
-| `inspector/LayoutPanel.tsx` | Display / FlexDir / Items / Justify / Gap. |
-| `inspector/SpacingPanel.tsx` | Padding + Margin via two `BoxSidesEditor` instances (linked-corners / per-side). |
-| `inspector/SizePanel.tsx` | Width / Height / Min-* / Max-*. |
-| `inspector/AppearancePanel.tsx` | Fill / Border (width + style + color) / Radius. Color inputs are full `ColorPicker`s; radius is a `NumericInput`. Exposes `'default'` sentinel for the bare `border` and `rounded` utilities. |
-| `inspector/EffectsPanel.tsx` | Shadow / Opacity / Blur. |
-| `inspector/PropsPanel.tsx` | Auto-form derived from each canonical's Zod `propsSchema`. Dispatches by Zod kind (`ZodEnum`, `ZodString`, `ZodBoolean`, `ZodNumber`); unsupported kinds render a labeled badge. |
-| `inspector/shared/useNodeClasses.ts` | Read/write helper. Signature: `useNodeClasses(nodeId, slot = 'root')`. Returns `classString` (active breakpoint, scoped to the slot), `inlineStyle` (base-only arbitrary CSS for the slot), `writeClasses`, `writeInline`. Funnels every inspector style I/O through one place; Pattern B panels pass a non-`'root'` slot to route reads/writes into the correct style bucket. |
-| `inspector/shared/ColorPicker.tsx` | Popover with three sections: token swatch grid, `react-colorful` visual picker (sat/lightness + hue), hex text input. Tagged-union `ColorPickerValue` (`token` / `hex` / `unset`). Panels map values into slice + inline writes. |
-| `inspector/shared/NumericInput.tsx` | Hybrid text input accepting tokens or arbitrary CSS values (`13px`, `50%`, `1.5rem`). Step buttons walk the token scale; Popover dropdown for picking. |
+| `inspector/ResizeToggle.tsx` | Inspector control that activates native CSS `resize: both` on the selected node. While active, the user drags the corner handle; toggling off commits the rendered px to `style.inline.root.width / .height`. |
+| `inspector/panel-registry.ts` | Pluggable panel registry. `registerPanel` / `unregisterPanel` / `listPanels` / `getPanelsFor`. Inspector reads from this — both built-ins and SDK-authored panels live here. |
+| `inspector/built-in-panels.ts` | Side-effect module that registers the 7 built-in panels (Layout / Size / Spacing / Typography / Appearance / Effects / Properties) via `registerPanel` at module load. Imported from `App.tsx`. |
+| `inspector/{Typography,Layout,Spacing,Size,Appearance,Effects}Panel.tsx` | The 6 class-editing panels. Each accepts `{ nodeId, slot }`. Backed by the matching `tw-classes` slice parse/merge pair. |
+| `inspector/PropsPanel.tsx` | Auto-form derived from each canonical's Zod `propsSchema`. Top-level component dispatches one `PropField` per schema entry; recursive `PropField` handles `ZodEnum` / `ZodString` / `ZodBoolean` / `ZodNumber` / `ZodArray` / `ZodObject`. Unsupported kinds render a labeled badge. |
+| `inspector/fields/PropField.tsx` | Recursive Zod-kind dispatcher extracted from PropsPanel. Used at the top level by PropsPanel and recursively by ArrayField / ObjectField when descending into nested element schemas. |
+| `inspector/fields/ArrayField.tsx` | `z.array(z.object/scalar)` editor — stacked item cards with `↑ / ↓ / 🗑` controls and a "+ Add" button. Caps at one level: `z.array(z.array(…))` shows "unsupported deep nesting". |
+| `inspector/fields/ObjectField.tsx` | `z.object` editor used by ArrayField when the element is an object. Renders the sub-schema's fields recursively via PropField. |
+| `inspector/fields/defaults.ts` | `defaultValueFor(schema)` — seeds new items when the "+ Add" button fires. |
+| `inspector/shared/useNodeClasses.ts` | Read/write helper. Signature: `useNodeClasses(nodeId, slot = 'root')`. Returns `classString` (active breakpoint, scoped to the slot), `inlineStyle` (active-breakpoint arbitrary CSS for the slot), `writeClasses`, `writeInline`. At non-base, reads/writes route through `style.responsiveInline[bp][slot]`. Funnels every inspector style I/O through one place. |
+| `inspector/shared/ColorPicker.tsx` | Popover with three sections: token swatch grid, `react-colorful` visual picker (sat/lightness + hue), hex text input. Tagged-union `ColorPickerValue` (`token` / `hex` / `unset`). Works at every breakpoint — Phase 6 lifted the base-only restriction. |
+| `inspector/shared/NumericInput.tsx` | Hybrid text input accepting tokens or arbitrary CSS values (`13px`, `50%`, `1.5rem`). Step buttons walk the token scale; Popover dropdown for picking. Works at every breakpoint. |
 | `inspector/shared/BoxSidesEditor.tsx` | Linked-corners editor (padding / margin). Linked mode uses `NumericInput`; per-side mode uses `ValueSelect` (token-only). |
 | `inspector/shared/CollapsibleSection.tsx` | Native `<details>`/`<summary>` wrapper used by Inspector to make each panel collapsible. |
 | `inspector/shared/ValueSelect.tsx` | Generic typed Select (Radix-backed shadcn Select) for closed enums. Supports per-item `renderOption` for icons/swatches. |
 | `inspector/shared/ColorSelect.tsx` | **Deprecated** — superseded by ColorPicker. Token-only native `<select>` retained for transition; remove once nothing imports it. |
 | `inspector/shared/PanelRow.tsx` | Label-on-left layout helper for consistent row rhythm. |
-| `SaveLoadBar.tsx` | Top bar. Title, adapter switcher, theme switcher, Save/Load buttons. |
+| `SaveLoadBar.tsx` | Top bar. Title, undo/redo buttons (via `<UndoRedo>`), adapter switcher, theme switcher, Save/Load buttons. |
+| `UndoRedo.tsx` | Undo/redo toolbar buttons wired to `actions.history.undo/redo`. Subscribes to `query.history.canUndo/canRedo` for disabled state. Installs a global Cmd/Ctrl+Z, Cmd/Ctrl+Shift+Z keyboard handler (skipped when target is an editable element). |
 | `ThemeSwitcher.tsx` | Dropdown that flips `activeThemeId` in the editor store. |
 | `AdapterSwitcher.tsx` | Dropdown that flips `activeAdapterId` in the editor store. |
-| `Hydrator.tsx` | Renders `null`. On mount, restores tree + theme + adapter from `localStorage`. Module-level `hydrated` flag prevents re-restore on any future remount. |
+| `Hydrator.tsx` | Renders `null`. On mount, restores tree + theme + adapter from `localStorage`. Module-level `hydrated` flag prevents re-restore on any future remount. Load passes through `migrateDocument` so Phase-5 documents work after Phase 6's Card shape change. |
 
 ### Layer 2 — Canonical Component Registry (`src/registry/`)
 
@@ -100,15 +103,15 @@ A canonical may declare an explicit `applicablePanels: readonly PanelId[]` to op
 
 Most are **Pattern A** (one slot, named `'root'`). Two are **Pattern B** with named sub-slots:
 
-- **Card** — `styleSlots: ['root', 'header', 'body', 'footer']`, `isCanvas: true` (children drop into the body region).
-- **Tabs** — `styleSlots: ['root', 'tabs', 'content']`, props-driven (each tab's content is a string in the `tabs` prop array).
+- **Card** — `styleSlots: ['root', 'header', 'body', 'footer']`, `canvasSlots: ['header', 'body', 'footer']`. Outer Card is NOT a canvas; each named sub-slot is an independently droppable region. Phase 6 ships this multi-canvas model; old documents are migrated on load.
+- **Tabs** — `styleSlots: ['root', 'tabs', 'content']`, props-driven (each tab's content is a string in the `tabs` prop array). Multi-canvas Tabs (per-tab content as canvas) deferred to Phase 7 — the dynamic canvas count tied to `props.tabs.length` is a different complexity class.
 
 The Inspector's `SlotPicker` exposes the named slots as pills above the class-editing panels; the `activeSlot` mode routes every panel write into `style.classes[slot]` (or `style.responsive[bp][slot]`).
 
 | File | Role |
 |---|---|
-| `types.ts` | `CanonicalComponent`, `NodeStyle`, `CanonicalCategory`, `CanonicalId`, `PanelId`. |
-| `registry.ts` | `registerComponent`, `getComponent`, `getComponentByDisplayName`, `listComponents`, `getApplicablePanels`. In-memory map. |
+| `types.ts` | `CanonicalComponent` (with optional `canvasSlots` for Pattern B multi-canvas), `NodeStyle` (with optional `responsive` + `inline` + `responsiveInline`), `CanonicalCategory`, `CanonicalId`, `PanelId`. |
+| `registry.ts` | `registerComponent` / `registerCanonical` (aliases), `unregisterCanonical`, `getComponent`, `getComponentByDisplayName`, `listComponents`, `getApplicablePanels`, `getCanvasSlots`, `_markEditorMounted` (internal, called from Editor.tsx — post-mount registrations log a warning). In-memory map. |
 | `components/index.ts` | Barrel of side-effect imports. Adding a new canonical = one line here. |
 | `components/{box,text,button,input}.ts` | Phase 3 canonicals. Button explicitly omits the typography panel (shadcn's flex-centered primitive doesn't respect text utilities). |
 | `components/{heading,link,image,stack,divider,icon,badge,avatar,alert}.ts` | Phase 5 Pattern A breadth — content, navigation, media, display, and feedback canonicals. |
@@ -151,24 +154,25 @@ Adapters are registered by side-effect import. `registerAdapter` validates the m
 {
   canonicalId: string
   props: Record<string, unknown>            // user-set props
-  style: NodeStyle                          // { classes, responsive?, inline? }
-  children?: ReactNode                      // Craft-managed children if canvas
+  style: NodeStyle                          // { classes, responsive?, inline?, responsiveInline? }
+  children?: ReactNode                      // Craft-managed children if Pattern A canvas
   rootRef?: (el: HTMLElement | null) => void
 
   // Populated by CanonicalNode. Pattern A impls use the root-slot fields:
   className?: string                        // composed responsive class string for the root slot
   sx?: Record<string, unknown>              // MUI's sx prop (from adapter.classMap)
-  inlineStyle?: CSSProperties               // composed inline CSS for the root slot (base arbitrary values + classMap output)
+  inlineStyle?: CSSProperties               // composed inline CSS for the root slot (base only — responsive inline is class-promoted)
 
   // Pattern B impls read per-slot maps. Pattern A impls can ignore these.
   composedClasses?: Record<string, string>          // slot → composed responsive class string
-  composedInlineStyles?: Record<string, CSSProperties>  // slot → composed inline CSS
+  composedInlineStyles?: Record<string, CSSProperties>  // slot → composed inline CSS (base only)
+  slotChildren?: Record<string, ReactNode>          // Phase 6 — slot → <Element canvas/> wrapper for multi-canvas Pattern B
 }
 ```
 
 `rootRef` is how the editor wires Craft's `connect` / `drag` to the *actual rendered DOM*. Without it, nested drop-target hit-testing breaks (see [§ rootRef on the adapter contract](#rootref-on-the-adapter-contract)).
 
-**Pattern A impls consume `className` / `sx` / `inlineStyle`. Pattern B impls (Card, Tabs) consume `composedClasses[slot]` and `composedInlineStyles[slot]` per named slot.** Either way, impls must *never* read `style.classes.root` directly — `CanonicalNode` composes base + responsive breakpoint slices into the final class string AND merges arbitrary inline values from `style.inline[slot]` before passing to the impl. The root entries of `composedClasses` / `composedInlineStyles` always mirror `className` / `inlineStyle`, so reading either is correct for Pattern A. See [§ Adapter impls consume rendered className](#adapter-impls-consume-rendered-classname) and [§ Pattern B slot routing](#pattern-b-slot-routing).
+**Pattern A impls consume `className` / `sx` / `inlineStyle` and use the `children` prop.** Pattern B impls consume `composedClasses[slot]` / `composedInlineStyles[slot]` per region AND consume `slotChildren[slot]` (the `<Element canvas>` wrapper) for each canvas slot. Either way, impls must *never* read `style.classes.root` directly — `CanonicalNode` composes base + responsive breakpoint slices into the final class string AND merges arbitrary inline values from `style.inline[slot]` before passing to the impl. The root entries of `composedClasses` / `composedInlineStyles` always mirror `className` / `inlineStyle`. See [§ Adapter impls consume rendered className](#adapter-impls-consume-rendered-classname), [§ Pattern B slot routing](#pattern-b-slot-routing), and [§ Multi-canvas via canvasSlots](#multi-canvas-via-canvasslots).
 
 ### Layer 4 — Craft.js bridge (`src/craft/`)
 
@@ -176,7 +180,7 @@ Craft.js manages the document tree, selection set, drag/drop, and history. The b
 
 | File | Role |
 |---|---|
-| `CanonicalNode.tsx` | Generic React component. Given `canonicalId` + `nodeProps` + `style`, looks up the canonical def from the registry, the impl from the active adapter, and iterates `def.styleSlots`: for each slot, calls `composeResponsive(style, slot)` + `composeInlineStyle(style, slot)` and stores the result in `composedClasses[slot]` / `composedInlineStyles[slot]`. The root-slot results are also mirrored to `className` / `inlineStyle` for Pattern A backwards compat, with `adapter.classMap` applied at the root level. Attaches Craft's `connect/drag` via `rootRef`. Renders a labeled placeholder if the active adapter has no impl for the canonical. |
+| `CanonicalNode.tsx` | Generic React component. Given `canonicalId` + `nodeProps` + `style`, looks up the canonical def from the registry, the impl from the active adapter, and iterates `def.styleSlots`: for each slot, calls `composeResponsive(style, slot)` + `composeInlineStyle(style, slot)` and stores the result in `composedClasses[slot]` / `composedInlineStyles[slot]`. When `def.canvasSlots` is set, also generates one `<Element id={slot} is="div" canvas/>` wrapper per slot and passes them via `slotChildren`. When `style.responsiveInline` has entries for a slot, calls `composeResponsiveInline` to generate a hash-keyed CSS class with `@media` rules, appends the class to `composedClasses[slot]`, and renders an inline `<style>` block sibling to the impl. The root-slot results are mirrored to `className` / `inlineStyle` for Pattern A backwards compat. Attaches Craft's `connect/drag` via `rootRef`. Renders a labeled placeholder if the active adapter has no impl for the canonical. |
 | `resolver.tsx` | `buildResolver()` walks `listComponents()` and produces one Craft user-component per canonical id, each delegating to `CanonicalNode`. `getResolver()` is the cached singleton accessor. |
 
 ---
@@ -222,7 +226,8 @@ Single funnel for all node-style editing. **Anything that writes to `style.class
 |---|---|
 | `tw-classes.ts` | Typed unions + parser/serializer/merge for six slices: typography, layout, spacing, size, appearance (fill + border + radius), effects. |
 | `responsive.ts` | `composeResponsive(style, slot)` — merges `style.classes[slot]` (base) with each `style.responsive[bp][slot]`, prefixing breakpoint slices with `bp:`. Called by `CanonicalNode` before invoking `adapter.classMap`. |
-| `inline.ts` | `composeInlineStyle(style, slot)` — returns `style.inline[slot]` as `React.CSSProperties` for inline injection. Used by `CanonicalNode` to merge arbitrary user picks onto the impl's `inlineStyle` prop. |
+| `inline.ts` | `composeInlineStyle(style, slot)` — returns `style.inline[slot]` as `React.CSSProperties` for inline injection. Used by `CanonicalNode` to merge arbitrary user picks onto the impl's `inlineStyle` prop **when the slot has no responsive inline entries**. When responsive inline IS present, the base inline is promoted into the generated CSS class instead — see `responsive-inline.ts`. |
+| `responsive-inline.ts` | `composeResponsiveInline(style, slot)` — returns `{ className, css, consumesBaseInline }`. When the slot has any `style.responsiveInline[bp][slot]` entry, generates a hash-keyed CSS class (e.g., `ri-3jvn7`) covering BOTH base and responsive declarations via plain rules + `@media` blocks. CanonicalNode appends the class to the slot's composed string and renders the CSS inside an inline `<style>` sibling. Empty result when no responsive entry — caller keeps the inline-style fast path. |
 | `safelist.generated.css` | Generated output of `scripts/gen-safelist.ts`. Listed in `.gitignore`; regenerated on every `npm run dev` / `npm run build`. |
 
 Per-slice API contract (parametrized over slice type):
@@ -231,9 +236,31 @@ Per-slice API contract (parametrized over slice type):
 
 Slices are independent — `parseTypography` doesn't recognize `bg-card`, `parseSpacing` doesn't recognize `flex`. Each merge function passes classes from other slices through as `unknownClasses`. The inspector panels each operate on one slice; round-trips through multiple panels preserve every class.
 
-**Arbitrary CSS values** (hex colors, custom `13px` spacing) bypass the Tailwind class system entirely. The inspector writes them to `style.inline[slot][cssProperty]`; `CanonicalNode` merges that into `inlineStyle` for the impl. Inline-style storage limits arbitrary values to the **base** breakpoint — non-base picks would require a per-document safelist build pipeline (deferred). Token picks and arbitrary picks are mutually exclusive at the panel level: picking a token clears the matching inline property, and vice versa.
+**Arbitrary CSS values** (hex colors, custom `13px` spacing) bypass the Tailwind class system entirely. At the **base breakpoint**, the inspector writes them to `style.inline[slot][cssProperty]`; `CanonicalNode` emits them via the React `style` prop (fast path). At **non-base breakpoints**, writes go to `style.responsiveInline[bp][slot][cssProperty]`; `CanonicalNode` generates a per-node CSS class with `@media` rules covering base + responsive and renders the class via an inline `<style>` block. Either way, token picks and arbitrary picks are mutually exclusive at the panel level: picking a token clears the matching inline property, and vice versa.
 
 The **safelist** is the bridge between this single-funnel parser and Tailwind v4's JIT scanner. The inspector emits class strings via template literals (`text-${size}`, `bg-${color}`, …) that Tailwind can't see in source. `scripts/gen-safelist.ts` reads the slice arrays from `tw-classes.ts` (single source of truth) and emits `@source inline()` directives for every utility × every breakpoint prefix (~250 directives covering thousands of utility-prefix pairs). The result lands in `safelist.generated.css`, imported by `index.css`. Wired via `predev` / `prebuild` npm scripts.
+
+### Public SDK boundary (`src/sdk/`)
+
+Phase 6 carved out a public boundary for external authors. Anything in `src/sdk/*` is part of the contract; everything else is internal and can change without notice. The SDK is consumed via the `@design/sdk` path alias (wired in `tsconfig.json`, `tsconfig.app.json`, `vite.config.ts`).
+
+| File | Role |
+|---|---|
+| `index.ts` | Main entry — re-exports the full surface from the topical modules below. |
+| `adapter.ts` | `Adapter`, `AdapterRenderProps`, `ClassMapFn`, `ClassMapResult` types + `registerAdapter`, `listAdapters`, `useActiveAdapter`. |
+| `canonical.ts` | `CanonicalComponent`, `CanonicalCategory`, `CanonicalId`, `PanelId` types + `registerCanonical` / `registerComponent`, `unregisterCanonical`, `getComponent`, `getComponentByDisplayName`, `listComponents`, `getCanvasSlots`, `getApplicablePanels`. |
+| `style.ts` | `NodeStyle`. |
+| `hooks.ts` | `useNodeClasses` for panel authors. |
+| `panel.ts` | `PanelDefinition` type + `registerPanel`, `unregisterPanel`, `listPanels`, `getPanelsFor`. |
+| `boundary.test.ts` | Asserts every expected name is exported AND that internal symbols (`CanonicalNode`, resolver helpers) are NOT leaked. |
+
+Internal adapters (shadcn, MUI) dogfood the boundary — their `index.ts` files import `registerAdapter` from `@design/sdk`. The Chakra example at `examples/adapter-chakra/` imports ONLY via the SDK; that subtree is included in `tsconfig.app.json` so it type-checks but isn't bundled into `src/`.
+
+User-facing docs:
+- `docs/SDK_GUIDE.md` — full reference.
+- `docs/TUTORIAL_ADAPTER.md` — Chakra walkthrough.
+- `docs/TUTORIAL_CANONICAL.md` — adding a Stepper canonical.
+- `docs/TUTORIAL_PANEL.md` — adding a custom inspector panel.
 
 ### shadcn-managed code (`src/lib/`, `src/components/ui/`)
 
@@ -303,6 +330,8 @@ craftjs-design/
       tw-classes.test.ts        # vitest — all slices + cross-slice isolation
       responsive.ts             # composeResponsive(style, slot) → Tailwind-prefixed className
       inline.ts                 # composeInlineStyle(style, slot) → React.CSSProperties from style.inline
+      responsive-inline.ts      # composeResponsiveInline(style, slot) → CSS class + @media rules
+      responsive-inline.test.ts
       safelist.generated.css    # gitignored — emitted by scripts/gen-safelist.ts
     craft/
       CanonicalNode.tsx         # invokes composeResponsive + adapter.classMap; placeholder for missing impls
@@ -315,12 +344,22 @@ craftjs-design/
       ThemeSwitcher.tsx
       AdapterSwitcher.tsx
       Hydrator.tsx
+      UndoRedo.tsx                # toolbar buttons + Cmd+Z global handler
       inspector/
         ResponsiveBar.tsx
         SlotPicker.tsx              # Pattern B canonicals only (>1 slot)
+        ResizeToggle.tsx            # native CSS resize:both toggle for selected node
+        panel-registry.ts           # registerPanel / unregisterPanel / getPanelsFor
+        built-in-panels.ts          # side-effect — registers the 7 built-ins
         TypographyPanel.tsx, LayoutPanel.tsx, SpacingPanel.tsx
         SizePanel.tsx, AppearancePanel.tsx, EffectsPanel.tsx
-        PropsPanel.tsx
+        PropsPanel.tsx              # top-level Zod schema → form
+        fields/
+          PropField.tsx             # recursive Zod-kind dispatcher
+          ArrayField.tsx            # z.array(...) editor with add/remove/reorder
+          ObjectField.tsx           # z.object recursion for nested element schemas
+          defaults.ts               # defaultValueFor(schema) for seeded "Add" items
+          defaults.test.ts
         shared/
           useNodeClasses.ts       # reads/writes classes + inline; subscribes to activeBreakpoint
           ColorPicker.tsx         # tokens + react-colorful visual picker + hex input
@@ -332,10 +371,26 @@ craftjs-design/
           PanelRow.tsx
     persistence/
       schema.ts                 # Zod envelope around Craft's serialized JSON
-      storage.ts                # localStorage I/O
+      storage.ts                # localStorage I/O (loadDocument runs migrateDocument)
+      migrations.ts             # walk-the-tree migrations applied on load
+      migrations.test.ts
+    sdk/                          # Public boundary — see § SDK boundary
+      index.ts                  # re-export entry
+      adapter.ts, canonical.ts, style.ts, hooks.ts, panel.ts
+      boundary.test.ts          # asserts expected exports + no internal leakage
+  examples/                     # SDK consumer examples — sibling to src/
+    adapter-chakra/             # Phase 6 — Chakra adapter walkthrough
+      index.ts                  # registerAdapter via @design/sdk
+      lib.tsx                   # mock primitives (swap for @chakra-ui/react)
+      components/               # Box, Heading, Button, Stack, Card impls
+      README.md
   docs/
     ARCHITECTURE.md             # this file
     DEVELOPER_GUIDE.md
+    SDK_GUIDE.md                # public surface reference
+    TUTORIAL_ADAPTER.md         # walkthrough — building an adapter
+    TUTORIAL_CANONICAL.md       # walkthrough — adding a canonical
+    TUTORIAL_PANEL.md           # walkthrough — adding an inspector panel
     plans/
       *.md                      # historical/phased implementation plans
 ```
@@ -552,6 +607,89 @@ The Toolbox is more than a flat list of components. It's the user's primary inde
 
 **Persistence**: both favorites and recents persist to `localStorage['craftjs-design.toolbox']` — a *separate* key from the document envelope (`craftjs-design:doc:v1`). Toolbox preferences are user-level; they survive document switches and aren't part of the saved document.
 
+### <a id="multi-canvas-via-canvasslots"></a>Multi-canvas Pattern B via `canvasSlots`
+
+The Container Pattern decision (above) describes Pattern A — outer node is the single canvas — and earlier reserved Pattern B for genuine composites. Phase 6 ships Pattern B for Card.
+
+The contract: a canonical declares `canvasSlots: readonly string[]`. When set, `CanonicalNode` generates one `<Element id={slot} is="div" canvas/>` wrapper per slot and passes the wrappers via `slotChildren: Record<string, ReactNode>`. Each wrapper becomes a linked Craft child node — its own drop zone with its own subtree. The outer canonical node is NOT a canvas (declaring `isCanvas: false`); declaring both would create competing drop targets and break hit-testing.
+
+The adapter impl places each wrapper inside its corresponding DOM region:
+
+```tsx
+function ShadcnCard({ slotChildren = {}, composedClasses = {} }: AdapterRenderProps) {
+  return (
+    <Card className={composedClasses.root}>
+      <CardHeader className={composedClasses.header}>{slotChildren.header}</CardHeader>
+      <CardContent className={composedClasses.body}>{slotChildren.body}</CardContent>
+      <CardFooter className={composedClasses.footer}>{slotChildren.footer}</CardFooter>
+    </Card>
+  )
+}
+```
+
+Empty slot wrappers are invisible by default (zero height when their `<Element>`'s linked node has no children). The `.canvas-slot` class on each wrapper + `:empty` CSS in `src/index.css` give them a min-height + a dashed outline + a "Drop here" hint when empty. Disappears the moment the slot has children.
+
+`getCanvasSlots(def)` is the single resolution function:
+- Explicit `canvasSlots: [...]` → Pattern B multi-canvas.
+- `canvasSlots` unset, `isCanvas: true` → Pattern A (legacy single canvas via `['root']`).
+- `canvasSlots` unset, `isCanvas: false` → no canvas (leaf).
+
+Tabs stays props-driven in Phase 6 — its canvas count varies with `props.tabs.length`, which is a different complexity class from Card's fixed three slots. Phase 7 will revisit.
+
+### <a id="responsive-arbitrary-via-runtime-style-injection"></a>Responsive arbitrary inline via runtime `<style>` injection
+
+Phase 4.5 limited arbitrary CSS values (hex colors, custom `13px` spacing) to the base breakpoint because the inline-style HTML attribute can't carry `@media` queries. Phase 6 lifts the limit using runtime CSS injection rather than a Vite-time safelist.
+
+For each slot that has at least one entry in `style.responsiveInline[bp][slot]`, `CanonicalNode`:
+
+1. Calls `composeResponsiveInline(style, slot)`, which content-hashes the slot's combined inline (base + responsive) into a stable class id like `ri-3jvn7`.
+2. Generates CSS rules — base declarations + one `@media (min-width: …)` block per breakpoint.
+3. Appends the class id to `composedClasses[slot]`.
+4. Emits the CSS inside an inline `<style>` element rendered as a sibling of the impl.
+5. **Skips** `composedInlineStyles[slot]` for that slot — base inline now lives inside the class so the inline-style attribute's higher specificity doesn't beat the `@media` class rule.
+
+The content-hash means two nodes with identical responsive styling share the same class id; the browser dedups identical rules across multiple `<style>` tags effectively. No collector, no coordination, no flash-of-unstyled-content.
+
+Compared to a Vite-time safelist this approach trades a small per-node `<style>` cost for simplicity. The full Vite safelist option was kept on the table but not pulled — runtime injection is sufficient for current document sizes.
+
+### <a id="sdk-boundary"></a>SDK boundary — public surface in `src/sdk/`
+
+Phase 6 carved out `src/sdk/` as the public boundary for adapter / canonical / panel authors. Two motivations:
+
+1. **Stability.** Internal types in `src/adapters/types.ts`, `src/registry/types.ts`, etc. evolve as the editor's internals shift. A pinned public surface insulates SDK consumers from those moves.
+2. **Discoverability.** A single import path (`@design/sdk`) is documentable in a way "import from this file or that file deep inside the project" is not.
+
+The boundary is **mostly social** — the lint rule (when added) catches accidental cross-boundary imports in `examples/`, the boundary test catches accidental export removal, and ongoing review catches "would an SDK consumer reach for this?" That triad together is enough; full per-package separation would slow internal refactors without proportional benefit.
+
+The path alias `@design/sdk` is wired in three places (must stay in sync):
+- `tsconfig.json` (root) — for tooling that reads the root config (shadcn CLI, etc.).
+- `tsconfig.app.json` — for `tsc -b`.
+- `vite.config.ts` — for runtime resolution.
+
+Internal adapters dogfood the boundary — `src/adapters/{shadcn,mui}/index.ts` import `registerAdapter` from `@design/sdk`. The Chakra example at `examples/adapter-chakra/` imports ONLY from the SDK, proving an external author can build an adapter without touching internal modules.
+
+### <a id="panel-registry"></a>Pluggable inspector panels
+
+Phase 6 replaced the Inspector's hardcoded `panels.includes('layout') && <LayoutPanel/>` cascade with a panel registry. `PanelDefinition` describes a panel:
+
+```ts
+interface PanelDefinition {
+  id: string                                    // 'layout' | 'spacing' | ... | custom
+  displayName: string
+  order: number                                 // sort key; built-ins use 10–70
+  applicableTo: (def: CanonicalComponent) => boolean
+  component: ComponentType<{ nodeId: string; slot: string }>
+}
+```
+
+The 7 built-ins (Layout, Size, Spacing, Typography, Appearance, Effects, Properties) register themselves at module load via `src/editor/inspector/built-in-panels.ts`. External panels register the same way via `registerPanel` from `@design/sdk`.
+
+Resolution (`getPanelsFor(def)`):
+1. If `def.applicablePanels` is set, that's a whitelist — only registered panels whose id appears in the list render. Preserves the legacy semantics where Button explicitly excludes typography.
+2. Otherwise, each panel's `applicableTo(def)` predicate decides.
+
+Inspector iterates the resolved list, sorts by `order`, and renders each via `<panel.component nodeId={...} slot={activeSlot} />` wrapped in a `CollapsibleSection`. The PropsPanel passes `slot` but ignores it (it edits canonical props, not slot classes).
+
 ### Form components are non-interactive in editor mode
 
 Select, Checkbox, Radio, Switch, and Textarea would be unusable in the editor if they responded to clicks: every click on a checkbox during *editing* would toggle the prop's stored value, and the user can't actually edit the prop visibly. The adapter impls render them with `onChange` / `onCheckedChange` / `onValueChange` set to no-ops (`() => {}`), and Textarea uses native `readOnly`. The canonical's stored `checked` / `value` / `defaultValue` props drive what's shown; the user edits them via PropsPanel.
@@ -709,6 +847,8 @@ Stored at `localStorage['craftjs-design:doc:v1']`:
 The `:v1` suffix on the storage key reserves namespace for a future v2 envelope to coexist during migration.
 
 The `activeBreakpoint` (which breakpoint the user is currently editing) is **not** persisted — it's a UI mode, not a document property. It resets to `'base'` on every reload.
+
+**Migrations (`src/persistence/migrations.ts`).** `loadDocument` pipes the deserialized envelope through `migrateDocument` before handing back. Each migration step walks the opaque Craft JSON and mutates node shapes in place. Steps are idempotent; running them on an already-current document is a no-op. Phase 6 ships one step: stripping the Phase-5 Card prop set (`title` / `description` / `showFooter` / `footerText`) and flipping persisted `isCanvas: true` on Card nodes to `false` so the new multi-canvas model doesn't compete with the outer Card for drops. Add a new migration step when bumping the envelope shape OR when changing a canonical's persisted shape in a way the current code can't read.
 
 ---
 

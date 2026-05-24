@@ -6,7 +6,8 @@
   ],
   "compilerOptions": {
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@design/sdk": ["./src/sdk/index.ts"]
     }
   }
 }

@@ -1,4 +1,4 @@
-import { registerAdapter } from '../AdapterContext'
+import { registerAdapter } from '@design/sdk'
 import { ShadcnAlert } from './components/Alert'
 import { ShadcnAvatar } from './components/Avatar'
 import { ShadcnBadge } from './components/Badge'

@@ -31,17 +31,12 @@ function isSizeToken(v: string): v is SizeValue {
 }
 
 export function SizePanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
-  const { classString, inlineStyle, writeClasses, writeInline, activeBreakpoint } =
+  const { classString, inlineStyle, writeClasses, writeInline } =
     useNodeClasses(nodeId, slot)
   const { slice } = parseSize(classString)
   const update = (patch: Partial<SizeSlice>) => {
     writeClasses(mergeSize(classString, patch))
   }
-
-  const hexHint =
-    activeBreakpoint !== 'base'
-      ? 'Arbitrary values supported at base breakpoint only.'
-      : undefined
 
   return (
     <section className="space-y-2">
@@ -72,7 +67,6 @@ export function SizePanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: st
               value={current}
               tokens={SIZE_VALUES}
               onChange={onChange}
-              arbitraryDisabledHint={hexHint}
             />
           </PanelRow>
         )

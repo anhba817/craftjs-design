@@ -26,7 +26,17 @@ export function ShadcnSelect({
   }
   return (
     <span ref={rootRef} style={{ display: 'contents' }}>
-      <Select value={defaultValue} disabled={disabled} onValueChange={() => {}}>
+      {/* Force `open={false}` in editor mode so clicking the trigger doesn't
+          pop open the Radix dropdown — the dropdown would yank focus and
+          interrupt the user's editing flow. The trigger is still visually
+          present and Craft's connectors still see clicks for selection. */}
+      <Select
+        value={defaultValue}
+        disabled={disabled}
+        open={false}
+        onOpenChange={() => {}}
+        onValueChange={() => {}}
+      >
         <SelectTrigger className={cn(className)} style={inlineStyle} aria-label={label}>
           <SelectValue placeholder={label} />
         </SelectTrigger>

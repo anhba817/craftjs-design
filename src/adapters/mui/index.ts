@@ -1,4 +1,4 @@
-import { registerAdapter } from '../AdapterContext'
+import { registerAdapter } from '@design/sdk'
 import { MuiWrapper } from './Wrapper'
 import { MaterialAlert } from './components/Alert'
 import { MaterialAvatar } from './components/Avatar'

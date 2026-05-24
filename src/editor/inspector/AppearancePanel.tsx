@@ -24,7 +24,7 @@ const BORDER_WIDTH_OPTIONS = ['default', ...BORDER_WIDTHS] as const
 const RADIUS_OPTIONS = ['default', ...RADII] as const
 
 export function AppearancePanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
-  const { classString, inlineStyle, writeClasses, writeInline, activeBreakpoint } =
+  const { classString, inlineStyle, writeClasses, writeInline } =
     useNodeClasses(nodeId, slot)
   const { slice } = parseAppearance(classString)
   const update = (patch: Partial<AppearanceSlice>) => {
@@ -60,15 +60,10 @@ export function AppearancePanel({ nodeId, slot = 'root' }: { nodeId: string; slo
     }
   }
 
-  const hexHint =
-    activeBreakpoint !== 'base'
-      ? 'Arbitrary values supported at base breakpoint only.'
-      : undefined
-
   return (
     <section className="space-y-2">
       <PanelRow label="Fill">
-        <ColorPicker value={fillValue} onChange={setFill} hexDisabledHint={hexHint} />
+        <ColorPicker value={fillValue} onChange={setFill} />
       </PanelRow>
       <PanelRow label="Border">
         <ValueSelect
@@ -85,17 +80,12 @@ export function AppearancePanel({ nodeId, slot = 'root' }: { nodeId: string; slo
         />
       </PanelRow>
       <PanelRow label="B Color">
-        <ColorPicker
-          value={borderColorValue}
-          onChange={setBorderColor}
-          hexDisabledHint={hexHint}
-        />
+        <ColorPicker value={borderColorValue} onChange={setBorderColor} />
       </PanelRow>
       <PanelRow label="Radius">
         <NumericInput
           value={inlineStyle.borderRadius ?? slice.rounded ?? ''}
           tokens={RADIUS_OPTIONS}
-          arbitraryDisabledHint={hexHint}
           onChange={(next) => {
             if (next === '') {
               update({ rounded: undefined })

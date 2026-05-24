@@ -4,19 +4,16 @@ import CardContent from '@mui/material/CardContent'
 import CardHeader from '@mui/material/CardHeader'
 import type { AdapterRenderProps } from '../../types'
 
+// MUI's CardHeader's `title` / `subheader` props expect strings — for the
+// multi-canvas model we ignore them and render dropped children inside the
+// header region directly. MUI's CardHeader does accept arbitrary children (it
+// renders them after the title/subheader area), so this works visually.
 export function MaterialCard({
-  props,
-  children,
   rootRef,
   composedClasses = {},
   composedInlineStyles = {},
+  slotChildren = {},
 }: AdapterRenderProps) {
-  const { title, description, showFooter, footerText } = props as {
-    title: string
-    description: string
-    showFooter: boolean
-    footerText: string
-  }
   return (
     <MuiCard
       ref={rootRef as never}
@@ -24,25 +21,22 @@ export function MaterialCard({
       style={composedInlineStyles.root}
     >
       <CardHeader
-        title={title}
-        subheader={description || undefined}
         className={composedClasses.header}
         style={composedInlineStyles.header}
+        title={slotChildren.header}
       />
       <CardContent
         className={composedClasses.body}
         style={composedInlineStyles.body}
       >
-        {children}
+        {slotChildren.body}
       </CardContent>
-      {showFooter && (
-        <CardActions
-          className={composedClasses.footer}
-          style={composedInlineStyles.footer}
-        >
-          {footerText}
-        </CardActions>
-      )}
+      <CardActions
+        className={composedClasses.footer}
+        style={composedInlineStyles.footer}
+      >
+        {slotChildren.footer}
+      </CardActions>
     </MuiCard>
   )
 }

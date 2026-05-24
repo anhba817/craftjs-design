@@ -19,7 +19,7 @@ import { ValueSelect } from './shared/ValueSelect'
 import { useNodeClasses } from './shared/useNodeClasses'
 
 export function TypographyPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
-  const { classString, inlineStyle, writeClasses, writeInline, activeBreakpoint } =
+  const { classString, inlineStyle, writeClasses, writeInline } =
     useNodeClasses(nodeId, slot)
   const { slice } = parseTypography(classString)
 
@@ -70,15 +70,7 @@ export function TypographyPanel({ nodeId, slot = 'root' }: { nodeId: string; slo
         />
       </PanelRow>
       <PanelRow label="Color">
-        <ColorPicker
-          value={colorValue}
-          onChange={setColor}
-          hexDisabledHint={
-            activeBreakpoint !== 'base'
-              ? 'Arbitrary values supported at base breakpoint only.'
-              : undefined
-          }
-        />
+        <ColorPicker value={colorValue} onChange={setColor} />
       </PanelRow>
     </section>
   )

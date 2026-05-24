@@ -1,19 +1,11 @@
 import { useEditor } from '@craftjs/core'
 import { useEffect, useState } from 'react'
-import {
-  getApplicablePanels,
-  getComponentByDisplayName,
-} from '@/registry/registry'
-import { AppearancePanel } from './inspector/AppearancePanel'
-import { EffectsPanel } from './inspector/EffectsPanel'
-import { LayoutPanel } from './inspector/LayoutPanel'
-import { PropsPanel } from './inspector/PropsPanel'
+import { getComponentByDisplayName } from '@/registry/registry'
+import { getPanelsFor } from './inspector/panel-registry'
+import { ResizeToggle } from './inspector/ResizeToggle'
 import { ResponsiveBar } from './inspector/ResponsiveBar'
 import { SlotPicker } from './inspector/SlotPicker'
 import { CollapsibleSection } from './inspector/shared/CollapsibleSection'
-import { SizePanel } from './inspector/SizePanel'
-import { SpacingPanel } from './inspector/SpacingPanel'
-import { TypographyPanel } from './inspector/TypographyPanel'
 
 export function Inspector() {
   const { selected, isRoot, actions } = useEditor((state, query) => {
@@ -30,7 +22,10 @@ export function Inspector() {
   })
 
   const def = selected ? getComponentByDisplayName(selected.displayName) : null
-  const panels = def ? getApplicablePanels(def) : []
+  // Phase 6 — panels come from the inspector panel registry. Built-ins
+  // register themselves via src/editor/inspector/built-in-panels.ts; SDK
+  // consumers can registerPanel() to add custom ones.
+  const panels = def ? getPanelsFor(def) : []
   const slots = def?.styleSlots ?? ['root']
 
   // Slot state is per-selection — resets to the first slot when the user
@@ -78,45 +73,15 @@ export function Inspector() {
                   Delete
                 </button>
               )}
+              <ResizeToggle nodeId={selected.id} />
             </div>
 
             <div className="mt-4 space-y-2 border-t border-gray-200 pt-3">
-              {panels.includes('layout') && (
-                <CollapsibleSection title="Layout">
-                  <LayoutPanel nodeId={selected.id} slot={slot} />
+              {panels.map((panel) => (
+                <CollapsibleSection key={panel.id} title={panel.displayName}>
+                  <panel.component nodeId={selected.id} slot={slot} />
                 </CollapsibleSection>
-              )}
-              {panels.includes('size') && (
-                <CollapsibleSection title="Size">
-                  <SizePanel nodeId={selected.id} slot={slot} />
-                </CollapsibleSection>
-              )}
-              {panels.includes('spacing') && (
-                <CollapsibleSection title="Spacing">
-                  <SpacingPanel nodeId={selected.id} slot={slot} />
-                </CollapsibleSection>
-              )}
-              {panels.includes('typography') && (
-                <CollapsibleSection title="Typography">
-                  <TypographyPanel nodeId={selected.id} slot={slot} />
-                </CollapsibleSection>
-              )}
-              {panels.includes('appearance') && (
-                <CollapsibleSection title="Appearance">
-                  <AppearancePanel nodeId={selected.id} slot={slot} />
-                </CollapsibleSection>
-              )}
-              {panels.includes('effects') && (
-                <CollapsibleSection title="Effects">
-                  <EffectsPanel nodeId={selected.id} slot={slot} />
-                </CollapsibleSection>
-              )}
-              {panels.includes('componentProps') && (
-                <CollapsibleSection title="Properties">
-                  {/* PropsPanel edits canonical props, not slot classes — slot doesn't apply. */}
-                  <PropsPanel nodeId={selected.id} />
-                </CollapsibleSection>
-              )}
+              ))}
             </div>
           </div>
         </>

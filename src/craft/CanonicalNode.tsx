@@ -1,11 +1,12 @@
-import { useNode } from '@craftjs/core'
+import { Element, useNode } from '@craftjs/core'
 import type { CSSProperties, ReactNode } from 'react'
 import { useActiveAdapter } from '../adapters/AdapterContext'
 import type { ClassMapResult } from '../adapters/types'
-import { getComponent } from '../registry/registry'
+import { getCanvasSlots, getComponent } from '../registry/registry'
 import type { NodeStyle } from '../registry/types'
 import { composeInlineStyle } from '../style/inline'
 import { composeResponsive } from '../style/responsive'
+import { composeResponsiveInline } from '../style/responsive-inline'
 
 export interface CanonicalNodeProps {
   canonicalId: string
@@ -59,11 +60,25 @@ export function CanonicalNode({
   // impls written before Pattern B existed.
   const composedClasses: Record<string, string> = {}
   const composedInlineStyles: Record<string, CSSProperties> = {}
+  const responsiveInlineCSSParts: string[] = []
   for (const slot of def.styleSlots) {
-    composedClasses[slot] = composeResponsive(style, slot)
-    const inline = composeInlineStyle(style, slot)
-    if (inline) composedInlineStyles[slot] = inline
+    const baseClasses = composeResponsive(style, slot)
+    // Phase 6: when the slot has any responsiveInline entry, ALL of its inline
+    // (base + responsive) gets promoted to a generated CSS class. The base
+    // moves out of the inline-style attribute so its specificity doesn't beat
+    // the @media rule. When there's no responsive entry, the inline-style
+    // attribute fast path stays in place.
+    const ri = composeResponsiveInline(style, slot)
+    composedClasses[slot] = ri.className
+      ? `${baseClasses} ${ri.className}`.trim()
+      : baseClasses
+    if (ri.css) responsiveInlineCSSParts.push(ri.css)
+    if (!ri.consumesBaseInline) {
+      const inline = composeInlineStyle(style, slot)
+      if (inline) composedInlineStyles[slot] = inline
+    }
   }
+  const responsiveInlineCSS = responsiveInlineCSSParts.join('\n')
 
   // Root-slot classMap output. Adapters with classMap receive the composed
   // root string; non-root slot composition isn't passed through classMap
@@ -75,25 +90,64 @@ export function CanonicalNode({
     : { className: rootClassString }
 
   // Merge classMap's inlineStyle with user's arbitrary root-slot inline.
-  // User picks win.
+  // User picks win. composedInlineStyles.root may be undefined when responsive
+  // inline promoted the slot to the CSS-class path.
   const rootInline = composedInlineStyles.root
   const inlineStyle = rootInline
     ? { ...styleProps.inlineStyle, ...rootInline }
     : styleProps.inlineStyle
 
+  // Pattern B multi-canvas: when the canonical declares an explicit
+  // `canvasSlots` list (e.g. Card with header/body/footer), generate one
+  // <Element canvas id={slot}/> wrapper per slot. Each wrapper becomes a
+  // linked Craft node — its own drop zone with its own subtree. The adapter
+  // impl receives the wrappers via `slotChildren` and places each one inside
+  // the corresponding DOM region.
+  //
+  // Pattern A canvases (the legacy isCanvas:true → ['root'] case) don't get
+  // slotChildren — they keep using the `children` prop populated by Craft
+  // through React. That path is unchanged.
+  const canvasSlots = getCanvasSlots(def)
+  const usesSlotChildren = def.canvasSlots !== undefined
+  // Each Element wrapper renders as a plain <div> in the DOM (because `is="div"`).
+  // We attach `canvas-slot` so global CSS in index.css can:
+  //  - give every slot a sensible min-height so empty slots are still hit-test
+  //    targets (shadcn's CardHeader / CardContent only have horizontal padding,
+  //    so without this they collapse to 0px and can't accept drops);
+  //  - render a "Drop here" hint via `:empty` for unfilled slots, so users see
+  //    where to drop.
+  const slotChildren: Record<string, ReactNode> | undefined = usesSlotChildren
+    ? Object.fromEntries(
+        canvasSlots.map((slot) => [
+          slot,
+          <Element
+            key={slot}
+            id={slot}
+            is="div"
+            canvas
+            className="canvas-slot"
+          />,
+        ]),
+      )
+    : undefined
+
   return (
-    <Impl
-      canonicalId={canonicalId}
-      props={nodeProps}
-      style={style}
-      rootRef={attachRef}
-      className={styleProps.className}
-      sx={styleProps.sx}
-      inlineStyle={inlineStyle}
-      composedClasses={composedClasses}
-      composedInlineStyles={composedInlineStyles}
-    >
-      {children}
-    </Impl>
+    <>
+      {responsiveInlineCSS && <style>{responsiveInlineCSS}</style>}
+      <Impl
+        canonicalId={canonicalId}
+        props={nodeProps}
+        style={style}
+        rootRef={attachRef}
+        className={styleProps.className}
+        sx={styleProps.sx}
+        inlineStyle={inlineStyle}
+        composedClasses={composedClasses}
+        composedInlineStyles={composedInlineStyles}
+        slotChildren={slotChildren}
+      >
+        {children}
+      </Impl>
+    </>
   )
 }

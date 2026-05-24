@@ -2,6 +2,8 @@
 
 Task-oriented guide for working in this codebase. For the why-and-how-it's-structured, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
+**For SDK consumers** (writing adapters, canonicals, or panels for the editor without modifying internals), see [`SDK_GUIDE.md`](./SDK_GUIDE.md) + the three tutorials. This guide covers in-tree contribution.
+
 ---
 
 ## Getting started
@@ -60,7 +62,7 @@ Canonicals are the abstract palette. Each one has a stable id, a Zod prop schema
 
    ```ts
    import { z } from 'zod'
-   import { registerComponent } from '../registry'
+   import { registerCanonical } from '../registry'   // or 'registerComponent' — they're aliases
 
    export const tooltipPropsSchema = z.object({
      label: z.string(),
@@ -68,7 +70,7 @@ Canonicals are the abstract palette. Each one has a stable id, a Zod prop schema
    })
    export type TooltipProps = z.infer<typeof tooltipPropsSchema>
 
-   registerComponent<TooltipProps>({
+   registerCanonical<TooltipProps>({
      id: 'tooltip',                      // stable — persisted in documents
      category: 'feedback',
      displayName: 'Tooltip',             // shown in Toolbox; persisted as Craft resolver key
@@ -97,12 +99,14 @@ The toolbox picks it up automatically (iterates `listComponents()` and groups by
 
 ### Adding a Pattern B canonical (multiple style slots)
 
-Use this pattern when a canonical has visually-distinct regions the user should style independently — Card has `header`/`body`/`footer`, Tabs has `tabs`/`content`. The mechanics are an extension of Pattern A: declare multiple `styleSlots`, and the inspector's `SlotPicker` exposes them as pills above the class-editing panels.
+Use this pattern when a canonical has visually-distinct regions the user should style independently — Card has `header`/`body`/`footer`, Tabs has `tabs`/`content`. Declare multiple `styleSlots`; the inspector's `SlotPicker` exposes them as pills above the class-editing panels.
+
+For canonicals where each region should *also* be its own drop zone (Card's header / body / footer all accept dropped children independently), declare a matching `canvasSlots` — see "Adding a multi-canvas Pattern B canonical" below. For canonicals where regions are styling-only (no per-region drops), stop here.
 
 1. Declare the slots in the canonical:
 
    ```ts
-   registerComponent<DialogProps>({
+   registerCanonical<DialogProps>({
      id: 'dialog',
      // ...
      styleSlots: ['root', 'header', 'body', 'actions'],   // 'root' must be first
@@ -143,7 +147,52 @@ Use this pattern when a canonical has visually-distinct regions the user should 
 
 3. No changes needed in Inspector or panels — `SlotPicker` shows automatically when `styleSlots.length > 1`, and every class-editing panel already accepts a `slot` prop.
 
-**Limitation (Phase 5):** Pattern B is *styling-only multi-slot*. The Craft canvas (drop target) is still single per node — Card body is the canvas; header and footer can't accept dropped children. True multi-canvas Pattern B is a Phase 6 item.
+### Adding a multi-canvas Pattern B canonical
+
+When each named region needs to be its own independently-droppable canvas (Card with header / body / footer drop zones), add `canvasSlots`:
+
+1. Declare both `styleSlots` and `canvasSlots`. The outer canonical's `isCanvas` MUST be `false` — declaring both `isCanvas: true` AND `canvasSlots` would create competing drop targets and break hit-testing.
+
+   ```ts
+   registerCanonical({
+     id: 'splitter',
+     category: 'layout',
+     // ...
+     isCanvas: false,                              // outer is just a wrapper
+     styleSlots: ['root', 'left', 'right'],
+     canvasSlots: ['left', 'right'],               // both panels accept drops
+     defaults: {
+       props: {},
+       style: { classes: { root: '', left: '', right: '' } },
+     },
+   })
+   ```
+
+2. The adapter impl receives `slotChildren: Record<slot, ReactNode>` — each entry is a `<Element canvas/>` wrapper that becomes its own linked Craft child node:
+
+   ```tsx
+   export function ShadcnSplitter({
+     rootRef,
+     composedClasses = {},
+     composedInlineStyles = {},
+     slotChildren = {},
+   }: AdapterRenderProps) {
+     return (
+       <div ref={rootRef} className={cn('grid grid-cols-2', composedClasses.root)}>
+         <div className={cn(composedClasses.left)} style={composedInlineStyles.left}>
+           {slotChildren.left}
+         </div>
+         <div className={cn(composedClasses.right)} style={composedInlineStyles.right}>
+           {slotChildren.right}
+         </div>
+       </div>
+     )
+   }
+   ```
+
+3. Each `slotChildren[slot]` renders as a `<div class="canvas-slot">…</div>`. The `.canvas-slot` class in `src/index.css` gives empty slots a min-height + a dashed outline + a "Drop here" hint via `:empty` — disappears the moment the slot has children.
+
+4. **Document migrations.** Changing a canonical from props-driven to multi-canvas (or back) is a persisted-shape change. Existing saved documents have the old shape baked in. Add a migration step in `src/persistence/migrations.ts` that walks the Craft tree and rewrites stale Card / Splitter / etc. nodes. The Phase-6 Card migration is the reference example — strip the dropped string props AND flip persisted `isCanvas: true` to `false`.
 
 ### Adding an adapter
 
@@ -235,7 +284,7 @@ The next render of any node with that canonical id picks up the new impl. No fur
 
 ### Adding an inspector panel
 
-The inspector mounts per-node sub-panels filtered by each canonical's `applicablePanels`. Seven panels ship today (Typography, Layout, Spacing, Size, Appearance, Effects, Props). To add an eighth — say, a custom "Animation" panel — follow this template, copying from `TypographyPanel.tsx` as the canonical example.
+The Inspector reads panels from a pluggable registry — built-ins and custom panels register the same way. Seven panels ship today (Layout, Size, Spacing, Typography, Appearance, Effects, Properties); they register themselves at module load via `src/editor/inspector/built-in-panels.ts`. To add an eighth — say, a custom "Animation" panel — follow this template, copying from `TypographyPanel.tsx` as the canonical example.
 
 1. **Add a slice to `src/style/tw-classes.ts`** if your panel edits Tailwind classes. Each slice is a self-contained block: const arrays + slice interface + regex patterns + `parse*` / `serialize*` / `merge*` trio. Slices must be independent — `parseX` should pass through every class that's not in X's prefix family as `unknownClasses`. See the typography block as a template.
 
@@ -296,28 +345,24 @@ The inspector mounts per-node sub-panels filtered by each canonical's `applicabl
 
    **Read the live class string at write time** by passing the current `classString` into `merge*` — that's the closure-captured value, refreshed on every render via `useNodeClasses`. Don't call `parseAnimation` separately just before writing; the merge function already does it.
 
-5. **If the panel supports arbitrary values via ColorPicker/NumericInput**, follow the token-vs-arbitrary mutual-exclusion pattern (see Conventions). Disable arbitrary entry at non-base breakpoints via `arbitraryDisabledHint`:
+5. **If the panel supports arbitrary values via ColorPicker/NumericInput**, follow the token-vs-arbitrary mutual-exclusion pattern (see Conventions). Phase 6 lifted the base-only restriction — arbitrary values work at every breakpoint via `style.responsiveInline`. `useNodeClasses` routes the writes automatically based on `activeBreakpoint`; no panel-side gating needed.
 
-   ```tsx
-   const hexHint =
-     activeBreakpoint !== 'base'
-       ? 'Arbitrary values supported at base breakpoint only.'
-       : undefined
+6. **Register the panel via `registerPanel`.** Phase 6 replaced the Inspector's hardcoded panel cascade with a registry. Add a side-effect import for your panel's registration in `App.tsx` (or in `src/editor/inspector/built-in-panels.ts` if it's a built-in):
 
-   <ColorPicker value={color} onChange={setColor} hexDisabledHint={hexHint} />
-   <NumericInput value={width} tokens={SIZE_VALUES} onChange={setWidth}
-                 arbitraryDisabledHint={hexHint} />
+   ```ts
+   import { registerPanel } from '@design/sdk'   // or '../inspector/panel-registry' internally
+   import { AnimationPanel } from './AnimationPanel'
+
+   registerPanel({
+     id: 'animation',
+     displayName: 'Animation',
+     order: 80,                                  // after every built-in (10–70)
+     applicableTo: () => true,                   // or narrow by category / isCanvas
+     component: AnimationPanel,
+   })
    ```
 
-6. **Update `Inspector.tsx`** to mount the panel conditionally wrapped in a `CollapsibleSection`. Pass `slot={activeSlot}` so the panel works for both Pattern A and Pattern B canonicals:
-
-   ```tsx
-   {panels.includes('animation') && (
-     <CollapsibleSection title="Animation">
-       <AnimationPanel nodeId={selected.id} slot={activeSlot} />
-     </CollapsibleSection>
-   )}
-   ```
+   Resolution rules: if a canonical declares `applicablePanels`, that list is a whitelist — only panels with those ids render. Otherwise each panel's `applicableTo(def)` predicate decides. Canonicals with explicit `applicablePanels` (Button, the 5 form canonicals) won't show your panel unless they add `'animation'` to their list.
 
 7. **Add the slice's utilities to `scripts/gen-safelist.ts`** so Tailwind compiles them. The script reads slice arrays from `tw-classes.ts` — add `expand('animate-', ANIMATIONS)` and Tailwind will see every breakpoint-prefixed combination.
 
@@ -468,6 +513,38 @@ localStorage.removeItem('craftjs-design.toolbox')     // clear toolbox prefs (fa
 ```
 
 If you're adding a new piece of user-level UI state, follow the same pattern — its own localStorage key, read/written outside the document envelope. Don't accidentally stuff user preferences into the document.
+
+### The `@design/sdk` boundary
+
+Phase 6 carved out a public boundary at `src/sdk/`. Files under `src/sdk/` are the contract for external SDK consumers (adapters / canonicals / panels authored outside the editor's core). Internal code can import either way; new code outside `src/adapters/`, `src/registry/`, `src/editor/inspector/`, and `src/style/` should prefer the SDK path.
+
+```ts
+// ✅ Right — SDK consumers see clear, documented boundary
+import { registerAdapter, useNodeClasses } from '@design/sdk'
+import type { AdapterRenderProps } from '@design/sdk'
+
+// ❌ Wrong (for SDK consumers) — reaches into internals
+import { registerAdapter } from '../../src/adapters/AdapterContext'
+```
+
+Anything under `examples/` MUST import only from `@design/sdk`. That's the proof-of-boundary subtree — the Chakra example at `examples/adapter-chakra/` demonstrates the pattern.
+
+When adding a new public name (a new type or function intended for SDK consumers):
+1. Add the implementation in its natural internal location.
+2. Re-export it from the appropriate `src/sdk/*.ts` file.
+3. Add the name to `src/sdk/boundary.test.ts`'s `EXPECTED_FUNCTIONS` list (catches accidental future removal).
+4. Add JSDoc with a runnable usage example.
+
+### Responsive arbitrary inline works at every breakpoint
+
+Phase 6 lifted the Phase 4.5 base-only restriction. The data shape:
+
+- **Base** — `style.inline[slot][cssProp]` (unchanged).
+- **Non-base** — `style.responsiveInline[bp][slot][cssProp]` (new).
+
+`useNodeClasses` routes reads / writes between the two automatically based on `activeBreakpoint`. Panel code doesn't gate by breakpoint anymore — calling `writeInline(cssProperty, hexValue)` at the `md` breakpoint writes to `style.responsiveInline.md[slot][cssProperty]`. CanonicalNode generates a hash-keyed CSS class with `@media` rules covering all breakpoints + the base entry; the class is appended to the slot's composed className and the CSS is rendered inside an inline `<style>` block.
+
+**Don't read from `style.inline[slot]` directly** when authoring a panel — use `useNodeClasses(nodeId, slot).inlineStyle`. That returns the *active-breakpoint* slice. Direct reads give you the base slice regardless of where the user is currently editing.
 
 ### Form components are non-interactive in editor mode
 

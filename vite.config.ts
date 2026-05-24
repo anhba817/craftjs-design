@@ -9,6 +9,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@design/sdk': path.resolve(__dirname, './src/sdk/index.ts'),
     },
   },
 })

@@ -28,13 +28,9 @@ const HEX_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
 interface ColorPickerProps {
   value: ColorPickerValue
   onChange: (v: ColorPickerValue) => void
-  // If set, hex / visual picker inputs are disabled and this hint renders
-  // beneath the disabled section. Panels pass a message when
-  // activeBreakpoint !== 'base' (responsive arbitrary lands in Phase 5+).
-  hexDisabledHint?: string
 }
 
-export function ColorPicker({ value, onChange, hexDisabledHint }: ColorPickerProps) {
+export function ColorPicker({ value, onChange }: ColorPickerProps) {
   // Independent state for the visual picker and hex text input. Both sync to
   // the upstream `value` when it changes externally (token click, undo, etc.).
   // When the user drags the visual picker, every onChange fires a commit so
@@ -53,8 +49,6 @@ export function ColorPicker({ value, onChange, hexDisabledHint }: ColorPickerPro
       setHexInput(value.hex)
     }
   }, [value])
-
-  const hexDisabled = !!hexDisabledHint
 
   const swatchStyle =
     value.kind === 'token'
@@ -118,13 +112,7 @@ export function ColorPicker({ value, onChange, hexDisabledHint }: ColorPickerPro
             Clear color
           </button>
         </div>
-        <div
-          className={cn(
-            'space-y-2 border-t border-gray-200 pt-3',
-            hexDisabled && 'pointer-events-none opacity-60',
-          )}
-          aria-disabled={hexDisabled}
-        >
+        <div className="space-y-2 border-t border-gray-200 pt-3">
           <div className="text-xs font-medium text-gray-600">Custom color</div>
           {/* react-colorful renders its own saturation/lightness picker + hue
               slider with inlined styles. We constrain its width to match the
@@ -142,18 +130,14 @@ export function ColorPicker({ value, onChange, hexDisabledHint }: ColorPickerPro
           <input
             type="text"
             value={hexInput}
-            disabled={hexDisabled}
             onChange={(e) => setHexInput(e.target.value)}
             onBlur={commitHex}
             onKeyDown={(e) => {
               if (e.key === 'Enter') commitHex()
             }}
             placeholder="#fa8072"
-            className="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-gray-700 disabled:bg-gray-100"
+            className="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-gray-700"
           />
-          {hexDisabled && (
-            <p className="text-[10px] text-gray-500">{hexDisabledHint}</p>
-          )}
         </div>
       </PopoverContent>
     </Popover>
