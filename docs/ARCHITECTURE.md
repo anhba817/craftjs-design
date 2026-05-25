@@ -195,6 +195,30 @@ Craft.js manages the document tree, selection set, drag/drop, and history. The b
 
 Cross-cutting infrastructure that doesn't fit the four-layer model but supports it.
 
+### Error handling (`src/editor/errors/`)
+
+Two parallel surfaces, by failure-mode:
+
+- **`ErrorBoundary`** (`ErrorBoundary.tsx`) catches errors thrown during a
+  React render. Four boundary layers — top-shell (`App.tsx`), canvas,
+  toolbox, and per-panel (`Inspector.tsx`) — each with its own typed
+  fallback in `fallbacks.tsx`. Inner boundaries keep their layer alive
+  when sibling layers fail; the top-shell catches truly unrecoverable
+  cases.
+- **`useGlobalErrorHandler` + `AsyncErrorBanner`** (`asyncError.ts`,
+  `useGlobalErrorHandler.ts`, `AsyncErrorBanner.tsx`) catches what the
+  boundaries miss: errors thrown inside effects, event handlers, or
+  unhandled promise rejections (`window.error` /
+  `window.unhandledrejection`). One toast appears at bottom-right with
+  the message + a Dismiss button; the user keeps working. Critical
+  async failures (Hydrator deserialize) are designed to bubble through
+  the boundary instead, so this handles the long tail of non-fatal
+  issues.
+
+Normalisation lives in `asyncError.ts` — pure helpers (`normalizeErrorEvent`,
+`normalizeRejectionEvent`) that turn the browser event into a stable
+`AsyncErrorInfo` shape. Tested in isolation.
+
 ### Theme Layer (`src/themes/`)
 
 Themes are CSS-variable token packs scoped via `[data-theme]` selectors. Registered the same way canonicals and adapters are.

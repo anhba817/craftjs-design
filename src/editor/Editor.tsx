@@ -6,6 +6,7 @@ import { _markEditorMounted, getComponent } from '../registry/registry'
 import { ThemeProvider } from '../themes/ThemeProvider'
 import { CanvasKeyboardRegion } from './canvas/CanvasKeyboardRegion'
 import { ResizeOverlay } from './canvas/ResizeOverlay'
+import { AsyncErrorBanner } from './errors/AsyncErrorBanner'
 import { ErrorBoundary } from './errors/ErrorBoundary'
 import {
   CanvasErrorFallback,
@@ -45,6 +46,12 @@ export function Editor() {
         <Hydrator />
         <ResolverUpdater />
         <ResizeOverlay />
+        {/* Phase 9 § 1.6 — toast for uncaught async errors (effects,
+            event handlers, fetch promises) that the React render-path
+            ErrorBoundaries don't see. Critical async failures
+            (Hydrator deserialize) still bubble to a boundary; this
+            handles everything else. */}
+        <AsyncErrorBanner />
         <div className="flex h-screen flex-col">
           <SaveLoadBar />
           <div className="flex min-h-0 flex-1">
