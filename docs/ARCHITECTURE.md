@@ -571,14 +571,23 @@ If the active adapter has no impl for the canonical, `CanonicalNode` renders a l
 
 ### Load
 
-Either via the Load button (manual) or `Hydrator` (auto, on mount):
+Either via `Hydrator` (auto, once on mount) or `useDocumentSwitcher` (runtime). Both paths route through `applyEnvelopeSafely`:
 
-1. `localStorage.getItem('craftjs-design:doc:v1')` → raw string.
-2. `JSON.parse` + `documentSchema.parse` → validated envelope.
-3. `actions.deserialize(doc.craftJson)` → Craft replaces the entire tree.
-4. `setActiveTheme(doc.themeId)` if present + `setActiveAdapter(doc.adapterId)`. Store updates trigger `ThemeProvider` and `AdapterProvider` consumers to re-render.
+1. Read the envelope (`documentRegistry.readDocument(id)` for the registry path, `decodeDocument(fragment)` for the shared-URL path).
+2. `validateCraftJson(envelope.craftJson)` — pre-check parses JSON, requires ROOT, verifies every `parent` / `nodes` / `linkedNodes` ref resolves, every `type.resolvedName` is `'div'` or a registered canonical.
+3. `actions.deserialize(...)` — Craft replaces the tree.
+4. Apply theme + adapter from the envelope.
 
-`Hydrator` wraps the above in try/catch — corrupted localStorage logs and the editor boots with the default seed instead of crashing.
+**Race conditions (§ 1.10).** `applyEnvelopeSafely` returns a `Promise<ApplyEnvelopeResult>`. Work runs through a module-level promise queue + generation counter:
+
+- Each call increments a global generation number; the work is enqueued behind any in-flight apply.
+- When the work fires (next microtask), it compares its captured generation to the current global one. If newer calls have come in, the work returns `{ ok: true, superseded: true }` without touching Craft.
+- Rapid-fire applies (e.g., user clicks doc B while doc A is mid-load) collapse to "latest wins" — only the final envelope reaches `deserialize`, so the user never sees intermediate canvases.
+- A failing apply doesn't block the queue — the `catch` swallows rejections at the queue level so a broken envelope can't strand subsequent loads.
+
+**Two boot paths.** Hydrator's module-level `hydrated` flag is intentionally narrow: it gates **the initial restore from localStorage on first mount**, nothing else. Document switching goes through `useDocumentSwitcher` exclusively (snapshot-current → `setActiveId` → load target → apply). The two paths share the same `applyEnvelopeSafely` queue so they can't race against each other either.
+
+**Failure handling.** If the integrity check fails OR `actions.deserialize` throws, `applyEnvelopeSafely` sets `editorStore.malformedDocument` — `Editor.tsx` swaps the canvas Frame for `<MalformedDocumentBanner>` and the user can inspect, export, or reset. Resetting archives the broken envelope under `craftjs-design:doc:<id>:broken:<timestamp>` before writing the Empty template.
 
 ### Theme swap
 

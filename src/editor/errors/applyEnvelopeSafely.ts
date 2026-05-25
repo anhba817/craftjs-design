@@ -19,17 +19,73 @@ import { validateCraftJson } from './craftJsonIntegrity'
 //     malformed state (banner shows) and returns { ok: false }.
 //   - Also applies the doc's theme + adapter on success, mirroring the
 //     two existing inline applyEnvelope() copies.
+//
+// Phase 9 § 1.10 — hydration race conditions.
+//
+// Apply calls are serialized via a promise chain. Each call enqueues work
+// behind any prior in-flight apply; the work runs as a microtask. A
+// generation counter pins each call to its own "version" — when a work
+// task finally runs, it checks whether a newer call has been enqueued
+// since. If so it skips, on the understanding that the newer call will
+// take care of replacing the canvas. This collapses rapid-fire applies
+// (e.g., user clicks doc B while doc A is mid-load) to a single
+// "latest wins" outcome instead of the editor flickering through every
+// intermediate state.
+//
+// The queue is module-scoped intentionally — there's exactly one Craft
+// editor at a time, and serialising at that level is the right grain.
 
 type CraftActions = ReturnType<typeof useEditor>['actions']
 
 export interface ApplyEnvelopeResult {
   ok: boolean
+  // True when the call was superseded by a later applyEnvelopeSafely
+  // before its turn in the queue. The newer call will handle the work;
+  // callers can usually ignore this.
+  superseded?: boolean
   // When ok=false, the malformed state has already been set in
   // editorStore; callers don't need to do anything else.
   error?: Error
 }
 
+let queue: Promise<unknown> = Promise.resolve()
+let generation = 0
+
 export function applyEnvelopeSafely(
+  actions: CraftActions,
+  docId: string,
+  envelope: EditorDocument,
+): Promise<ApplyEnvelopeResult> {
+  generation += 1
+  const myGen = generation
+
+  const work = (): ApplyEnvelopeResult => {
+    if (myGen !== generation) {
+      // A later applyEnvelopeSafely call has overwritten us. Skip —
+      // the latest one will land the actual content.
+      return { ok: true, superseded: true }
+    }
+    return runApply(actions, docId, envelope)
+  }
+
+  const next = queue.then(work, work)
+  // Swallow rejections at the queue level so one failure doesn't block
+  // subsequent applies. (work itself doesn't throw — failures route to
+  // setMalformedDocument and a resolved { ok: false } — but defensive
+  // here.)
+  queue = next.catch(() => undefined)
+  return next
+}
+
+// Test-only — resets the module-level queue + generation so each test
+// sees a fresh state. The implementation is intentionally private to
+// this module; tests import via the named export below.
+export function _resetQueueForTests(): void {
+  queue = Promise.resolve()
+  generation = 0
+}
+
+function runApply(
   actions: CraftActions,
   docId: string,
   envelope: EditorDocument,
@@ -48,11 +104,12 @@ export function applyEnvelopeSafely(
     setMalformedDocument({ docId, envelope, error })
     return { ok: false, error }
   }
-  // Success path: clear any prior malformed state + apply theme/adapter.
+  // Success: clear any prior malformed state + apply theme/adapter.
   if (useEditorStore.getState().malformedDocument) {
     setMalformedDocument(null)
   }
-  if (envelope.themeId) useEditorStore.getState().setActiveTheme(envelope.themeId)
+  if (envelope.themeId)
+    useEditorStore.getState().setActiveTheme(envelope.themeId)
   useEditorStore.getState().setActiveAdapter(envelope.adapterId)
   return { ok: true }
 }
