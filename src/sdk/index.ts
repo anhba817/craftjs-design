@@ -1,7 +1,14 @@
 // Public SDK entry point. Re-exports the full authoring surface for adapter,
 // canonical, and panel extension. Internal module structure under src/sdk/*
-// groups related exports for IDE auto-import; consumers can import from the
-// root path '@design/sdk' for everything.
+// groups related exports for IDE auto-import.
+//
+// Import paths:
+//   - In-tree (this repo + examples/): from '@design/sdk' (Vite alias).
+//   - Published consumers: from '@crafted-design/editor/sdk' (the npm
+//     subpath defined in package.json's exports field).
+//
+// Both resolve to the same module — the alias is convenience for the
+// monorepo, the subpath is the public-facing identity.
 //
 // What's stable here:
 //   - Adapter authoring: Adapter, AdapterRenderProps, ClassMapFn,
@@ -17,9 +24,12 @@
 //   - The Craft.js resolver builder
 //   - The editor store (use your own state for SDK-authored panels)
 //
-// External callers must import only from '@design/sdk'. Reaching into
-// internal modules (../adapters/types, ../registry/registry, etc.) is
-// unsupported and can break across versions.
+// External callers must import only from '@crafted-design/editor/sdk' (or
+// '@design/sdk' in this repo's examples). Reaching into internal modules
+// (../adapters/types, ../registry/registry, etc.) is unsupported and can
+// break across versions — see docs/INTEGRATION_GUIDE.md "Breaking-change
+// policy". The ESLint `no-restricted-imports` rule in eslint.config.js
+// enforces this for examples/**.
 
 export * from './adapter'
 export * from './canonical'
