@@ -214,6 +214,21 @@ Two parallel surfaces, by failure-mode:
   async failures (Hydrator deserialize) are designed to bubble through
   the boundary instead, so this handles the long tail of non-fatal
   issues.
+- **`applyEnvelopeSafely` + `MalformedDocumentBanner`**
+  (`craftJsonIntegrity.ts`, `applyEnvelopeSafely.ts`,
+  `MalformedDocumentBanner.tsx`) guards document-load failures.
+  Both Hydrator (boot) and `useDocumentSwitcher` (runtime switch) route
+  every `actions.deserialize` call through `applyEnvelopeSafely`.
+  Before deserialize, the integrity check validates the craftJson:
+  parses as an object, has ROOT, every `parent` / `nodes` /
+  `linkedNodes` ref resolves, every type is either `'div'` or a
+  registered canonical. Either path of failure (pre-check OR
+  deserialize throw) sets `editorStore.malformedDocument`; the editor
+  shell swaps the Frame for `MalformedDocumentBanner`. The banner
+  offers Show raw JSON, Export raw, and Reset to empty — the last
+  archives the broken envelope under
+  `craftjs-design:doc:<id>:broken:<timestamp>` before writing the
+  Empty template into the doc's slot.
 
 Normalisation lives in `asyncError.ts` — pure helpers (`normalizeErrorEvent`,
 `normalizeRejectionEvent`) that turn the browser event into a stable

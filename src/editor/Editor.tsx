@@ -3,11 +3,13 @@ import { useEffect } from 'react'
 import { AdapterProvider } from '../adapters/AdapterContext'
 import { getResolver } from '../craft/resolver'
 import { _markEditorMounted, getComponent } from '../registry/registry'
+import { useEditorStore } from '../state/editorStore'
 import { ThemeProvider } from '../themes/ThemeProvider'
 import { CanvasKeyboardRegion } from './canvas/CanvasKeyboardRegion'
 import { ResizeOverlay } from './canvas/ResizeOverlay'
 import { AsyncErrorBanner } from './errors/AsyncErrorBanner'
 import { ErrorBoundary } from './errors/ErrorBoundary'
+import { MalformedDocumentBanner } from './errors/MalformedDocumentBanner'
 import {
   CanvasErrorFallback,
   ToolboxErrorFallback,
@@ -34,6 +36,10 @@ export function Editor() {
     )
   }
   const Root = resolver[boxDef.displayName]
+  // Phase 9 § 1.9 — when applyEnvelopeSafely detects a structural or
+  // deserialize failure, Frame is swapped for MalformedDocumentBanner
+  // so the user has a recovery path instead of a half-loaded canvas.
+  const malformedDocument = useEditorStore((s) => s.malformedDocument)
 
   // Phase 8 — three boundary layers below the top shell. The outermost
   // (TopShellErrorFallback) is mounted by App.tsx so it catches anything
@@ -61,16 +67,20 @@ export function Editor() {
             <ThemeProvider>
               <main className="flex-1 overflow-auto bg-muted p-8">
                 <ErrorBoundary fallback={CanvasErrorFallback}>
-                  <CanvasKeyboardRegion>
-                    <Frame>
-                      <Element
-                        is={Root}
-                        canvas
-                        nodeProps={boxDef.defaults.props}
-                        style={boxDef.defaults.style}
-                      />
-                    </Frame>
-                  </CanvasKeyboardRegion>
+                  {malformedDocument ? (
+                    <MalformedDocumentBanner />
+                  ) : (
+                    <CanvasKeyboardRegion>
+                      <Frame>
+                        <Element
+                          is={Root}
+                          canvas
+                          nodeProps={boxDef.defaults.props}
+                          style={boxDef.defaults.style}
+                        />
+                      </Frame>
+                    </CanvasKeyboardRegion>
+                  )}
                 </ErrorBoundary>
               </main>
             </ThemeProvider>

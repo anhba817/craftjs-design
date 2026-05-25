@@ -4,6 +4,7 @@ import { useDocumentStore } from '@/persistence/documentStore'
 import type { EditorDocument } from '@/persistence/schema'
 import { getTemplate } from '@/persistence/templates/registry'
 import { useEditorStore } from '@/state/editorStore'
+import { applyEnvelopeSafely } from '@/editor/errors/applyEnvelopeSafely'
 
 // Hook for runtime document switching. Hydrator handles the boot path; this
 // handles every subsequent switch.
@@ -29,12 +30,12 @@ export function useDocumentSwitcher() {
     }
   }, [query])
 
+  // Routes through applyEnvelopeSafely so an integrity failure or a thrown
+  // deserialize sets the malformedDocument state — Editor.tsx swaps the
+  // canvas Frame for MalformedDocumentBanner. See Phase 9 § 1.9.
   const applyEnvelope = useCallback(
-    (doc: EditorDocument) => {
-      actions.deserialize(doc.craftJson)
-      const store = useEditorStore.getState()
-      if (doc.themeId) store.setActiveTheme(doc.themeId)
-      store.setActiveAdapter(doc.adapterId)
+    (docId: string, doc: EditorDocument) => {
+      applyEnvelopeSafely(actions, docId, doc)
     },
     [actions],
   )
@@ -54,13 +55,13 @@ export function useDocumentSwitcher() {
       store.setActiveId(targetId)
       const loaded = store.loadActiveDocument()
       if (loaded) {
-        applyEnvelope(loaded)
+        applyEnvelope(targetId, loaded)
         return
       }
       // Target document has no blob yet (created but never saved). Seed from
       // the Empty template so the canvas resets cleanly.
       const empty = getTemplate('empty')
-      if (empty) applyEnvelope(empty.envelope)
+      if (empty) applyEnvelope(targetId, empty.envelope)
     },
     [snapshotCurrent, applyEnvelope],
   )
@@ -73,7 +74,7 @@ export function useDocumentSwitcher() {
       }
       const empty = getTemplate('empty')
       const newId = store.createDocument(name, empty?.envelope)
-      if (empty) applyEnvelope(empty.envelope)
+      if (empty) applyEnvelope(newId, empty.envelope)
       return newId
     },
     [snapshotCurrent, applyEnvelope],
@@ -90,7 +91,7 @@ export function useDocumentSwitcher() {
         store.saveActiveDocument(snapshotCurrent())
       }
       const newId = store.createDocument(name, template.envelope)
-      applyEnvelope(template.envelope)
+      applyEnvelope(newId, template.envelope)
       return newId
     },
     [snapshotCurrent, applyEnvelope],
