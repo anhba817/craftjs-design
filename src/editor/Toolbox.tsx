@@ -209,7 +209,10 @@ export function Toolbox() {
     Array.from(grouped.values()).every((v) => v.length === 0)
 
   return (
-    <aside className="flex w-56 flex-col border-r border-gray-200">
+    <aside
+      aria-label="Component toolbox"
+      className="flex w-56 flex-col border-r border-gray-200"
+    >
       <div className="border-b border-gray-200 p-2">
         <label className="relative block">
           {/* Visually-hidden accessible name. The placeholder doubles as a
@@ -238,7 +241,7 @@ export function Toolbox() {
 
         {favoriteDefs.length > 0 && (
           <div className="space-y-1.5">
-            <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-400">
+            <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-500">
               Favorites
             </div>
             <div className="space-y-1">{favoriteDefs.map(renderButton)}</div>
@@ -247,7 +250,7 @@ export function Toolbox() {
 
         {recentDefs.length > 0 && (
           <div className="space-y-1.5">
-            <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-400">
+            <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-500">
               Recently used
             </div>
             <div className="space-y-1">{recentDefs.map(renderButton)}</div>
@@ -256,7 +259,7 @@ export function Toolbox() {
 
         {Array.from(grouped.entries()).map(([category, defs]) => (
           <div key={category} className="space-y-1.5">
-            <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-400">
+            <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-500">
               {CATEGORY_LABEL[category] ?? category}
             </div>
             <div className="space-y-1">{defs.map(renderButton)}</div>

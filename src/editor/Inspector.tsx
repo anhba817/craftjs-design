@@ -43,12 +43,15 @@ export function Inspector() {
   const showSlotPicker = slots.length > 1
 
   return (
-    <aside className="flex w-72 flex-col border-l border-gray-200">
+    <aside
+      aria-label="Inspector"
+      className="flex w-72 flex-col border-l border-gray-200"
+    >
       <div className="px-3 py-2 text-xs font-semibold tracking-wide uppercase text-gray-500">
         Inspector
       </div>
       {!selected ? (
-        <div className="px-3 text-xs text-gray-400">Nothing selected.</div>
+        <div className="px-3 text-xs text-gray-500">Nothing selected.</div>
       ) : (
         <>
           <ResponsiveBar />

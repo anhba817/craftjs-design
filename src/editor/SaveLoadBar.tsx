@@ -85,7 +85,13 @@ export function SaveLoadBar() {
   }
 
   return (
-    <div className="flex items-center gap-2 border-b border-gray-200 px-3 py-2">
+    <header className="flex items-center gap-2 border-b border-gray-200 px-3 py-2">
+      {/* WCAG SC 2.4.6 / axe `page-has-heading-one` — screen readers
+          expect an h1 per page. Lives inside the banner landmark so
+          axe `region` (all content in landmarks) also passes. The
+          editor chrome is visually self-evident; the heading is
+          sr-only. */}
+      <h1 className="sr-only">Editor</h1>
       <DocumentMenu />
       <UndoRedo />
       <div className="flex-1" />
@@ -127,6 +133,6 @@ export function SaveLoadBar() {
       >
         Load
       </button>
-    </div>
+    </header>
   )
 }
