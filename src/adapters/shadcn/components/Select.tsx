@@ -24,30 +24,37 @@ export function ShadcnSelect({
     defaultValue: string
     disabled: boolean
   }
+  // Radix's <Select> root is a Provider — no DOM element to attach a ref to.
+  // We attach rootRef to <SelectTrigger>, which renders the actual <button>.
+  // Phase 9: under React 19 the trigger forwards refs via {...props} so no
+  // display-contents wrapper is needed.
+  //
+  // Force `open={false}` in editor mode so clicking the trigger doesn't pop
+  // open the Radix dropdown — the dropdown would yank focus and interrupt
+  // the user's editing flow.
   return (
-    <span ref={rootRef} style={{ display: 'contents' }}>
-      {/* Force `open={false}` in editor mode so clicking the trigger doesn't
-          pop open the Radix dropdown — the dropdown would yank focus and
-          interrupt the user's editing flow. The trigger is still visually
-          present and Craft's connectors still see clicks for selection. */}
-      <Select
-        value={defaultValue}
-        disabled={disabled}
-        open={false}
-        onOpenChange={() => {}}
-        onValueChange={() => {}}
+    <Select
+      value={defaultValue}
+      disabled={disabled}
+      open={false}
+      onOpenChange={() => {}}
+      onValueChange={() => {}}
+    >
+      <SelectTrigger
+        ref={rootRef as never}
+        className={cn(className)}
+        style={inlineStyle}
+        aria-label={label}
       >
-        <SelectTrigger className={cn(className)} style={inlineStyle} aria-label={label}>
-          <SelectValue placeholder={label} />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((o) => (
-            <SelectItem key={o.value} value={o.value}>
-              {o.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </span>
+        <SelectValue placeholder={label} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o.value} value={o.value}>
+            {o.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }

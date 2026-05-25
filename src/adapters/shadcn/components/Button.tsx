@@ -9,14 +9,10 @@ const INTENT_TO_VARIANT = {
 
 type Intent = keyof typeof INTENT_TO_VARIANT
 
-// shadcn's primitive components (button.tsx, input.tsx) are written as plain
-// function components, not forwardRef wrappers — they assume React 19's
-// ref-as-prop semantics. We're on React 18 (Phase 1 downgrade), so passing
-// `ref` directly into <ShadcnButtonImpl> is a no-op with a console warning.
-//
-// Workaround: wrap with a `display: contents` span so the ref attaches cleanly
-// to a real DOM node. This is safe for non-canvas leaves (Button doesn't accept
-// drops), so it doesn't trigger Phase 1 risk #2's nested-hit-testing problem.
+// Phase 9 — React 19 forwards refs through plain function components as a
+// prop, so the `display: contents` wrapper from Phase 1 is no longer needed.
+// shadcn's Button spreads `{...props}` onto its inner <button>, which under
+// React 19 includes ref → ref attaches to the real DOM button.
 export function ShadcnButton({
   props,
   rootRef,
@@ -28,19 +24,15 @@ export function ShadcnButton({
     intent: Intent
     disabled: boolean
   }
-  // The wrapper span keeps `display: contents` so it stays layout-transparent;
-  // inlineStyle goes on the actual rendered button where it has a real box to
-  // apply to.
   return (
-    <span ref={rootRef} style={{ display: 'contents' }}>
-      <ShadcnButtonImpl
-        variant={INTENT_TO_VARIANT[intent] ?? 'default'}
-        disabled={disabled}
-        className={className}
-        style={inlineStyle}
-      >
-        {label}
-      </ShadcnButtonImpl>
-    </span>
+    <ShadcnButtonImpl
+      ref={rootRef as never}
+      variant={INTENT_TO_VARIANT[intent] ?? 'default'}
+      disabled={disabled}
+      className={className}
+      style={inlineStyle}
+    >
+      {label}
+    </ShadcnButtonImpl>
   )
 }

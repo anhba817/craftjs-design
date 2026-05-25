@@ -8,7 +8,7 @@
 // distinct from shadcn/MUI (teal accent, rounded surfaces) so the adapter
 // swap in the editor is visually obvious.
 
-import type { CSSProperties, ReactNode, Ref } from 'react'
+import type { CSSProperties, JSX, ReactNode, Ref } from 'react'
 
 const accent = '#319795'
 const bg = '#f7fafc'
@@ -82,6 +82,7 @@ export function ChakraButton({
 
 interface ChakraHeadingProps extends CommonProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl'
+  // React 19 removed the global JSX namespace; import it as a type from React.
   as?: keyof JSX.IntrinsicElements
 }
 

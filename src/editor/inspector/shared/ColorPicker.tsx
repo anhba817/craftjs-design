@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { HexColorPicker } from 'react-colorful'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
@@ -102,7 +102,62 @@ export function ColorPicker({
     }
   }
 
+  // Drag-driven sliders defer BOTH React state updates AND the parent
+  // commit until pointerup. The earlier version updated `pickerColor` /
+  // `hexInput` on every tick so the popover stayed "responsive"; in
+  // practice every state update cascaded into PopoverContent positioning
+  // re-renders inside Radix (1500+ commits per drag) even though the
+  // parent Inspector never re-rendered. See PERFORMANCE.md Flow 5.
+  //
+  // Why it's safe to skip state updates during drag:
+  //   - The visual picker (react-colorful HexColorPicker) manages its
+  //     cursor with its own internal Saturation/Hue state. Once mounted
+  //     with an initial `color`, it doesn't need parent re-renders to
+  //     keep the cursor visually following the pointer.
+  //   - HSL / RGB sliders are native <input type="range"> elements;
+  //     during a drag the browser shows the thumb at the pointer
+  //     position regardless of the `value` prop. The value sync on
+  //     release reconciles back to the controlled state.
+  //   - The text-input hex display stays stale during drag; designers
+  //     read the color from the visual cursor / swatch, not from the
+  //     text field. It refreshes on release.
+  //
+  // On pointerup the final hex commits via onChange (one Craft.js
+  // dispatch, one Inspector re-render).
+  const isDraggingRef = useRef(false)
+  const pendingDragHexRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    const handleUp = () => {
+      if (!isDraggingRef.current) return
+      isDraggingRef.current = false
+      const finalHex = pendingDragHexRef.current
+      pendingDragHexRef.current = null
+      if (finalHex != null) onChange({ kind: 'hex', hex: finalHex })
+    }
+    // Listen on document so a drag that releases outside the popover
+    // (e.g., pointer left the picker surface) still commits.
+    document.addEventListener('pointerup', handleUp)
+    document.addEventListener('pointercancel', handleUp)
+    return () => {
+      document.removeEventListener('pointerup', handleUp)
+      document.removeEventListener('pointercancel', handleUp)
+    }
+  }, [onChange])
+
+  const handleDragSurfacePointerDown = () => {
+    isDraggingRef.current = true
+    pendingDragHexRef.current = null
+  }
+
   const commitFromSliders = (hex: string) => {
+    if (isDraggingRef.current) {
+      // Drag tick: stash hex in a ref. Do NOT call setState — that would
+      // cascade into Radix Popover positioning re-renders.
+      pendingDragHexRef.current = hex
+      return
+    }
+    // Programmatic / non-drag commit (eyedropper, EXTERNAL `value` change).
     setPickerColor(hex)
     setHexInput(hex)
     onChange({ kind: 'hex', hex })
@@ -212,19 +267,21 @@ export function ColorPicker({
                 <ModeToggle mode={solidMode} onChange={setSolidMode} />
               </div>
 
-              {solidMode === 'visual' && (
-                <HexColorPicker
-                  color={pickerColor}
-                  onChange={(hex) => commitFromSliders(hex)}
-                  style={{ width: '100%', height: '160px' }}
-                />
-              )}
-              {solidMode === 'hsl' && (
-                <HslSliders hex={pickerColor} onChange={commitFromSliders} />
-              )}
-              {solidMode === 'rgb' && (
-                <RgbSliders hex={pickerColor} onChange={commitFromSliders} />
-              )}
+              <div onPointerDown={handleDragSurfacePointerDown}>
+                {solidMode === 'visual' && (
+                  <HexColorPicker
+                    color={pickerColor}
+                    onChange={(hex) => commitFromSliders(hex)}
+                    style={{ width: '100%', height: '160px' }}
+                  />
+                )}
+                {solidMode === 'hsl' && (
+                  <HslSliders hex={pickerColor} onChange={commitFromSliders} />
+                )}
+                {solidMode === 'rgb' && (
+                  <RgbSliders hex={pickerColor} onChange={commitFromSliders} />
+                )}
+              </div>
 
               <div className="flex items-center gap-1.5">
                 <input

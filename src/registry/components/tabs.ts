@@ -24,6 +24,42 @@ export type TabsProps = z.infer<typeof tabsPropsSchema>
 
 export const TAB_SLOT_PREFIX = 'tab-'
 
+/**
+ * Synthesizes a unique render value per tab so Radix / MUI can distinguish
+ * panels even when the user-authored `value` is empty (newly-added tabs from
+ * the PropsPanel "+ Add" button) or collides with a sibling.
+ *
+ * Returns one synthetic value per input tab, in index order:
+ *   - Unique non-empty `value` → passes through unchanged.
+ *   - Empty `value` → `_unset_<index>`.
+ *   - Duplicate `value` → first occurrence keeps the value; second gets
+ *     `<value>__1`, third `<value>__2`, etc.
+ *
+ * The synthetic values back both Radix's panel switching AND the canvas
+ * slotChildren key (`canvasSlots` uses the same helper), so a synthesized
+ * value's dropped children land in the right panel.
+ *
+ * Limitation: renaming a tab's `value` still orphans its canvas content
+ * because the slot key changes. PRODUCTION_READINESS § 2.11 (stable per-tab
+ * ids) tracks the deeper fix.
+ */
+export function uniqueTabValues(tabs: readonly { value: string }[]): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (let i = 0; i < tabs.length; i++) {
+    const base = tabs[i].value || `_unset_${i}`
+    let v = base
+    let suffix = 1
+    while (seen.has(v)) {
+      v = `${base}__${suffix}`
+      suffix++
+    }
+    seen.add(v)
+    out.push(v)
+  }
+  return out
+}
+
 registerComponent<TabsProps>({
   id: 'tabs',
   category: 'navigation',
@@ -33,7 +69,7 @@ registerComponent<TabsProps>({
   styleSlots: ['root', 'tabs', 'content'],
   canvasSlots: (props) => {
     const tabs = (props as TabsProps).tabs ?? []
-    return tabs.map((t) => `${TAB_SLOT_PREFIX}${t.value}`)
+    return uniqueTabValues(tabs).map((v) => `${TAB_SLOT_PREFIX}${v}`)
   },
   propsSchema: tabsPropsSchema,
   defaults: {

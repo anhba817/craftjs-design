@@ -20,7 +20,7 @@ npm install @design/editor   # placeholder — package name TBD at publish
 Peer dependencies:
 
 ```bash
-npm install react@^18 react-dom@^18 @craftjs/core@^0.2.12
+npm install react@^19 react-dom@^19 @craftjs/core@^0.2.12
 ```
 
 ## Minimal embed
@@ -230,17 +230,16 @@ stays on `:root`. See `docs/ARCHITECTURE.md` § Themes for details.
 
 ## Caveats
 
-### React 19 status
+### React version
 
-The editor's dev environment is React 18.3 today. Craft.js's
-`peerDependencies` accept React 19, so technically the dist runs in a React
-19 host — but the editor team hasn't done a full smoke test in that
-environment. Phase 9 ships the React 19 upgrade with a verified test pass.
+The editor requires React 19. The Phase-1 `display: contents` ref-forwarding
+wrappers around shadcn primitives (which were React-18-era workarounds) are
+gone — refs now flow directly through plain function components via React 19's
+ref-as-prop semantics.
 
-If you're on React 19 and hit issues, the most likely cause is the
-`display: contents` ref-forwarding workaround in adapter impls (added for
-React 18's `forwardRef` constraints). Those wrappers can be removed once
-React 19 is officially supported.
+Older React 18 hosts would fail at runtime; the dist's `peerDependencies`
+declare `^19`. To use the editor in a React 18 host, downgrade the editor to
+a pre-Phase-9 version.
 
 ### Bundle size
 
@@ -250,8 +249,11 @@ sourcemap):
 | Asset | Raw | Gzipped |
 |---|---|---|
 | `dist-lib/index.js` | 1.5 MB | 326 KB |
-| `dist-lib/index.css` | 390 KB | 114 KB |
+| `dist-lib/index.css` | 388 KB | 113 KB |
 | Combined | 1.9 MB | **440 KB gzipped** |
+
+(Phase 9 React 19 upgrade trimmed ~1 KB JS and ~2 KB CSS by removing the
+`display: contents` wrappers from 9 shadcn adapter impls.)
 
 The CSS is large because the Tailwind safelist covers every utility × every
 breakpoint that the inspector can emit (270+ `@source inline()` directives).

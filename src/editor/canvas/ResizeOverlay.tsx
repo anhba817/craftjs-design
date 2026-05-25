@@ -1,5 +1,5 @@
 import { useEditor } from '@craftjs/core'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { mergeSize } from '@/style/tw-classes'
 import type { SizeValue } from '@/style/tw-classes'
 import type { NodeStyle } from '@/registry/types'
@@ -86,8 +86,19 @@ export function ResizeOverlay() {
   })
 
   const [rect, setRect] = useState<DOMRect | null>(null)
+  // Phase 9 Group C — keep the overlay's size in lock-step with the dragged
+  // node via direct DOM mutation. Without this every mousemove triggers a
+  // ResizeObserver tick → setRect → React render of ResizeOverlay + 8
+  // Handles. Baseline measurement showed 568 renders per resize gesture
+  // (see PERFORMANCE.md Flow 9).
+  const overlayRef = useRef<HTMLDivElement | null>(null)
+  // True between mousedown and mouseup on a handle. While true, recompute()
+  // skips setRect — the overlay's size is being managed directly by
+  // onMouseMove instead.
+  const isResizingRef = useRef(false)
 
   const recompute = useCallback(() => {
+    if (isResizingRef.current) return // Drag is steering the overlay directly.
     if (!selectedDom) {
       setRect(null)
       return
@@ -118,6 +129,8 @@ export function ResizeOverlay() {
     e.stopPropagation()
     e.preventDefault()
 
+    isResizingRef.current = true
+
     const axes = HANDLE_AXES[handle]
     const startX = e.clientX
     const startY = e.clientY
@@ -133,15 +146,27 @@ export function ResizeOverlay() {
         axes.y === 0
           ? startH
           : Math.max(20, startH + (mv.clientY - startY) * axes.y)
-      // Direct DOM mutation during drag. React doesn't track these inline
-      // style writes; the final value is committed via setProp on mouseup.
-      if (axes.x !== 0) selectedDom.style.width = `${Math.round(newW)}px`
-      if (axes.y !== 0) selectedDom.style.height = `${Math.round(newH)}px`
+      const wPx = `${Math.round(newW)}px`
+      const hPx = `${Math.round(newH)}px`
+      // Direct DOM mutation during drag — neither React render nor a
+      // Craft.js dispatch fires per tick. The final value commits via
+      // setProp on mouseup.
+      if (axes.x !== 0) selectedDom.style.width = wPx
+      if (axes.y !== 0) selectedDom.style.height = hPx
+      // Keep the overlay sized to the node. Without this the overlay's
+      // outline would lag a frame behind the node — same direct-DOM
+      // pattern the node itself uses.
+      const overlay = overlayRef.current
+      if (overlay) {
+        if (axes.x !== 0) overlay.style.width = wPx
+        if (axes.y !== 0) overlay.style.height = hPx
+      }
     }
 
     const onMouseUp = () => {
       document.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('mouseup', onMouseUp)
+      isResizingRef.current = false
 
       const finalW = selectedDom.offsetWidth
       const finalH = selectedDom.offsetHeight
@@ -183,6 +208,13 @@ export function ResizeOverlay() {
           props.style.classes.root = nextClasses
         }
       })
+
+      // Sync React state to the final DOM size in one commit. The
+      // ResizeObserver tick that follows the setProp commit will also
+      // fire recompute(); both setRect calls land on the same value
+      // (React bails out the second) so this is at most one extra
+      // render per gesture.
+      recompute()
     }
 
     document.addEventListener('mousemove', onMouseMove)
@@ -191,6 +223,7 @@ export function ResizeOverlay() {
 
   return (
     <div
+      ref={overlayRef}
       aria-hidden
       className="pointer-events-none fixed z-50"
       style={{

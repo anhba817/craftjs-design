@@ -14,11 +14,9 @@ export function ShadcnAvatar({
     fallback: string
   }
   return (
-    <span ref={rootRef} style={{ display: 'contents' }}>
-      <Avatar className={cn(className)} style={inlineStyle}>
-        {src && <AvatarImage src={src} alt={alt} />}
-        <AvatarFallback>{fallback}</AvatarFallback>
-      </Avatar>
-    </span>
+    <Avatar ref={rootRef as never} className={cn(className)} style={inlineStyle}>
+      {src && <AvatarImage src={src} alt={alt} />}
+      <AvatarFallback>{fallback}</AvatarFallback>
+    </Avatar>
   )
 }

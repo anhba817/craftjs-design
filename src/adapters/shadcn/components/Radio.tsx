@@ -15,22 +15,21 @@ export function ShadcnRadio({
     disabled: boolean
   }
   return (
-    <span ref={rootRef} style={{ display: 'contents' }}>
-      <RadioGroup
-        name={name}
-        value={selectedValue}
-        disabled={disabled}
-        onValueChange={() => {}}
-        className={cn('flex flex-col gap-2', className)}
-        style={inlineStyle}
-      >
-        {options.map((o) => (
-          <label key={o.value} className="inline-flex items-center gap-2">
-            <RadioGroupItem value={o.value} disabled={disabled} />
-            <span className="text-sm text-foreground">{o.label}</span>
-          </label>
-        ))}
-      </RadioGroup>
-    </span>
+    <RadioGroup
+      ref={rootRef as never}
+      name={name}
+      value={selectedValue}
+      disabled={disabled}
+      onValueChange={() => {}}
+      className={cn('flex flex-col gap-2', className)}
+      style={inlineStyle}
+    >
+      {options.map((o) => (
+        <label key={o.value} className="inline-flex items-center gap-2">
+          <RadioGroupItem value={o.value} disabled={disabled} />
+          <span className="text-sm text-foreground">{o.label}</span>
+        </label>
+      ))}
+    </RadioGroup>
   )
 }

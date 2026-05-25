@@ -33,16 +33,15 @@ export function ShadcnAlert({
   }
   const Icon = INTENT_ICON[intent] ?? Info
   return (
-    <span ref={rootRef} style={{ display: 'contents' }}>
-      <Alert
-        variant={INTENT_TO_VARIANT[intent] ?? 'default'}
-        className={cn(className)}
-        style={inlineStyle}
-      >
-        <Icon className="size-4" />
-        <AlertTitle>{title}</AlertTitle>
-        <AlertDescription>{description}</AlertDescription>
-      </Alert>
-    </span>
+    <Alert
+      ref={rootRef as never}
+      variant={INTENT_TO_VARIANT[intent] ?? 'default'}
+      className={cn(className)}
+      style={inlineStyle}
+    >
+      <Icon className="size-4" />
+      <AlertTitle>{title}</AlertTitle>
+      <AlertDescription>{description}</AlertDescription>
+    </Alert>
   )
 }

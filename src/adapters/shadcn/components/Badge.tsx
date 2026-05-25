@@ -18,17 +18,16 @@ export function ShadcnBadge({
   inlineStyle,
 }: AdapterRenderProps) {
   const { label, intent } = props as { label: string; intent: Intent }
-  // shadcn Badge is a plain function component (not forwardRef). Same span
-  // wrapper pattern as ShadcnButton.
+  // Phase 9 — React 19 forwards refs through plain function components, so
+  // shadcn Badge gets the ref directly without a wrapper.
   return (
-    <span ref={rootRef} style={{ display: 'contents' }}>
-      <ShadcnBadgeImpl
-        variant={INTENT_TO_VARIANT[intent] ?? 'default'}
-        className={cn(className)}
-        style={inlineStyle}
-      >
-        {label}
-      </ShadcnBadgeImpl>
-    </span>
+    <ShadcnBadgeImpl
+      ref={rootRef as never}
+      variant={INTENT_TO_VARIANT[intent] ?? 'default'}
+      className={cn(className)}
+      style={inlineStyle}
+    >
+      {label}
+    </ShadcnBadgeImpl>
   )
 }

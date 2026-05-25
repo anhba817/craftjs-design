@@ -15,16 +15,15 @@ export function ShadcnTextarea({
     disabled: boolean
   }
   return (
-    <span ref={rootRef} style={{ display: 'contents' }}>
-      <Textarea
-        placeholder={placeholder}
-        value={value}
-        rows={rows}
-        disabled={disabled}
-        readOnly
-        className={cn(className)}
-        style={inlineStyle}
-      />
-    </span>
+    <Textarea
+      ref={rootRef as never}
+      placeholder={placeholder}
+      value={value}
+      rows={rows}
+      disabled={disabled}
+      readOnly
+      className={cn(className)}
+      style={inlineStyle}
+    />
   )
 }

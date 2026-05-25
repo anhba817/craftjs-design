@@ -1,16 +1,17 @@
 import Box from '@mui/material/Box'
 import Tab from '@mui/material/Tab'
 import MuiTabs from '@mui/material/Tabs'
-import { TAB_SLOT_PREFIX } from '@/registry/components/tabs'
+import { TAB_SLOT_PREFIX, uniqueTabValues } from '@/registry/components/tabs'
 import type { AdapterRenderProps } from '../../types'
 
 // MUI Tabs is more imperative than Radix — there's no automatic content
 // switching. We render the active tab's content based on `defaultValue` and
 // freeze it (no-op onChange) in editor mode.
 //
-// Phase 7 multi-canvas: each tab's content lives in its own linked Craft
-// canvas (keyed `tab-<value>`); we look up the active tab's slot wrapper
-// from `slotChildren`.
+// Phase 9 — synthetic per-tab render values (see uniqueTabValues) keep the
+// active-tab lookup stable when the user-authored `value` is empty or
+// duplicated. Without these the active tab is ambiguous when multiple tabs
+// share a value.
 export function MaterialTabs({
   props,
   rootRef,
@@ -22,7 +23,13 @@ export function MaterialTabs({
     tabs: { value: string; label: string }[]
     defaultValue: string
   }
-  const active = tabs.find((t) => t.value === defaultValue) ?? tabs[0]
+  const renderValues = uniqueTabValues(tabs)
+  const defaultIndex = Math.max(
+    0,
+    tabs.findIndex((t) => t.value === defaultValue),
+  )
+  const activeRenderValue = renderValues[defaultIndex] ?? renderValues[0]
+
   return (
     <Box
       ref={rootRef as never}
@@ -30,13 +37,13 @@ export function MaterialTabs({
       style={composedInlineStyles.root}
     >
       <MuiTabs
-        value={defaultValue}
+        value={activeRenderValue}
         onChange={() => {}}
         className={composedClasses.tabs}
         style={composedInlineStyles.tabs}
       >
-        {tabs.map((t) => (
-          <Tab key={t.value} value={t.value} label={t.label} />
+        {tabs.map((t, i) => (
+          <Tab key={renderValues[i]} value={renderValues[i]} label={t.label} />
         ))}
       </MuiTabs>
       <Box
@@ -44,7 +51,8 @@ export function MaterialTabs({
         style={composedInlineStyles.content}
         sx={{ p: 2 }}
       >
-        {active && slotChildren[`${TAB_SLOT_PREFIX}${active.value}`]}
+        {activeRenderValue &&
+          slotChildren[`${TAB_SLOT_PREFIX}${activeRenderValue}`]}
       </Box>
     </Box>
   )
