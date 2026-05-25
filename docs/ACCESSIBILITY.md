@@ -62,16 +62,25 @@ semantics natively. No custom slider logic to break.
 These are documented to scope the gap honestly — not all are blockers for
 Phase 8 sign-off. Phase 9+ polish picks them up.
 
-### Future — keyboard navigation between editor regions
+### Shipped — Toolbox keyboard navigation (Phase 9 § 1.5)
 
-Tab order today is "browser default" — DOM order. The user can tab from the
-toolbar through the toolbox through the canvas (Craft's selection isn't
-keyboard-navigable; click only) into the inspector. The inspector's panel
-sections are collapsible and each panel's controls are reachable, but
-moving between regions is not optimized.
+The Toolbox implements the WAI-ARIA toolbar pattern with roving tabindex.
+The component list is `role="toolbar"` with `aria-orientation="vertical"`;
+exactly one component button is tab-focusable at a time. Keys:
 
-**Recommended**: a roving-tabindex pattern with arrow keys for the toolbox
-and inspector sections. Phase 9 polish.
+| Key | Action |
+|---|---|
+| `Tab` | Enters / exits the toolbar (one tab stop for the whole region) |
+| `ArrowDown` / `ArrowUp` | Move focus to next / previous component (crosses section boundaries) |
+| `Home` / `End` | First / last component |
+| `Enter` or `Space` | Drop the focused component. Selection-aware: child of ROOT (no selection), child of the selected canvas (canvas selected), sibling AFTER the selected node (non-canvas selected) |
+| `F` | Toggle the favorite star on the focused row |
+| `/` | Focus the search input (also works from inside the input — refocuses + selects) |
+| `Escape` (in search) | Clear the search query and return focus to the first component |
+
+Implementation: `src/editor/Toolbox.tsx`. The favorited buttons stay
+`tabIndex={-1}` so they don't fragment the roving rotation — `F` is the
+keyboard path; mouse users click directly.
 
 ### Future — Craft.js selection via keyboard
 

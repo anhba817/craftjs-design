@@ -1,6 +1,13 @@
 import { Element, useEditor } from '@craftjs/core'
 import { Search, Star } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import { getResolver } from '../craft/resolver'
 import {
   getRegistryVersion,
@@ -87,7 +94,7 @@ function groupByCategory(
 }
 
 export function Toolbox() {
-  const { connectors } = useEditor()
+  const { connectors, actions, query: editorQuery } = useEditor()
   // Phase 7 — re-render on registry-version bumps so hot canonical reload
   // surfaces new entries in the palette without a page reload.
   const version = useSyncExternalStore(
@@ -156,18 +163,103 @@ export function Toolbox() {
 
   const grouped = useMemo(() => groupByCategory(visibleDefs), [visibleDefs])
 
-  const renderButton = useCallback(
+  // ARIA roving tabindex — Phase 9 Group D / PRODUCTION_READINESS § 1.5.
+  // The flat orderedDefs array reflects DOM order (Favorites → Recent →
+  // each category). A favorited def appears twice (once in Favorites,
+  // once in its category). Each visual position is a separate roving
+  // slot, so the focus index is into this array, not into allDefs.
+  const orderedDefs = useMemo(() => {
+    const out: CanonicalComponent[] = []
+    out.push(...favoriteDefs)
+    out.push(...recentDefs)
+    for (const defs of grouped.values()) out.push(...defs)
+    return out
+  }, [favoriteDefs, recentDefs, grouped])
+
+  // Refs indexed by orderedDefs position so a favorited def's two visual
+  // slots get distinct refs.
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
+  const toolbarRef = useRef<HTMLDivElement | null>(null)
+  const [focusedIndex, setFocusedIndex] = useState(0)
+
+  // Keep focusedIndex inside the orderedDefs range. When favorites toggle
+  // or search filters change the list, the previously-focused slot may
+  // disappear; snap to the new last item.
+  useEffect(() => {
+    if (orderedDefs.length === 0) {
+      setFocusedIndex(0)
+      return
+    }
+    if (focusedIndex >= orderedDefs.length) {
+      setFocusedIndex(orderedDefs.length - 1)
+    }
+  }, [focusedIndex, orderedDefs.length])
+
+  const focusButtonAt = useCallback((idx: number) => {
+    buttonRefs.current[idx]?.focus()
+  }, [])
+
+  // Selection-aware drop: Enter on a focused component inserts it.
+  //   - no selection → child of ROOT.
+  //   - canvas selection → child of the selected canvas.
+  //   - non-canvas selection → sibling AFTER the selected node.
+  const dropDef = useCallback(
     (def: CanonicalComponent) => {
+      const Bound = resolver[def.displayName]
+      if (!Bound) return
+      const selectedIds = editorQuery.getEvent('selected').all()
+      const selectedId = selectedIds[0]
+      let parentId = 'ROOT'
+      let indexToPlaceAt: number | undefined
+      if (selectedId) {
+        const selectedNode = editorQuery.node(selectedId).get()
+        if (selectedNode.data.isCanvas) {
+          parentId = selectedId
+        } else {
+          parentId = selectedNode.data.parent ?? 'ROOT'
+          const parent = editorQuery.node(parentId).get()
+          const siblings = parent.data.nodes ?? []
+          const sibIdx = siblings.indexOf(selectedId)
+          if (sibIdx >= 0) indexToPlaceAt = sibIdx + 1
+        }
+      }
+      const element = (
+        <Element
+          is={Bound}
+          canvas={def.isCanvas}
+          nodeProps={def.defaults.props}
+          style={def.defaults.style}
+        />
+      )
+      // Craft.js's actions.add() takes a Node (not a React element), so we
+      // parse the <Element> JSX into a node tree first. parseReactElement
+      // + toNodeTree handles canvas-bearing nodes (creates the linked
+      // nodes for canvas children) the same way the connectors.create
+      // drag path does.
+      const tree = editorQuery.parseReactElement(element).toNodeTree()
+      actions.addNodeTree(tree, parentId, indexToPlaceAt)
+      recordUse(def.id)
+    },
+    [resolver, editorQuery, actions, recordUse],
+  )
+
+  const renderButton = useCallback(
+    (def: CanonicalComponent, rovingIdx: number, sectionKey: string) => {
       const Bound = resolver[def.displayName]
       if (!Bound) return null
       const isFavorite = state.favorites.includes(def.id)
+      const isRovingFocused = rovingIdx === focusedIndex
       return (
         <div
-          key={def.id}
+          // section prefix keeps the React key unique when a favorited def
+          // appears in both the Favorites section and its category section.
+          key={`${sectionKey}-${def.id}`}
           className="group flex items-center gap-1.5 rounded border border-gray-200 bg-white hover:bg-gray-50"
         >
           <button
             ref={(el) => {
+              buttonRefs.current[rovingIdx] = el
               if (el) {
                 connectors.create(
                   el,
@@ -181,7 +273,9 @@ export function Toolbox() {
               }
             }}
             onMouseDown={() => recordUse(def.id)}
-            className="flex-1 cursor-grab px-2 py-1.5 text-left text-sm text-gray-700 active:cursor-grabbing"
+            onFocus={() => setFocusedIndex(rovingIdx)}
+            tabIndex={isRovingFocused ? 0 : -1}
+            className="flex-1 cursor-grab px-2 py-1.5 text-left text-sm text-gray-700 active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             {def.displayName}
           </button>
@@ -189,6 +283,10 @@ export function Toolbox() {
             type="button"
             onClick={() => toggleFavorite(def.id)}
             aria-label={isFavorite ? 'Unfavorite' : 'Favorite'}
+            // Star button stays out of the roving rotation — keyboard users
+            // reach it via `F` while focused on the row (see handleKeyDown).
+            // Mouse users click directly.
+            tabIndex={-1}
             className="px-1.5 py-1.5 text-gray-300 hover:text-yellow-500"
           >
             <Star
@@ -200,13 +298,94 @@ export function Toolbox() {
         </div>
       )
     },
-    [connectors, recordUse, resolver, state.favorites, toggleFavorite],
+    [connectors, recordUse, resolver, state.favorites, toggleFavorite, focusedIndex],
   )
 
   const isEmpty =
     favoriteDefs.length === 0 &&
     recentDefs.length === 0 &&
     Array.from(grouped.values()).every((v) => v.length === 0)
+
+  const handleToolbarKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (orderedDefs.length === 0) {
+      // Only `/` and Escape still make sense when nothing's listed.
+      if (e.key === '/') {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+        searchInputRef.current?.select()
+      }
+      return
+    }
+    switch (e.key) {
+      case 'ArrowDown': {
+        e.preventDefault()
+        const next = Math.min(focusedIndex + 1, orderedDefs.length - 1)
+        setFocusedIndex(next)
+        focusButtonAt(next)
+        break
+      }
+      case 'ArrowUp': {
+        e.preventDefault()
+        const next = Math.max(focusedIndex - 1, 0)
+        setFocusedIndex(next)
+        focusButtonAt(next)
+        break
+      }
+      case 'Home': {
+        e.preventDefault()
+        setFocusedIndex(0)
+        focusButtonAt(0)
+        break
+      }
+      case 'End': {
+        e.preventDefault()
+        const last = orderedDefs.length - 1
+        setFocusedIndex(last)
+        focusButtonAt(last)
+        break
+      }
+      case 'Enter':
+      case ' ': {
+        // Space and Enter both drop the focused def — matches the WAI-ARIA
+        // toolbar pattern where activation keys are equivalent on buttons.
+        e.preventDefault()
+        const def = orderedDefs[focusedIndex]
+        if (def) dropDef(def)
+        break
+      }
+      case 'f':
+      case 'F': {
+        // Star toggle for the focused row — keyboard equivalent of clicking
+        // the favorite icon. Avoids re-using Tab (the toolbar is a single
+        // tab stop) while still letting power users curate favorites.
+        e.preventDefault()
+        const def = orderedDefs[focusedIndex]
+        if (def) toggleFavorite(def.id)
+        break
+      }
+      case '/': {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+        searchInputRef.current?.select()
+        break
+      }
+    }
+  }
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      if (query) {
+        setQuery('')
+      }
+      // Return focus to the first visible component. orderedDefs may not
+      // include the previously-focused entry once the filter is cleared,
+      // so always restart at index 0.
+      setFocusedIndex(0)
+      // Wait for the post-clear render to materialize the button.
+      requestAnimationFrame(() => focusButtonAt(0))
+    }
+  }
 
   return (
     <aside
@@ -225,18 +404,27 @@ export function Toolbox() {
             aria-hidden
           />
           <input
+            ref={searchInputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
             placeholder="Search components…"
             className="w-full rounded border border-gray-200 bg-white py-1.5 pl-7 pr-2 text-sm placeholder:text-gray-400 focus:border-gray-400 focus:outline-none"
           />
         </label>
       </div>
 
-      <div className="flex-1 space-y-4 overflow-y-auto p-3">
+      <div
+        ref={toolbarRef}
+        role="toolbar"
+        aria-label="Components"
+        aria-orientation="vertical"
+        onKeyDown={handleToolbarKeyDown}
+        className="flex-1 space-y-4 overflow-y-auto p-3 focus:outline-none"
+      >
         {isEmpty && (
-          <div className="text-xs text-gray-400">No components match.</div>
+          <div className="text-xs text-gray-500">No components match.</div>
         )}
 
         {favoriteDefs.length > 0 && (
@@ -244,7 +432,11 @@ export function Toolbox() {
             <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-500">
               Favorites
             </div>
-            <div className="space-y-1">{favoriteDefs.map(renderButton)}</div>
+            <div className="space-y-1">
+              {favoriteDefs.map((def, i) =>
+                renderButton(def, i, 'fav'),
+              )}
+            </div>
           </div>
         )}
 
@@ -253,18 +445,36 @@ export function Toolbox() {
             <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-500">
               Recently used
             </div>
-            <div className="space-y-1">{recentDefs.map(renderButton)}</div>
+            <div className="space-y-1">
+              {recentDefs.map((def, i) =>
+                renderButton(def, favoriteDefs.length + i, 'rec'),
+              )}
+            </div>
           </div>
         )}
 
-        {Array.from(grouped.entries()).map(([category, defs]) => (
-          <div key={category} className="space-y-1.5">
-            <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-500">
-              {CATEGORY_LABEL[category] ?? category}
-            </div>
-            <div className="space-y-1">{defs.map(renderButton)}</div>
-          </div>
-        ))}
+        {(() => {
+          // Compute the starting roving index for each category section.
+          // Pre-section base = favorites + recents; each preceding
+          // category adds its own length.
+          let cursor = favoriteDefs.length + recentDefs.length
+          return Array.from(grouped.entries()).map(([category, defs]) => {
+            const sectionStart = cursor
+            cursor += defs.length
+            return (
+              <div key={category} className="space-y-1.5">
+                <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-500">
+                  {CATEGORY_LABEL[category] ?? category}
+                </div>
+                <div className="space-y-1">
+                  {defs.map((def, i) =>
+                    renderButton(def, sectionStart + i, `cat-${category}`),
+                  )}
+                </div>
+              </div>
+            )
+          })
+        })()}
       </div>
     </aside>
   )
