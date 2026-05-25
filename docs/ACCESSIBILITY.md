@@ -85,37 +85,42 @@ keyboard path; mouse users click directly.
 ### Shipped — Canvas keyboard navigation (Phase 9 § 1.4)
 
 The canvas region (`<CanvasKeyboardRegion>` in
-`src/editor/canvas/CanvasKeyboardRegion.tsx`) is a single tab stop. Once
-focus is inside, the user navigates a depth-first pre-order traversal of
-the node tree with arrow keys; the focused node carries the
-`data-canvas-focused` attribute (styled in `index.css` as a solid outline,
-deliberately distinct from the dashed selection outline drawn by
-`ResizeOverlay`). Focus and selection are independent state — focus
-tracks the keyboard caret, selection is what the Inspector reflects.
+`src/editor/canvas/CanvasKeyboardRegion.tsx`) is a single tab stop. Arrow
+keys move the **selection** directly — there is no separate keyboard-focus
+state. The ResizeOverlay's dashed outline + 8 resize handles is the
+visual indicator, identical to mouse-driven selection. This matches the
+pattern used by Figma's layers panel, file managers, and IDE outline
+views: arrows = move selection.
 
-Key map (active when a canvas node holds focus):
+Key map (active when focus is inside the canvas region):
 
 | Key | Action |
 |---|---|
-| `Tab` | Enters / exits the canvas region (one tab stop) |
-| `ArrowDown` | Next node in pre-order (first child if any, else next sibling, else next ancestor's sibling) |
-| `ArrowUp` | Previous node in pre-order (previous sibling's deepest descendant, else parent) |
-| `ArrowRight` | First child (else next sibling) |
-| `ArrowLeft` | Parent |
-| `Enter` or `Space` | `actions.selectNode(focusedId)` — promotes the caret to a committed selection |
-| `Escape` | Clears selection; returns focus to the region wrapper |
-| `Delete` or `Backspace` | `actions.delete(focusedId)` (ROOT exempt); focus jumps to next sibling, then previous sibling, then parent in that preference order |
+| `Tab` | Enters / exits the canvas region (one tab stop). When entering with no current selection, ROOT is selected. |
+| `ArrowDown` | Selects the next node in pre-order (first child if any, else next sibling, else next ancestor's sibling). |
+| `ArrowUp` | Selects the previous node in pre-order (previous sibling's deepest descendant, else parent). |
+| `ArrowRight` | Selects the first child (else next sibling). |
+| `ArrowLeft` | Selects the parent. |
+| `Escape` | Clears selection; returns focus to the region wrapper. |
+| `Delete` or `Backspace` | `actions.delete(selectedId)` (ROOT exempt); selection moves to next sibling, previous sibling, or parent in that preference order. |
 
-Click syncs both states: Craft's selection change handler subscribes via
-`useEditor` and updates the focus pointer + ring without re-focusing
-(the browser already moved native focus on click).
+Implementation notes:
 
-Each canvas node's DOM gets `tabindex=-1` from
-`CanonicalNode.attachRef` so it can be programmatically focused without
-fragmenting the natural tab order. Form inputs nested inside a canvas
-node (e.g. an editable text canonical) keep their own arrow-key
-behaviour — the handler returns early when the event target is an
-`<input>`, `<textarea>`, or `contenteditable` element.
+- The keydown listener attaches at `document` level (not as a React
+  `onKeyDown`) because some Craft.js connectors / Radix overlays attach
+  direct DOM listeners that can call `stopPropagation` on synthetic
+  events. The handler gates on
+  `containerRef.current?.contains(document.activeElement)` so arrow
+  keys outside the canvas (Inspector inputs, Toolbox) stay unaffected.
+- Form inputs nested inside a canvas node (an editable text canonical,
+  for instance) keep their own arrow-key behaviour — the handler
+  returns early when the event target is an `<input>`, `<textarea>`,
+  or `contenteditable` element.
+- Each canvas node's DOM gets `tabindex=-1` from
+  `CanonicalNode.attachRef` so click-focus works for all browsers
+  (Safari requires explicit tabindex to focus a `<div>` on click).
+- After delete or arrow navigation, the new selection auto-scrolls
+  into view via `scrollIntoView({ block: 'nearest' })`.
 
 ### Future — color contrast of token swatches
 

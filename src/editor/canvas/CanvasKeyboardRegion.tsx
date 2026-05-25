@@ -3,35 +3,37 @@ import { useCallback, useEffect, useRef, type ReactNode } from 'react'
 
 // Phase 9 Group D / PRODUCTION_READINESS § 1.4 — canvas keyboard navigation.
 //
-// The canvas region is a single tab stop. Inside the region the user navigates
-// a tree of nodes with arrow keys; the currently-focused node carries the
-// `data-canvas-focused` attribute (styled in index.css with an outline
-// distinct from the dashed selection outline drawn by ResizeOverlay). Focus
-// and selection are independent state — focus tracks the keyboard caret,
-// selection is what the Inspector reflects. `Enter` promotes focus to
-// selection.
+// The canvas region is a single tab stop. Arrow keys move the *selection*
+// directly: pressing ArrowDown on a selected node selects the next node in
+// pre-order, ArrowRight drills into the first child, ArrowLeft pops to the
+// parent, etc. Selection (not a separate "focus" state) is the source of
+// truth — the ResizeOverlay's dashed outline + 8 resize handles are the
+// visual indicator, identical to mouse-driven selection.
 //
-// Why a ref-based focus tracker and not React state:
-//   - The tree can grow / shrink (Hydrator restore, undo, document switch)
-//     between renders. A React state would either lag the DOM or fight
-//     Craft's own reconciliation.
-//   - The visual focus ring is a DOM attribute; the only React thing we
-//     need is for descendants to keep their tabindex=-1 setup, which
-//     CanonicalNode handles on each render via its attachRef.
+// Why selection-only (no separate focus state):
+//   - File managers / Figma's layers panel / IDE outline views all use
+//     "arrow = move selection." Designers expect the same.
+//   - A separate focus ring duplicates the ResizeOverlay's outline and
+//     visually competes with it. With selection-only, the user always
+//     sees one indicator.
+//   - The keyboard caret IS the selection — pressing Enter is redundant,
+//     so we don't define it (the Delete/Backspace + Escape handlers do
+//     the heavy lifting).
 //
-// Keys handled (only while a canvas node is the activeElement):
-//   ArrowDown  — first child if any, else next sibling, else next ancestor's
-//                next sibling.
-//   ArrowUp    — previous sibling's deepest last descendant, else parent.
-//   ArrowRight — first child if any, else next sibling (same as ArrowDown
-//                without the ancestor-walk; matches tree-widget convention).
+// Keys handled (only while focus is inside the canvas region):
+//   ArrowDown  — next node in pre-order (first child if any, else next
+//                sibling, else next ancestor's sibling). Selects it.
+//   ArrowUp    — previous node in pre-order (previous sibling's deepest
+//                descendant, else parent). Selects it.
+//   ArrowRight — first child if any, else next sibling.
 //   ArrowLeft  — parent.
-//   Enter      — actions.selectNode(focusedId).
-//   Escape     — clear selection AND blur back to the region container.
+//   Escape     — clears selection AND returns focus to the wrapper.
 //   Delete /
-//   Backspace  — actions.delete(focusedId) (when not ROOT); focus jumps to
-//                the next sibling, previous sibling, or parent in that
-//                preference order.
+//   Backspace  — actions.delete(selectedId) (when not ROOT); selection
+//                jumps to the next sibling, previous sibling, or parent.
+//
+// Selection itself lives in Craft.js's events.selected — this component
+// just reads from it and writes via actions.selectNode().
 
 interface NodeQueryShape {
   data: {
@@ -41,23 +43,19 @@ interface NodeQueryShape {
   }
 }
 
-const FOCUS_ATTR = 'data-canvas-focused'
-
 export function CanvasKeyboardRegion({ children }: { children: ReactNode }) {
-  // Subscribe to Craft's selection so a mouse click is reflected in the
-  // keyboard-focus pointer below — without this, arrow keys after a click
-  // would resume from wherever the keyboard had previously been.
+  // Subscribe to Craft's selection so the keydown handler always sees the
+  // current id without having to re-query each press.
   const { actions, query, selectedNodeId } = useEditor((state) => {
     const ids = state.events.selected ? Array.from(state.events.selected) : []
     return { selectedNodeId: (ids[0] as string | undefined) ?? null }
   })
+  const selectedNodeIdRef = useRef<string | null>(selectedNodeId)
+  selectedNodeIdRef.current = selectedNodeId
+
   const containerRef = useRef<HTMLDivElement | null>(null)
-  // Focus state is held in a ref because changes are imperative (set DOM
-  // attribute + .focus()); no need to trigger React re-renders.
-  const focusedIdRef = useRef<string | null>(null)
-  // Suppress the single auto-promotion that would otherwise happen when
-  // Escape moves focus to the wrapper (the wrapper's onFocus would otherwise
-  // bounce focus right back to ROOT). Consumed on the next focus event.
+  // Suppress the single auto-promotion that would otherwise re-select
+  // ROOT when Escape moves focus to the wrapper.
   const suppressNextPromotionRef = useRef(false)
 
   // Safe accessor — query.node throws when the id doesn't exist (e.g. after
@@ -73,38 +71,14 @@ export function CanvasKeyboardRegion({ children }: { children: ReactNode }) {
     [query],
   )
 
-  const setFocus = useCallback(
-    (id: string | null) => {
-      const prevId = focusedIdRef.current
-      if (prevId && prevId !== id) {
-        const prev = getNode(prevId)
-        prev?.data.dom?.removeAttribute(FOCUS_ATTR)
-      }
-      focusedIdRef.current = id
-      if (id) {
-        const next = getNode(id)
-        const dom = next?.data.dom
-        if (dom) {
-          dom.setAttribute(FOCUS_ATTR, '')
-          // preventScroll keeps the inspector / toolbox stable when the user
-          // navigates into off-screen nodes — the canvas auto-scrolls
-          // (overflow: auto on <main>) without an additional jump.
-          dom.focus({ preventScroll: false })
-        }
-      }
-    },
-    [getNode],
-  )
-
-  // Walk the next focusable node in a depth-first pre-order traversal.
-  // Returns null when there's nothing after `id` (i.e., last node in tree).
+  // Walk the next focusable node in depth-first pre-order. Returns null
+  // when there's nothing after `id` (last node in tree).
   const nextInTree = useCallback(
     (id: string): string | null => {
       const node = getNode(id)
       if (!node) return null
       const children = node.data.nodes ?? []
       if (children.length > 0) return children[0]
-      // Climb until we find an ancestor with a next sibling.
       let current = id
       while (true) {
         const cur = getNode(current)
@@ -120,8 +94,6 @@ export function CanvasKeyboardRegion({ children }: { children: ReactNode }) {
     [getNode],
   )
 
-  // The pre-order "previous": deepest-last-descendant of previous sibling,
-  // else parent. Mirrors nextInTree so Up/Down reach every node.
   const prevInTree = useCallback(
     (id: string): string | null => {
       const node = getNode(id)
@@ -166,183 +138,162 @@ export function CanvasKeyboardRegion({ children }: { children: ReactNode }) {
     [getNode],
   )
 
-  // Clear focus on unmount so the next mount starts clean.
-  useEffect(() => {
-    return () => {
-      const prevId = focusedIdRef.current
-      if (prevId) {
-        const prev = getNode(prevId)
-        prev?.data.dom?.removeAttribute(FOCUS_ATTR)
-      }
-      focusedIdRef.current = null
-    }
-  }, [getNode])
-
-  // Click-driven selection arrives via Craft's events.selected. Sync the
-  // keyboard-focus pointer + visual ring without re-focusing (the click
-  // already moved native focus). Without this the next ArrowDown would
-  // resume from the previous keyboard position, not the clicked node.
-  useEffect(() => {
-    if (!selectedNodeId) return
-    if (selectedNodeId === focusedIdRef.current) return
-    const prevId = focusedIdRef.current
-    if (prevId) {
-      const prev = getNode(prevId)
-      prev?.data.dom?.removeAttribute(FOCUS_ATTR)
-    }
-    focusedIdRef.current = selectedNodeId
-    const next = getNode(selectedNodeId)
-    next?.data.dom?.setAttribute(FOCUS_ATTR, '')
-  }, [selectedNodeId, getNode])
-
-  const handleContainerFocus = useCallback(
-    (e: React.FocusEvent<HTMLDivElement>) => {
-      // Only react when focus arrives on the wrapper itself (tab from outside).
-      // Focus entering a descendant node will not match because e.target is
-      // that descendant.
-      if (e.target !== containerRef.current) return
-      if (suppressNextPromotionRef.current) {
-        // Escape just dropped us here intentionally — leave focus on the
-        // wrapper so the user can Tab away cleanly.
-        suppressNextPromotionRef.current = false
-        return
-      }
-      const last = focusedIdRef.current
-      const target = last && getNode(last) ? last : 'ROOT'
-      setFocus(target)
-    },
-    [getNode, setFocus],
-  )
-
-  const handleContainerBlur = useCallback(
-    (e: React.FocusEvent<HTMLDivElement>) => {
-      // Strip focus state when the user leaves the region entirely (e.g.,
-      // Tab to the Inspector). Movement within the region still leaves the
-      // attribute on the active node.
-      const next = e.relatedTarget as Node | null
-      if (next && containerRef.current?.contains(next)) return
-      const id = focusedIdRef.current
-      if (id) {
-        const node = getNode(id)
-        node?.data.dom?.removeAttribute(FOCUS_ATTR)
-      }
-      focusedIdRef.current = null
+  // Scroll the newly-selected node into view so the ResizeOverlay's outline
+  // is visible after a long arrow run. ResizeOverlay positions on a fixed
+  // overlay so the canvas's own overflow:auto handles scrolling.
+  const ensureVisible = useCallback(
+    (id: string) => {
+      const dom = getNode(id)?.data.dom
+      dom?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
     },
     [getNode],
   )
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      // Form inputs inside a canvas node should handle their own arrow keys.
-      const target = e.target as HTMLElement
-      const tag = target.tagName
-      if (
-        tag === 'INPUT' ||
-        tag === 'TEXTAREA' ||
-        target.isContentEditable
-      ) {
+  const select = useCallback(
+    (id: string | null) => {
+      if (id) {
+        actions.selectNode(id)
+        ensureVisible(id)
+      } else {
+        actions.selectNode()
+      }
+    },
+    [actions, ensureVisible],
+  )
+
+  const handleContainerFocus = useCallback(
+    (e: React.FocusEvent<HTMLDivElement>) => {
+      // Only react when focus arrives on the wrapper itself (Tab from
+      // outside). Focus entering a descendant doesn't match.
+      if (e.target !== containerRef.current) return
+      if (suppressNextPromotionRef.current) {
+        suppressNextPromotionRef.current = false
         return
       }
-      const focusedId = focusedIdRef.current
-      if (!focusedId) return
+      // No selection yet → select ROOT so the user has a visible starting
+      // point. If something is already selected (mouse click before Tab),
+      // leave it alone.
+      if (!selectedNodeIdRef.current) {
+        select('ROOT')
+      }
+    },
+    [select],
+  )
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Form inputs inside a canvas node should handle their own arrows.
+      const target = e.target as HTMLElement | null
+      if (target) {
+        const tag = target.tagName
+        if (
+          tag === 'INPUT' ||
+          tag === 'TEXTAREA' ||
+          target.isContentEditable
+        ) {
+          return
+        }
+      }
+      // Only act when focus is somewhere inside the canvas region.
+      const active = document.activeElement
+      if (!active || !containerRef.current?.contains(active)) return
+
+      const selectedId = selectedNodeIdRef.current
+      // For the navigation keys we need a starting node — fall back to
+      // ROOT so a fresh Tab + ArrowDown does something useful.
+      const startId = selectedId ?? 'ROOT'
 
       switch (e.key) {
         case 'ArrowDown': {
           e.preventDefault()
-          const next = nextInTree(focusedId)
-          if (next) setFocus(next)
+          const next = nextInTree(startId)
+          if (next) select(next)
           break
         }
         case 'ArrowUp': {
           e.preventDefault()
-          const prev = prevInTree(focusedId)
-          if (prev) setFocus(prev)
+          const prev = prevInTree(startId)
+          if (prev) select(prev)
           break
         }
         case 'ArrowRight': {
           e.preventDefault()
-          const child = firstChild(focusedId)
-          if (child) setFocus(child)
+          const child = firstChild(startId)
+          if (child) select(child)
           else {
-            const sib = nextSibling(focusedId)
-            if (sib) setFocus(sib)
+            const sib = nextSibling(startId)
+            if (sib) select(sib)
           }
           break
         }
         case 'ArrowLeft': {
           e.preventDefault()
-          const node = getNode(focusedId)
+          const node = getNode(startId)
           const parentId = node?.data.parent
-          if (parentId) setFocus(parentId)
-          break
-        }
-        case 'Enter':
-        case ' ': {
-          e.preventDefault()
-          actions.selectNode(focusedId)
+          if (parentId) select(parentId)
           break
         }
         case 'Escape': {
+          if (!selectedId) return
           e.preventDefault()
-          // Empty selection — Craft.js accepts undefined to clear.
-          actions.selectNode()
-          // Clear our focus state + visual ring.
-          setFocus(null)
-          // Return focus to the wrapper so subsequent Tab leaves the region.
-          // The handleContainerFocus auto-promotion would normally bounce
-          // focus back to ROOT; suppress that single tick.
+          select(null)
+          // Return focus to the wrapper so subsequent Tab leaves the
+          // region — and suppress the wrapper's auto-promotion that
+          // would otherwise re-select ROOT.
           suppressNextPromotionRef.current = true
           containerRef.current?.focus()
           break
         }
         case 'Delete':
         case 'Backspace': {
-          if (focusedId === 'ROOT') return // ROOT can't be deleted.
+          if (!selectedId || selectedId === 'ROOT') return
           e.preventDefault()
-          // Pre-compute the focus destination before delete: next sibling
-          // (preserves reading order), else previous sibling, else parent.
-          const node = getNode(focusedId)
+          // Decide the next selection before deleting: prefer the next
+          // sibling (preserves reading order), then previous sibling,
+          // then parent.
+          const node = getNode(selectedId)
           const parentId = node?.data.parent ?? null
-          let nextFocus: string | null = parentId
+          let nextSelect: string | null = parentId
           if (parentId) {
             const parent = getNode(parentId)
             const siblings = parent?.data.nodes ?? []
-            const idx = siblings.indexOf(focusedId)
+            const idx = siblings.indexOf(selectedId)
             if (idx >= 0 && idx < siblings.length - 1) {
-              nextFocus = siblings[idx + 1]
+              nextSelect = siblings[idx + 1]
             } else if (idx > 0) {
-              nextFocus = siblings[idx - 1]
+              nextSelect = siblings[idx - 1]
             }
           }
-          actions.delete(focusedId)
-          // Schedule on the next tick so Craft's reconciliation lands and
-          // the destination node's DOM is rendered before we call .focus().
-          requestAnimationFrame(() => setFocus(nextFocus))
+          actions.delete(selectedId)
+          // Wait for Craft's reconciliation so the new target's DOM exists
+          // by the time we ask it to scrollIntoView.
+          requestAnimationFrame(() => select(nextSelect))
           break
         }
       }
-    },
-    [
-      actions,
-      firstChild,
-      getNode,
-      nextInTree,
-      nextSibling,
-      prevInTree,
-      setFocus,
-    ],
-  )
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [
+    actions,
+    firstChild,
+    getNode,
+    nextInTree,
+    nextSibling,
+    prevInTree,
+    select,
+  ])
 
   return (
     <div
       ref={containerRef}
       tabIndex={0}
       role="application"
-      aria-label="Canvas — Arrow keys to navigate, Enter to select, Delete to remove"
+      aria-label="Canvas — Arrow keys to navigate, Delete to remove, Escape to deselect"
       onFocus={handleContainerFocus}
-      onBlur={handleContainerBlur}
-      onKeyDown={handleKeyDown}
-      className="contents focus:outline-none"
+      // Block with no extra styling so the canvas tree sizes itself
+      // exactly like before.
+      className="outline-none"
     >
       {children}
     </div>

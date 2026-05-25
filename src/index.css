@@ -205,22 +205,12 @@ body {
   content: "Drop here";
 }
 
-/* Phase 9 § 1.4 — canvas keyboard navigation focus ring.
-   Drawn on the canvas node that holds keyboard focus via
-   CanvasKeyboardRegion. Distinct from the dashed selection outline
-   (ResizeOverlay) so users can tell the keyboard caret from the
-   committed selection — caret is solid + bright, selection is
-   dashed + persistent. The `outline` property (vs box-shadow) keeps
-   the node's box dimensions unchanged so layout doesn't shift
-   when focus moves. */
-[data-canvas-focused] {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-[data-canvas-focused]:focus {
-  /* Suppress the browser default focus ring — we already draw our own.
-     The element gets tabindex=-1 so this only fires when programmatically
-     focused by CanvasKeyboardRegion. */
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
+/* Phase 9 § 1.4 — suppress the browser default focus ring on canvas
+   nodes (they all carry tabindex=-1 from CanonicalNode so they can be
+   focused programmatically; we don't want a ring on every selection).
+   The ResizeOverlay's dashed outline + 8 handles is the keyboard /
+   selection indicator. */
+[data-craft-node-id]:focus,
+[data-craft-node-id]:focus-visible {
+  outline: none;
 }
