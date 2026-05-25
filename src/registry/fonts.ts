@@ -14,16 +14,26 @@
 // the lookup path consistent (every font in listFontTokens() resolves the
 // same way regardless of provenance).
 
+/** A font-family choice the designer can apply via the Typography panel. */
 export interface FontToken {
-  // Used as the className suffix: `font-<id>`. Lowercase + digits + hyphens.
+  /**
+   * Used as the className suffix: `font-<id>`. Must match
+   * `/^[a-z0-9-]+$/` (lowercase + digits + hyphens).
+   */
   id: string
-  // Display name shown in the Typography panel dropdown.
+  /** Display name shown in the Typography panel dropdown. */
   name: string
-  // CSS font-family value — e.g., `'Inter Variable', sans-serif` or
-  // `var(--font-sans)`.
+  /**
+   * CSS `font-family` value, e.g. `'Inter Variable', sans-serif` or
+   * `var(--font-sans)`. When `url` is set, the token's id is prepended
+   * as the primary family so the loaded font is used.
+   */
   family: string
-  // Optional URL for @font-face. When set, the runtime injects a font-face
-  // declaration loading the font; the browser fetches and applies it.
+  /**
+   * Optional URL for `@font-face`. When set, the runtime injects an
+   * `@font-face` declaration that loads the font; the browser fetches
+   * and applies it.
+   */
   url?: string
 }
 
@@ -71,6 +81,27 @@ function escapeFamily(family: string): string {
 
 const ID_RE = /^[a-z0-9-]+$/
 
+/**
+ * Register a font token so it appears in the Typography panel's Font
+ * dropdown. URL-backed tokens trigger an `@font-face` declaration; the
+ * browser fetches the font and the per-token `.font-<id>` CSS rule
+ * applies it.
+ *
+ * Throws if `token.id` doesn't match `/^[a-z0-9-]+$/`. Use
+ * `unregisterFontToken(id)` first to replace a built-in.
+ *
+ * @example
+ * ```ts
+ * import { registerFontToken } from '@crafted-design/editor/sdk'
+ *
+ * registerFontToken({
+ *   id: 'inter',
+ *   name: 'Inter',
+ *   family: '"Inter Variable", sans-serif',
+ *   url: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap',
+ * })
+ * ```
+ */
 export function registerFontToken(token: FontToken): void {
   if (!ID_RE.test(token.id)) {
     throw new Error(
@@ -81,16 +112,22 @@ export function registerFontToken(token: FontToken): void {
   rebuildStyleSheet()
 }
 
+/**
+ * Remove a font token by id. Returns `true` if a token was removed,
+ * `false` if the id wasn't registered.
+ */
 export function unregisterFontToken(id: string): boolean {
   const had = tokens.delete(id)
   if (had) rebuildStyleSheet()
   return had
 }
 
+/** Look up a font token by id; returns `undefined` if not registered. */
 export function getFontToken(id: string): FontToken | undefined {
   return tokens.get(id)
 }
 
+/** All registered font tokens, in registration order. */
 export function listFontTokens(): FontToken[] {
   return [...tokens.values()]
 }

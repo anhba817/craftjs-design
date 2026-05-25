@@ -1,0 +1,27 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/sdk/index.ts"],
+  "entryPointStrategy": "expand",
+  "out": "docs/api",
+  "readme": "none",
+  "name": "@crafted-design/editor SDK",
+  "tsconfig": "./tsconfig.app.json",
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "categorizeByGroup": true,
+  "kindSortOrder": [
+    "Function",
+    "Class",
+    "Interface",
+    "TypeAlias",
+    "Variable"
+  ],
+  "githubPages": false,
+  "hideGenerator": true,
+  "plugin": ["typedoc-plugin-markdown"],
+  "outputs": [
+    { "name": "html", "path": "docs/api/html" },
+    { "name": "markdown", "path": "docs/api/markdown" }
+  ]
+}

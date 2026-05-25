@@ -49,6 +49,37 @@ function bumpVersion(): void {
   for (const cb of registryListeners) cb();
 }
 
+/**
+ * Register a canonical component definition. Adds it to the in-memory
+ * registry keyed by `def.id`; subsequent `getComponent(id)` calls return
+ * the definition, and post-mount registrations trigger a registry-version
+ * bump so the Toolbox + Craft resolver pick them up without a reload.
+ *
+ * Throws if `def.id` is already registered. Use `unregisterCanonical(id)`
+ * first to replace a built-in.
+ *
+ * @typeParam P - The canonical's props shape (inferred from `def.propsSchema`).
+ * @param def - The canonical definition: id, category, displayName, tags,
+ *   isCanvas, styleSlots, propsSchema, defaults, plus optional
+ *   applicablePanels / canvasSlots overrides.
+ *
+ * @example
+ * ```ts
+ * import { z } from 'zod'
+ * import { registerComponent } from '@crafted-design/editor/sdk'
+ *
+ * registerComponent({
+ *   id: 'stepper',
+ *   category: 'navigation',
+ *   displayName: 'Stepper',
+ *   tags: ['progress', 'wizard'],
+ *   isCanvas: false,
+ *   styleSlots: ['root'],
+ *   propsSchema: z.object({ step: z.number() }),
+ *   defaults: { props: { step: 0 }, style: { classes: { root: '' } } },
+ * })
+ * ```
+ */
 export function registerComponent<P>(def: CanonicalComponent<P>): void {
   if (components.has(def.id)) {
     throw new Error(`duplicate canonical id: ${def.id}`);
@@ -88,15 +119,23 @@ export function unregisterCanonical(id: CanonicalId): boolean {
   return had;
 }
 
+/**
+ * Look up a canonical by id. Returns `undefined` when the id isn't
+ * registered. Cast via the `P` generic when you need the typed props
+ * shape; defaults to `Record<string, unknown>` if omitted.
+ */
 export function getComponent<P = Record<string, unknown>>(
   id: CanonicalId,
 ): CanonicalComponent<P> | undefined {
   return components.get(id) as CanonicalComponent<P> | undefined;
 }
 
-// Inspector panels know nodes by their Craft `displayName` (which equals each
-// canonical's displayName by construction — see craft/resolver.tsx). This
-// helper closes the loop so panels can map back to the canonical def.
+/**
+ * Reverse-lookup helper. Inspector panels and Craft.js know nodes by
+ * their `displayName` (each canonical's displayName is also its Craft
+ * user-component name — see `src/craft/resolver.tsx`). This is the
+ * one path back to the canonical def.
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getComponentByDisplayName(
   displayName: string,
@@ -107,16 +146,24 @@ export function getComponentByDisplayName(
   return undefined;
 }
 
+/** All registered canonicals, in registration order. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function listComponents(): CanonicalComponent<any>[] {
   return [...components.values()];
 }
 
-// Derives the canvas-slot list for a canonical. When canvasSlots is explicit,
-// it wins (multi-canvas Pattern B). Function form (Phase 7) is called with
-// the current node's props for dynamic counts (e.g., Tabs: one slot per tab).
-// Otherwise the legacy rule holds:
-// isCanvas=true → ['root'] (Pattern A single canvas), false → [].
+/**
+ * Resolve the canvas-slot list for a canonical. When `canvasSlots` is
+ * declared explicitly, it wins (multi-canvas Pattern B). Function form
+ * (Phase 7) is called with the current node's props for dynamic counts
+ * (e.g., Tabs: one slot per tab). Otherwise the legacy rule holds:
+ * `isCanvas=true` → `['root']` (Pattern A single canvas), false → `[]`.
+ *
+ * @param c - The canonical definition.
+ * @param nodeProps - Current node props, used only when `canvasSlots` is
+ *   a function. Optional for the static cases.
+ * @returns The slot keys for this canonical instance.
+ */
 export function getCanvasSlots(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   c: CanonicalComponent<any>,
@@ -129,16 +176,18 @@ export function getCanvasSlots(
   return c.isCanvas ? ["root"] : [];
 }
 
-// Resolves which inspector panels apply to a canonical. Honors an explicit
-// `applicablePanels` field on the canonical if present; otherwise derives a
-// sensible default from category + isCanvas.
-//
-// Defaults:
-// - Every canonical gets spacing, size, appearance, effects, componentProps.
-// - Containers (isCanvas) additionally get layout.
-// - Content/layout categories additionally get typography. Input-category
-//   canonicals omit it because their library primitives (shadcn/MUI buttons,
-//   inputs) override text-* utilities via cva/internal styling.
+/**
+ * Resolve which inspector panels apply to a canonical. Honours an
+ * explicit `applicablePanels` field on the canonical if present;
+ * otherwise derives a sensible default from `category` + `isCanvas`:
+ *
+ *   - Every canonical gets `spacing`, `size`, `appearance`, `effects`,
+ *     `componentProps`.
+ *   - Containers (`isCanvas`) additionally get `layout`.
+ *   - Content / layout categories additionally get `typography`. The
+ *     `input` category omits typography because library primitives
+ *     (shadcn / MUI inputs) override text-* utilities internally.
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getApplicablePanels(c: CanonicalComponent<any>): PanelId[] {
   if (c.applicablePanels) return [...c.applicablePanels];

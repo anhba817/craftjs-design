@@ -1,11 +1,20 @@
 # SDK Reference
 
-Public surface exported from `@design/sdk`. SDK consumers MUST import only
-from this path — reaching into `src/adapters/types`, `src/registry/types`,
-etc. is unsupported and can break across versions.
+Public surface exported from `@crafted-design/editor/sdk` (alias
+`@design/sdk` in this repo). SDK consumers MUST import only from these
+paths — reaching into `src/adapters/types`, `src/registry/types`, etc. is
+unsupported and can break across versions. ESLint's
+`no-restricted-imports` rule enforces this for `examples/**`.
 
-For task-oriented walkthroughs (writing an adapter, a canonical, or a panel),
-see [`TUTORIAL_ADAPTER.md`](./TUTORIAL_ADAPTER.md),
+This document is the **narrative reference** — what each surface is for,
+how it composes, and why the boundaries are drawn where they are. For
+authoritative function signatures + parameter tables, see the
+auto-generated TypeDoc reference at [`docs/api/`](./api/README.md). The
+TypeDoc reference is regenerated from JSDoc on each `npm run docs`; if
+the prose below contradicts the reference, the reference wins.
+
+For task-oriented walkthroughs (writing an adapter, a canonical, or a
+panel), see [`TUTORIAL_ADAPTER.md`](./TUTORIAL_ADAPTER.md),
 [`TUTORIAL_CANONICAL.md`](./TUTORIAL_CANONICAL.md),
 [`TUTORIAL_PANEL.md`](./TUTORIAL_PANEL.md).
 

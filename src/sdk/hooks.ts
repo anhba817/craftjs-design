@@ -20,3 +20,11 @@
 //   }
 
 export { useNodeClasses } from '../editor/inspector/shared/useNodeClasses'
+
+/**
+ * Tailwind v4's responsive breakpoints. `'base'` is the no-prefix bucket
+ * (writes to `style.classes`); `'sm'` / `'md'` / `'lg'` / `'xl'` / `'2xl'`
+ * write to `style.responsive[<bp>]`. The active breakpoint is editor UI
+ * state, not part of the saved document.
+ */
+export type { Breakpoint } from '../state/editorStore'

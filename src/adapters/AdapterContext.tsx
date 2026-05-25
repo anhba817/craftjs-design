@@ -6,6 +6,37 @@ import type { Adapter } from "./types";
 
 const adapters = new Map<string, Adapter>();
 
+/**
+ * Register an adapter — a UI library binding that provides renderers for
+ * each canonical id. Validates the manifest structurally (Zod) before
+ * mutating registry state; throws with a readable message on either a
+ * schema violation or a duplicate id.
+ *
+ * Adapters should register at module load so they're available before
+ * `<Editor />` mounts. Post-mount registration works but the
+ * AdapterSwitcher's dropdown captures the list at open time — see
+ * Phase 10 § 2.8 for the hot-reload variant.
+ *
+ * @param adapter - The adapter manifest: `{ id, displayName, components,
+ *   classMap?, Wrapper?, mount?, unmount? }`.
+ *
+ * @example
+ * ```ts
+ * import { registerAdapter } from '@crafted-design/editor/sdk'
+ * import type { AdapterRenderProps } from '@crafted-design/editor/sdk'
+ *
+ * function MyButton({ props, rootRef, className }: AdapterRenderProps) {
+ *   const { label } = props as { label: string }
+ *   return <button ref={rootRef as never} className={className}>{label}</button>
+ * }
+ *
+ * registerAdapter({
+ *   id: 'mylib',
+ *   displayName: 'My Library',
+ *   components: { button: MyButton },
+ * })
+ * ```
+ */
 export function registerAdapter(adapter: Adapter): void {
   // Validate structural shape before mutating registry state. Failing here
   // gives plugin authors a readable boot-time error instead of a confusing
@@ -23,10 +54,12 @@ export function registerAdapter(adapter: Adapter): void {
   adapters.set(adapter.id, adapter);
 }
 
+/** Look up an adapter by id. Returns `undefined` if not registered. */
 export function getAdapter(id: string): Adapter | undefined {
   return adapters.get(id);
 }
 
+/** All registered adapters, in registration order. */
 export function listAdapters(): Adapter[] {
   return [...adapters.values()];
 }
@@ -104,6 +137,16 @@ function composeAllWrappers(all: Adapter[], children: ReactNode): ReactNode {
   return wrapped;
 }
 
+/**
+ * Hook returning the currently-active adapter. The active adapter changes
+ * when the user picks a different one in the AdapterSwitcher (or when a
+ * loaded document sets `adapterId` on its envelope). Reads from
+ * `<AdapterProvider>`; throws if called outside the editor's React tree.
+ *
+ * Adapter authors don't typically need this — adapters' own components
+ * receive props via `AdapterRenderProps`. SDK consumers writing custom
+ * panels can use it to read the active adapter's `classMap` or metadata.
+ */
 export function useActiveAdapter(): Adapter {
   const adapter = useContext(AdapterCtx);
   if (!adapter) {

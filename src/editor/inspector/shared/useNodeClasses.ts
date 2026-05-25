@@ -4,26 +4,48 @@ import type { NodeStyle } from '@/registry/types'
 
 type NodeProps = { style: NodeStyle }
 
-// Read/write the active-breakpoint's class slice for a slot, plus inline
-// arbitrary values. Funnels all inspector style I/O through one place.
-//
-// Subscription model is intentionally split:
-//   - useEditor's collector subscribes to THIS node's props. When Immer's
-//     setProp produces a new props ref, the collector returns a different ref
-//     and the consuming component re-renders.
-//   - activeBreakpoint lives in Zustand. It's read via useEditorStore which
-//     subscribes independently.
-//   - classString and inlineStyle are computed in the body (not the collector)
-//     so they always reflect the LIVE activeBreakpoint. Otherwise the collector
-//     closure captures activeBreakpoint at the previous Craft state change,
-//     and edits at non-base breakpoints read stale data.
-//
-// Phase 6 — inline arbitrary values now read/write per-breakpoint:
-//   - base → style.inline[slot][cssProp]
-//   - non-base → style.responsiveInline[bp][slot][cssProp]
-// CanonicalNode picks up entries from BOTH locations and emits them either as
-// React style props (base-only fast path) or as a generated CSS class with
-// @media rules (when any responsive entry exists for the slot).
+/**
+ * The single I/O funnel for class-string + arbitrary-inline editing on
+ * a canvas node's style slot. Read the current class string + inline
+ * style record; write either via `writeClasses(next)` or
+ * `writeInline(cssProp, value)`.
+ *
+ * Routes reads / writes between the **base** breakpoint
+ * (`style.classes` / `style.inline`) and **non-base** breakpoints
+ * (`style.responsive` / `style.responsiveInline`) based on
+ * `editorStore.activeBreakpoint`. Panel authors should call this hook
+ * rather than poking Craft state directly — it captures the conventions
+ * the built-in panels rely on (responsive bucket routing, container peel
+ * on clear, etc.).
+ *
+ * The returned `classString` / `inlineStyle` always reflect the LIVE
+ * `activeBreakpoint` — they're computed in the hook body, not in the
+ * Craft collector, so breakpoint changes don't read stale data.
+ *
+ * @param nodeId - Craft node id (e.g., from `useEditor` collector).
+ * @param slot - Style slot. `'root'` for Pattern A canonicals; named
+ *   slot (`'header'`, `'body'`, …) for Pattern B canonicals like Card.
+ *   Defaults to `'root'`.
+ * @returns `{ classString, inlineStyle, writeClasses, writeInline,
+ *   activeBreakpoint }`. `writeClasses(next)` replaces the slot's class
+ *   string; `writeInline(prop, value)` sets a single CSS property (or
+ *   clears it with `undefined`).
+ *
+ * @example
+ * ```tsx
+ * import { useNodeClasses } from '@crafted-design/editor/sdk'
+ *
+ * function MyPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
+ *   const { classString, writeClasses } = useNodeClasses(nodeId, slot)
+ *   return (
+ *     <textarea
+ *       value={classString}
+ *       onChange={(e) => writeClasses(e.target.value)}
+ *     />
+ *   )
+ * }
+ * ```
+ */
 export function useNodeClasses(nodeId: string, slot: string = 'root') {
   const activeBreakpoint = useEditorStore((s) => s.activeBreakpoint)
 
