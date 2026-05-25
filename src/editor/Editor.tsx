@@ -4,6 +4,7 @@ import { AdapterProvider } from '../adapters/AdapterContext'
 import { getResolver } from '../craft/resolver'
 import { _markEditorMounted, getComponent } from '../registry/registry'
 import { ThemeProvider } from '../themes/ThemeProvider'
+import { CanvasKeyboardRegion } from './canvas/CanvasKeyboardRegion'
 import { ResizeOverlay } from './canvas/ResizeOverlay'
 import { ErrorBoundary } from './errors/ErrorBoundary'
 import {
@@ -53,14 +54,16 @@ export function Editor() {
             <ThemeProvider>
               <main className="flex-1 overflow-auto bg-muted p-8">
                 <ErrorBoundary fallback={CanvasErrorFallback}>
-                  <Frame>
-                    <Element
-                      is={Root}
-                      canvas
-                      nodeProps={boxDef.defaults.props}
-                      style={boxDef.defaults.style}
-                    />
-                  </Frame>
+                  <CanvasKeyboardRegion>
+                    <Frame>
+                      <Element
+                        is={Root}
+                        canvas
+                        nodeProps={boxDef.defaults.props}
+                        style={boxDef.defaults.style}
+                      />
+                    </Frame>
+                  </CanvasKeyboardRegion>
                 </ErrorBoundary>
               </main>
             </ThemeProvider>

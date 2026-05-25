@@ -82,15 +82,40 @@ Implementation: `src/editor/Toolbox.tsx`. The favorited buttons stay
 `tabIndex={-1}` so they don't fragment the roving rotation — `F` is the
 keyboard path; mouse users click directly.
 
-### Future — Craft.js selection via keyboard
+### Shipped — Canvas keyboard navigation (Phase 9 § 1.4)
 
-The canvas relies on mouse / pointer selection. Designers using keyboard
-exclusively can't select a node. The Inspector still shows "Nothing
-selected." until a pointer interaction.
+The canvas region (`<CanvasKeyboardRegion>` in
+`src/editor/canvas/CanvasKeyboardRegion.tsx`) is a single tab stop. Once
+focus is inside, the user navigates a depth-first pre-order traversal of
+the node tree with arrow keys; the focused node carries the
+`data-canvas-focused` attribute (styled in `index.css` as a solid outline,
+deliberately distinct from the dashed selection outline drawn by
+`ResizeOverlay`). Focus and selection are independent state — focus
+tracks the keyboard caret, selection is what the Inspector reflects.
 
-**Recommended**: add `tabIndex={0}` to the canvas root + arrow-key
-navigation between siblings, then `Enter` to select. Out of scope for
-Phase 8; documented as a Phase 9 task.
+Key map (active when a canvas node holds focus):
+
+| Key | Action |
+|---|---|
+| `Tab` | Enters / exits the canvas region (one tab stop) |
+| `ArrowDown` | Next node in pre-order (first child if any, else next sibling, else next ancestor's sibling) |
+| `ArrowUp` | Previous node in pre-order (previous sibling's deepest descendant, else parent) |
+| `ArrowRight` | First child (else next sibling) |
+| `ArrowLeft` | Parent |
+| `Enter` or `Space` | `actions.selectNode(focusedId)` — promotes the caret to a committed selection |
+| `Escape` | Clears selection; returns focus to the region wrapper |
+| `Delete` or `Backspace` | `actions.delete(focusedId)` (ROOT exempt); focus jumps to next sibling, then previous sibling, then parent in that preference order |
+
+Click syncs both states: Craft's selection change handler subscribes via
+`useEditor` and updates the focus pointer + ring without re-focusing
+(the browser already moved native focus on click).
+
+Each canvas node's DOM gets `tabindex=-1` from
+`CanonicalNode.attachRef` so it can be programmatically focused without
+fragmenting the natural tab order. Form inputs nested inside a canvas
+node (e.g. an editable text canonical) keep their own arrow-key
+behaviour — the handler returns early when the event target is an
+`<input>`, `<textarea>`, or `contenteditable` element.
 
 ### Future — color contrast of token swatches
 

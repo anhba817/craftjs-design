@@ -33,7 +33,16 @@ export function CanonicalNode({
   } = useNode()
 
   const attachRef = (el: HTMLElement | null) => {
-    if (el) connect(drag(el))
+    if (el) {
+      connect(drag(el))
+      // Phase 9 § 1.4 — every canvas node is programmatically focusable so
+      // CanvasKeyboardRegion can move focus across the tree with arrow keys.
+      // tabindex=-1 keeps the node out of the natural tab order; the region
+      // wrapper is the single tab stop.
+      if (!el.hasAttribute('tabindex')) {
+        el.setAttribute('tabindex', '-1')
+      }
+    }
   }
 
   // Adapter coverage gap: render a labeled placeholder instead of throwing.
