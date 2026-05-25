@@ -54,12 +54,31 @@ export function readDocumentIndex(): DocumentIndex {
   }
 }
 
-export function writeDocumentIndex(index: DocumentIndex): void {
+// Phase 9 § 1.7 — every write returns a typed result so callers can react
+// to a QuotaExceededError without parsing console logs. `'quota'` is the
+// only programmatically-recoverable failure; `'schema'` (Zod parse) and
+// `'unknown'` mean the data was rejected and the caller can't help —
+// they still get a result so they can keep state consistent.
+export type WriteResult =
+  | { ok: true }
+  | { ok: false; kind: 'quota' | 'schema' | 'unknown'; error: unknown }
+
+function isQuotaExceededError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false
+  const name = (err as { name?: unknown }).name
+  return name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED'
+}
+
+export function writeDocumentIndex(index: DocumentIndex): WriteResult {
   try {
     localStorage.setItem(STORAGE_KEY_INDEX, JSON.stringify(index))
+    return { ok: true }
   } catch (err) {
-    // QuotaExceeded etc. — log but don't throw; surface via a future banner.
+    if (isQuotaExceededError(err)) {
+      return { ok: false, kind: 'quota', error: err }
+    }
     console.error('[documentRegistry] writeDocumentIndex failed:', err)
+    return { ok: false, kind: 'unknown', error: err }
   }
 }
 
@@ -75,12 +94,55 @@ export function readDocument(id: string): EditorDocument | null {
   }
 }
 
-export function writeDocument(id: string, doc: EditorDocument): void {
+export function writeDocument(id: string, doc: EditorDocument): WriteResult {
+  let parsed: EditorDocument
   try {
-    const parsed = documentSchema.parse(doc)
-    localStorage.setItem(storageKeyForDocument(id), JSON.stringify(parsed))
+    parsed = documentSchema.parse(doc)
   } catch (err) {
-    console.error('[documentRegistry] writeDocument', id, 'failed:', err)
+    console.error('[documentRegistry] writeDocument schema', id, ':', err)
+    return { ok: false, kind: 'schema', error: err }
+  }
+  try {
+    localStorage.setItem(storageKeyForDocument(id), JSON.stringify(parsed))
+    return { ok: true }
+  } catch (err) {
+    if (isQuotaExceededError(err)) {
+      return { ok: false, kind: 'quota', error: err }
+    }
+    console.error('[documentRegistry] writeDocument', id, ':', err)
+    return { ok: false, kind: 'unknown', error: err }
+  }
+}
+
+/**
+ * Sums the byte length of every `craftjs-design*` key + value in
+ * localStorage. The total is approximate — browsers vary in how they
+ * count UTF-16 chars vs bytes, and quota limits per origin are typically
+ * 5–10 MB. We use a conservative 5 MB ceiling so the banner triggers
+ * before the actual limit on most engines.
+ */
+export function getStorageUsage(): {
+  usedBytes: number
+  totalBytes: number
+  percent: number
+} {
+  let used = 0
+  if (typeof localStorage === 'undefined') {
+    return { usedBytes: 0, totalBytes: 5 * 1024 * 1024, percent: 0 }
+  }
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (!key || !key.startsWith('craftjs-design')) continue
+    const value = localStorage.getItem(key) ?? ''
+    // length is char count; for ASCII-heavy JSON this approximates bytes.
+    // Multi-byte characters add a small over-budget margin in our favour.
+    used += key.length + value.length
+  }
+  const totalBytes = 5 * 1024 * 1024
+  return {
+    usedBytes: used,
+    totalBytes,
+    percent: (used / totalBytes) * 100,
   }
 }
 

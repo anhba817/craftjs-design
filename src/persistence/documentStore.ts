@@ -1,8 +1,12 @@
 import { create } from 'zustand'
+import { useEditorStore } from '@/state/editorStore'
+import type { StorageSaveFailedInfo } from '@/state/editorStore'
 import {
   type DocumentIndex,
   type DocumentSummary,
+  type WriteResult,
   deleteDocumentBlob,
+  getStorageUsage,
   migrateLegacyV1,
   newDocumentId,
   readDocument,
@@ -11,6 +15,24 @@ import {
   writeDocumentIndex,
 } from './documentRegistry'
 import type { EditorDocument } from './schema'
+
+// Phase 9 § 1.7 — after every write, report usage to editorStore so
+// StorageQuotaBanner / Modal reflect the current state. Quota failures
+// raise the save-failed modal; other failures are already logged inside
+// documentRegistry.
+function reportWrite(
+  operation: StorageSaveFailedInfo['operation'],
+  result: WriteResult,
+  docId?: string,
+): void {
+  if (result.ok === false && result.kind === 'quota') {
+    useEditorStore.getState().setStorageSaveFailed({ operation, docId })
+  }
+  // Always refresh the percent so the banner threshold tracking matches
+  // reality — usage can drop after a delete, for instance.
+  const usage = getStorageUsage()
+  useEditorStore.getState().setStorageQuotaPercent(usage.percent)
+}
 
 // Phase 7 multi-document store. Thin Zustand wrapper over documentRegistry —
 // the registry handles localStorage; this store provides reactive subscription
@@ -44,7 +66,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       documents: get().documents,
       activeId: id,
     }
-    writeDocumentIndex(next)
+    reportWrite('writeDocumentIndex', writeDocumentIndex(next))
     set(next)
   },
 
@@ -57,12 +79,12 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       created: now,
       updated: now,
     }
-    if (seed) writeDocument(id, seed)
+    if (seed) reportWrite('writeDocument', writeDocument(id, seed), id)
     const next: DocumentIndex = {
       documents: [...get().documents, summary],
       activeId: id,
     }
-    writeDocumentIndex(next)
+    reportWrite('writeDocumentIndex', writeDocumentIndex(next))
     set(next)
     return id
   },
@@ -75,7 +97,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
       documents,
       activeId: get().activeId,
     }
-    writeDocumentIndex(next)
+    reportWrite('writeDocumentIndex', writeDocumentIndex(next))
     set(next)
   },
 
@@ -96,8 +118,10 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
     const activeId =
       get().activeId === id ? (documents[0]?.id ?? null) : get().activeId
     const next: DocumentIndex = { documents, activeId }
-    writeDocumentIndex(next)
+    reportWrite('writeDocumentIndex', writeDocumentIndex(next))
     set(next)
+    // Delete frees space → percent may have dropped. reportWrite already
+    // refreshed it, so the banner reflects the new usage automatically.
   },
 
   saveActiveDocument(doc) {
@@ -118,9 +142,9 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
         d.id === activeId ? { ...d, updated: Date.now() } : d,
       )
     }
-    writeDocument(activeId, doc)
+    reportWrite('writeDocument', writeDocument(activeId, doc), activeId)
     const next: DocumentIndex = { documents, activeId }
-    writeDocumentIndex(next)
+    reportWrite('writeDocumentIndex', writeDocumentIndex(next))
     set(next)
   },
 

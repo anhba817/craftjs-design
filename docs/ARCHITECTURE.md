@@ -214,6 +214,19 @@ Two parallel surfaces, by failure-mode:
   async failures (Hydrator deserialize) are designed to bubble through
   the boundary instead, so this handles the long tail of non-fatal
   issues.
+- **`StorageQuotaBanner` + `StorageQuotaErrorModal`**
+  (`src/editor/persistence/`, backed by editorStore's
+  `storageQuotaPercent` / `storageQuotaDismissed` /
+  `storageSaveFailed`) warn the user about localStorage pressure.
+  `documentRegistry.getStorageUsage()` sums every `craftjs-design:*`
+  key and reports a percentage against a conservative 5 MB ceiling.
+  `documentStore.reportWrite` calls this after every save / index
+  write; usage ≥ 80% surfaces the banner under the header, and a
+  `QuotaExceededError` from `localStorage.setItem` (now caught and
+  reported via the `WriteResult` returned by `writeDocument` /
+  `writeDocumentIndex`) raises a blocking modal. The banner's
+  dismiss state lives in sessionStorage so it survives a reload but
+  resets between tabs.
 - **`applyEnvelopeSafely` + `MalformedDocumentBanner`**
   (`craftJsonIntegrity.ts`, `applyEnvelopeSafely.ts`,
   `MalformedDocumentBanner.tsx`) guards document-load failures.

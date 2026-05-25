@@ -3,6 +3,7 @@ import {
   LEGACY_V1_KEY,
   STORAGE_KEY_INDEX,
   deleteDocumentBlob,
+  getStorageUsage,
   migrateLegacyV1,
   newDocumentId,
   readDocument,
@@ -154,5 +155,110 @@ describe('documentRegistry — legacy v1 migration', () => {
     expect(migrateLegacyV1()).toBeNull()
     // Index is still empty — no partial state written.
     expect(localStorage.getItem(STORAGE_KEY_INDEX)).toBeNull()
+  })
+})
+
+// Phase 9 § 1.7 — quota-aware writes return typed results so callers
+// can show the right UI on QuotaExceededError instead of silently
+// console.error'ing.
+
+describe('documentRegistry — quota safety', () => {
+  // Override the previous beforeEach's localStorage stub with one that
+  // can be made to throw on setItem. The previous beforeEach still ran
+  // (resetting per test) — we just replace the stub here for these
+  // specific tests.
+  let storage: Map<string, string>
+  let forceErrorName: string | null
+
+  beforeEach(() => {
+    storage = new Map()
+    forceErrorName = null
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => (storage.has(k) ? storage.get(k)! : null),
+      setItem: (k: string, v: string) => {
+        if (forceErrorName) {
+          const err = new Error('Quota exceeded')
+          err.name = forceErrorName
+          throw err
+        }
+        storage.set(k, v)
+      },
+      removeItem: (k: string) => storage.delete(k),
+      clear: () => storage.clear(),
+      get length() {
+        return storage.size
+      },
+      key: (i: number) => Array.from(storage.keys())[i] ?? null,
+    })
+  })
+
+  it('writeDocument returns ok:true on a successful write', () => {
+    const env = makeEnvelope()
+    const result = writeDocument('doc-q1', env)
+    expect(result).toEqual({ ok: true })
+  })
+
+  it('writeDocument returns kind:quota when setItem throws QuotaExceededError', () => {
+    forceErrorName = 'QuotaExceededError'
+    const result = writeDocument('doc-q1', makeEnvelope())
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.kind).toBe('quota')
+  })
+
+  it('writeDocument returns kind:quota for the Firefox NS_ERROR_DOM_QUOTA_REACHED name', () => {
+    forceErrorName = 'NS_ERROR_DOM_QUOTA_REACHED'
+    const result = writeDocument('doc-q2', makeEnvelope())
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.kind).toBe('quota')
+  })
+
+  it('writeDocument returns kind:unknown for non-quota setItem failures', () => {
+    forceErrorName = 'SomethingElseError'
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const result = writeDocument('doc-q3', makeEnvelope())
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.kind).toBe('unknown')
+  })
+
+  it('writeDocument returns kind:schema and skips setItem when the envelope is invalid', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const result = writeDocument(
+      'doc-q4',
+      {} as unknown as EditorDocument,
+    )
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.kind).toBe('schema')
+    expect(storage.size).toBe(0)
+  })
+
+  it('writeDocumentIndex returns kind:quota when setItem throws', () => {
+    forceErrorName = 'QuotaExceededError'
+    const result = writeDocumentIndex({ documents: [], activeId: null })
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.kind).toBe('quota')
+  })
+
+  it('getStorageUsage reports 0% for an empty store', () => {
+    const usage = getStorageUsage()
+    expect(usage.usedBytes).toBe(0)
+    expect(usage.percent).toBe(0)
+    expect(usage.totalBytes).toBe(5 * 1024 * 1024)
+  })
+
+  it('getStorageUsage ignores non-craftjs-design keys', () => {
+    storage.set('some-other-app:big-key', 'x'.repeat(100_000))
+    storage.set('craftjs-design:doc:doc-u1:v2', 'short')
+    const usage = getStorageUsage()
+    expect(usage.usedBytes).toBeLessThan(200)
+    expect(usage.usedBytes).toBeGreaterThan(0)
+  })
+
+  it('getStorageUsage reports ≥80% once craftjs keys cross the threshold', () => {
+    storage.set(
+      'craftjs-design:doc:big:v2',
+      'x'.repeat(4 * 1024 * 1024 + 100_000),
+    )
+    const usage = getStorageUsage()
+    expect(usage.percent).toBeGreaterThanOrEqual(80)
   })
 })

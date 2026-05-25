@@ -2,6 +2,7 @@ import { Editor as Craft, Element, Frame } from '@craftjs/core'
 import { useEffect } from 'react'
 import { AdapterProvider } from '../adapters/AdapterContext'
 import { getResolver } from '../craft/resolver'
+import { getStorageUsage } from '../persistence/documentRegistry'
 import { _markEditorMounted, getComponent } from '../registry/registry'
 import { useEditorStore } from '../state/editorStore'
 import { ThemeProvider } from '../themes/ThemeProvider'
@@ -17,6 +18,8 @@ import {
 } from './errors/fallbacks'
 import { Hydrator } from './Hydrator'
 import { Inspector } from './Inspector'
+import { StorageQuotaBanner } from './persistence/StorageQuotaBanner'
+import { StorageQuotaErrorModal } from './persistence/StorageQuotaErrorModal'
 import { ResolverUpdater } from './ResolverUpdater'
 import { SaveLoadBar } from './SaveLoadBar'
 import { Toolbox } from './Toolbox'
@@ -26,6 +29,14 @@ export function Editor() {
   // calls after this point warn instead of silently failing to appear.
   useEffect(() => {
     _markEditorMounted()
+  }, [])
+
+  // Phase 9 § 1.7 — seed the storage quota percent on mount so the
+  // banner reflects the actual state from the start. Subsequent writes
+  // update this via documentStore.reportWrite().
+  useEffect(() => {
+    const usage = getStorageUsage()
+    useEditorStore.getState().setStorageQuotaPercent(usage.percent)
   }, [])
 
   const resolver = getResolver()
@@ -58,8 +69,13 @@ export function Editor() {
             (Hydrator deserialize) still bubble to a boundary; this
             handles everything else. */}
         <AsyncErrorBanner />
+        {/* Phase 9 § 1.7 — blocking modal when localStorage save fails
+            with QuotaExceededError. */}
+        <StorageQuotaErrorModal />
         <div className="flex h-screen flex-col">
           <SaveLoadBar />
+          {/* Phase 9 § 1.7 — non-blocking warning when usage ≥ 80%. */}
+          <StorageQuotaBanner />
           <div className="flex min-h-0 flex-1">
             <ErrorBoundary fallback={ToolboxErrorFallback}>
               <Toolbox />

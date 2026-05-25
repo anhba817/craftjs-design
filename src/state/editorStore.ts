@@ -33,6 +33,50 @@ interface EditorStore {
 
   malformedDocument: MalformedDocumentInfo | null
   setMalformedDocument: (info: MalformedDocumentInfo | null) => void
+
+  // Phase 9 § 1.7 — storage quota state. `percent` is the fraction of a
+  // conservative 5 MB threshold currently used by craftjs-design:* keys.
+  // `dismissed` survives reloads via sessionStorage but resets when the
+  // tab closes. `saveFailed` is set when a localStorage.setItem call
+  // throws QuotaExceededError — the modal renders until the user
+  // chooses an action.
+  storageQuotaPercent: number
+  storageQuotaDismissed: boolean
+  storageSaveFailed: StorageSaveFailedInfo | null
+
+  setStorageQuotaPercent: (percent: number) => void
+  dismissStorageQuotaBanner: () => void
+  setStorageSaveFailed: (info: StorageSaveFailedInfo | null) => void
+}
+
+export interface StorageSaveFailedInfo {
+  operation: 'writeDocument' | 'writeDocumentIndex' | 'deleteDocumentBlob'
+  // The document id involved, when meaningful. writeDocumentIndex isn't
+  // scoped to a single doc.
+  docId?: string
+}
+
+const QUOTA_DISMISS_SESSION_KEY = 'craftjs-design.quota-dismissed'
+
+function readDismissedFromSession(): boolean {
+  try {
+    return sessionStorage.getItem(QUOTA_DISMISS_SESSION_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeDismissedToSession(value: boolean): void {
+  try {
+    if (value) {
+      sessionStorage.setItem(QUOTA_DISMISS_SESSION_KEY, '1')
+    } else {
+      sessionStorage.removeItem(QUOTA_DISMISS_SESSION_KEY)
+    }
+  } catch {
+    // Session storage may be disabled (private mode). Banner reverts to
+    // session-only memory; acceptable degradation.
+  }
 }
 
 // Editor-side state that is NOT part of the Craft document tree.
@@ -49,4 +93,27 @@ export const useEditorStore = create<EditorStore>()((set) => ({
 
   malformedDocument: null,
   setMalformedDocument: (info) => set({ malformedDocument: info }),
+
+  storageQuotaPercent: 0,
+  storageQuotaDismissed: readDismissedFromSession(),
+  storageSaveFailed: null,
+
+  setStorageQuotaPercent: (percent) => {
+    set((prev) => {
+      // If the user previously dismissed but usage is now BELOW the 80%
+      // threshold, the dismiss state is moot — clearing it means the
+      // banner returns automatically if they cross the threshold again.
+      const stillElevated = percent >= 80
+      const dismissed = stillElevated ? prev.storageQuotaDismissed : false
+      if (!stillElevated && prev.storageQuotaDismissed) {
+        writeDismissedToSession(false)
+      }
+      return { storageQuotaPercent: percent, storageQuotaDismissed: dismissed }
+    })
+  },
+  dismissStorageQuotaBanner: () => {
+    writeDismissedToSession(true)
+    set({ storageQuotaDismissed: true })
+  },
+  setStorageSaveFailed: (info) => set({ storageSaveFailed: info }),
 }))
