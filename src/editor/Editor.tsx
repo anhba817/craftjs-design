@@ -18,6 +18,8 @@ import {
 } from './errors/fallbacks'
 import { Hydrator } from './Hydrator'
 import { Inspector } from './Inspector'
+import { ConcurrentEditBanner } from './persistence/ConcurrentEditBanner'
+import { useConcurrentEditWatcher } from './persistence/concurrentEditWatcher'
 import { StorageQuotaBanner } from './persistence/StorageQuotaBanner'
 import { StorageQuotaErrorModal } from './persistence/StorageQuotaErrorModal'
 import { ResolverUpdater } from './ResolverUpdater'
@@ -76,6 +78,10 @@ export function Editor() {
           <SaveLoadBar />
           {/* Phase 9 § 1.7 — non-blocking warning when usage ≥ 80%. */}
           <StorageQuotaBanner />
+          {/* Phase 9 § 1.8 — cross-tab edit detected; user picks which
+              version wins. */}
+          <ConcurrentEditBanner />
+          <ConcurrentEditWatcherMount />
           <div className="flex min-h-0 flex-1">
             <ErrorBoundary fallback={ToolboxErrorFallback}>
               <Toolbox />
@@ -110,3 +116,13 @@ export function Editor() {
 
 // Re-export for App.tsx to wrap the entire editor in a top-shell boundary.
 export { ErrorBoundary, TopShellErrorFallback }
+
+// Tiny inert host for the storage-event listener. The watcher hook can't
+// live directly in <Editor /> because that component renders <Craft>,
+// which holds the editor context the watcher's siblings consume —
+// rendering it as a child of <Craft> would invert the order. Keeping it
+// here as a no-op component is the simplest fix.
+function ConcurrentEditWatcherMount() {
+  useConcurrentEditWatcher()
+  return null
+}

@@ -1,6 +1,22 @@
 import { create } from 'zustand'
 import type { EditorDocument } from '@/persistence/schema'
 
+// Phase 9 § 1.8 — cross-tab edit conflict.
+//
+// When another tab writes the active document's localStorage blob (or its
+// :doc-index:v2 entry), the storage event fires in this tab.
+// useConcurrentEditWatcher parses the new envelope and lifts it into this
+// state; ConcurrentEditBanner renders the choice. Reload applies the
+// other tab's version; Overwrite saves the local snapshot, blowing away
+// what the other tab wrote.
+export interface ConcurrentEditConflict {
+  docId: string
+  // Parsed envelope as it sits in storage RIGHT NOW (the version from
+  // the other tab). Comparing against the in-memory canvas is the
+  // user's responsibility — they pick which one wins.
+  remoteEnvelope: EditorDocument
+}
+
 // Tailwind v4's default breakpoints. 'base' is our token for "no prefix" —
 // the inspector writes to style.classes when active; sm/md/lg/xl/2xl write
 // to style.responsive[<bp>].
@@ -47,6 +63,9 @@ interface EditorStore {
   setStorageQuotaPercent: (percent: number) => void
   dismissStorageQuotaBanner: () => void
   setStorageSaveFailed: (info: StorageSaveFailedInfo | null) => void
+
+  concurrentEditConflict: ConcurrentEditConflict | null
+  setConcurrentEditConflict: (info: ConcurrentEditConflict | null) => void
 }
 
 export interface StorageSaveFailedInfo {
@@ -116,4 +135,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
     set({ storageQuotaDismissed: true })
   },
   setStorageSaveFailed: (info) => set({ storageSaveFailed: info }),
+
+  concurrentEditConflict: null,
+  setConcurrentEditConflict: (info) => set({ concurrentEditConflict: info }),
 }))

@@ -50,6 +50,11 @@ interface DocumentStoreState extends DocumentIndex {
   deleteDocument(id: string): void
   saveActiveDocument(doc: EditorDocument): void
   loadActiveDocument(): EditorDocument | null
+  // Phase 9 § 1.8 — when a sibling tab modifies the doc-index, re-read
+  // localStorage into this store WITHOUT writing anything back. The
+  // alternative — calling setActiveId / writeDocumentIndex — would
+  // bounce the changed event back as a storage event in the other tab.
+  reloadIndexFromStorage(): void
 }
 
 function initialState(): DocumentIndex {
@@ -152,5 +157,10 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => ({
     const activeId = get().activeId
     if (!activeId) return null
     return readDocument(activeId)
+  },
+
+  reloadIndexFromStorage() {
+    const next = readDocumentIndex()
+    set({ documents: next.documents, activeId: next.activeId })
   },
 }))

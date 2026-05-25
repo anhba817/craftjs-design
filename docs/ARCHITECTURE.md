@@ -214,6 +214,23 @@ Two parallel surfaces, by failure-mode:
   async failures (Hydrator deserialize) are designed to bubble through
   the boundary instead, so this handles the long tail of non-fatal
   issues.
+- **`useConcurrentEditWatcher` + `ConcurrentEditBanner`**
+  (`src/editor/persistence/`) detect when another browser tab modifies
+  the active document or the doc-index. The hook attaches a
+  `window.storage` listener (which only fires for writes from OTHER
+  tabs by spec). Three outcomes, decided by the pure
+  `decideStorageEvent(event, activeId)` helper:
+  1. Doc-index changed → `documentStore.reloadIndexFromStorage()`
+     re-reads the index in place so the document menu reflects the
+     external rename / delete / create.
+  2. Active doc's blob changed and parses cleanly → the remote
+     envelope lands in `editorStore.concurrentEditConflict`, and
+     `ConcurrentEditBanner` shows two actions: Reload (apply remote
+     via `applyEnvelopeSafely`) or Overwrite (save local snapshot
+     back, blowing away the remote write).
+  3. Everything else (unparseable / unrelated / inactive doc) →
+     ignored. Inactive docs' freshest version is naturally picked up
+     by `useDocumentSwitcher` next time the user switches to them.
 - **`StorageQuotaBanner` + `StorageQuotaErrorModal`**
   (`src/editor/persistence/`, backed by editorStore's
   `storageQuotaPercent` / `storageQuotaDismissed` /
