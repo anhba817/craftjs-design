@@ -243,17 +243,21 @@ a pre-Phase-9 version.
 
 ### Bundle size
 
-Measured Phase 8 baseline (`npm run build:dist`, no minification, with
+Measured at end of Phase 9 (`npm run build:dist`, no minification, with
 sourcemap):
 
 | Asset | Raw | Gzipped |
 |---|---|---|
-| `dist-lib/index.js` | 1.5 MB | 326 KB |
-| `dist-lib/index.css` | 388 KB | 113 KB |
-| Combined | 1.9 MB | **440 KB gzipped** |
+| `dist-lib/index.js` | 1.6 MB | 336 KB |
+| `dist-lib/index.css` | 390 KB | 114 KB |
+| Combined | 2.0 MB | **450 KB gzipped** |
 
-(Phase 9 React 19 upgrade trimmed ~1 KB JS and ~2 KB CSS by removing the
-`display: contents` wrappers from 9 shadcn adapter impls.)
+Phase 9 net delta: roughly +100 KB raw JS / +10 KB gzipped from the
+reliability infrastructure (axe-init for dev, async error handler,
+malformed-doc recovery, storage quota tracking, concurrent-edit
+watcher, canvas keyboard nav). axe-init is dev-only via
+`import.meta.env.DEV` and tree-shakes out of the production bundle —
+the +100 KB is the production-shipping reliability surface itself.
 
 The CSS is large because the Tailwind safelist covers every utility × every
 breakpoint that the inspector can emit (270+ `@source inline()` directives).
@@ -268,10 +272,50 @@ The Chakra example adapter is included by default; remove it via
 
 ### Document storage quota
 
-localStorage has a 5–10 MB quota per origin. The editor uses it by default;
-documents that exceed quota fail silently (logged to console). For larger
-designs, use the `useDocumentStore` API to read documents into memory and
-persist to your own backend (IndexedDB, server-side).
+localStorage has a 5–10 MB quota per origin. Phase 9 added two UI layers
+that surface storage pressure before the editor silently drops a save:
+
+- `<StorageQuotaBanner>` appears once `documentRegistry.getStorageUsage()`
+  reports ≥ 80 % of a conservative 5 MB ceiling. Dismissable; the
+  dismiss state lives in sessionStorage so it survives a reload but
+  resets across tabs.
+- `<StorageQuotaErrorModal>` is blocking. It fires when
+  `writeDocument` / `writeDocumentIndex` catches a `QuotaExceededError`
+  from `localStorage.setItem`. The save did NOT complete; the user
+  must delete a document via the toolbar Documents menu or accept that
+  subsequent edits won't be persisted.
+
+For larger designs, use the `useDocumentStore` API to read documents into
+memory and persist to your own backend (IndexedDB, server-side). The
+`documentRegistry.writeDocument` API returns a typed `WriteResult` so
+custom backends can react to per-write failures rather than relying on
+the built-in banner / modal.
+
+### Cross-tab edit safety
+
+When two tabs edit the same document, `useConcurrentEditWatcher`
+listens to `window.storage` events from sibling tabs. Index changes
+auto-sync; active-doc blob changes raise `<ConcurrentEditBanner>` with
+two actions: Reload (apply the other tab's version, discarding
+unsaved local changes) or Overwrite (save your snapshot, blowing
+away the other tab's write). Tests live in
+`src/editor/persistence/concurrentEditWatcher.test.ts` and exercise
+the `decideStorageEvent` helper without a DOM.
+
+### Async error handling
+
+`window.error` and `window.unhandledrejection` are caught by
+`useGlobalErrorHandler` and surfaced via `<AsyncErrorBanner>` — a
+toast at bottom-right with a Dismiss button. Critical async failures
+(Hydrator deserialize, adapter mount) still bubble through the four
+`<ErrorBoundary>` layers; the global handler only catches the long
+tail (event handlers, fetch promises, third-party scripts).
+
+### Keyboard navigation
+
+The canvas region is a single tab stop; arrow keys move the selection
+directly. Toolbox implements the WAI-ARIA toolbar pattern with roving
+tabindex. See `docs/ACCESSIBILITY.md` for the full key map.
 
 ### Custom font tokens at runtime
 

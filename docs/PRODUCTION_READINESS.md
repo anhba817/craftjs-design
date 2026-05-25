@@ -60,81 +60,119 @@ Pending: manual smoke test in a running browser session — automated tests
 cover the pure code paths but rendering correctness of the upgraded shadcn /
 MUI / Radix / Craft.js stack needs a human pass.
 
-### 1.2 React Profiler baseline + memoization sweep *(High / UX)*
+### 1.2 React Profiler baseline + memoization sweep ✅ *(Shipped — Phase 9 Group B + C)*
 
-PERFORMANCE.md documents a measurement plan but no actual baseline. The
-six tracked flows (mount, drop, select, token edit, hex edit, adapter
-swap) need real numbers, and any re-render storms need fixes via
-`useMemo` / `React.memo`. Likely candidates (untested):
+All 9 tracked flows (the original six plus large-doc open, tabs with all
+canvases, rapid resize) are measured in PERFORMANCE.md with before/after
+numbers. The two critical hotspots fixed in Group C:
 
-- `Toolbox` re-registers Craft sources on every favorite/recent change.
-- `PropField` recurses through Zod schemas on every PropsPanel render.
-- `ColorPicker`'s HSL/RGB sliders recompute track gradients per drag tick.
-- `ResizeOverlay`'s `setRect` fires on every scroll event.
+- **Flow 5 — hex color edit**: 376 commits → 8 ColorPicker re-renders.
+  ColorPicker now defers BOTH React state and parent commits during
+  drag; on pointerup a single commit lands. Drag stays at 60 fps.
+- **Flow 9 — rapid resize**: 570 commits → 3. ResizeOverlay's `rect` is
+  now mirrored to a `ref` + direct DOM mutation during the gesture;
+  one React commit fires on pointerup.
 
-### 1.3 Real axe-core scan + remediation *(High / Accessibility)*
+Smaller candidate items (Toolbox re-register, PropField recursion,
+slider gradient memoisation, ResizeOverlay scroll batching, panel
+mounting) are documented in PERFORMANCE.md with measured baselines and
+accepted as not currently hot.
 
-ACCESSIBILITY.md flags known gaps. A real scan in a browser with axe-core
-will find more — especially around color contrast on the muted palette,
-focus-ring visibility on Radix popovers, and keyboard traps in nested
-popovers (gradient editor inside ColorPicker, template picker inside
-document menu).
+### 1.3 Real axe-core scan + remediation ✅ *(Shipped — Phase 9 Group B + D)*
 
-### 1.4 Canvas keyboard navigation *(UX)*
+@axe-core/react auto-scans the editor in dev mode (`src/devtools/axe-init.ts`,
+guarded by `import.meta.env.DEV`). Findings remediated:
 
-Craft.js's selection is pointer-only today. Designers using keyboard
-exclusively can't select a node. Adding `tabIndex={0}` to each rendered
-node + arrow-key navigation (next sibling / parent / first child) +
-Enter to select would close the loop.
+- **color-contrast (serious)**: 8 elements failed at 2.6:1 — Toolbox
+  category headers + Inspector empty state. Lifted from `text-gray-400`
+  to `text-gray-500` (4.66:1, passes).
+- **landmark-unique (moderate)**: Toolbox + Inspector were both
+  unlabelled `<aside>`. Added `aria-label`.
+- **region (moderate)**: SaveLoadBar was a `<div>`. Changed to
+  `<header>` so its content is inside a landmark.
+- **page-has-heading-one (moderate)**: no `<h1>`. Added `sr-only`
+  inside the header.
 
-### 1.5 Toolbox roving tabindex *(UX)*
+Re-scan returns zero violations.
 
-18 components × 7 category sections × 2 favorite/recent rows = ~40
-focusable items in the Toolbox. Tab through all of them is tedious. A
-roving tabindex pattern (arrow keys between, Enter to drop) is standard
-for component palettes.
+### 1.4 Canvas keyboard navigation ✅ *(Shipped — Phase 9 Group D)*
 
-### 1.6 Async error coverage *(UX)*
+`<CanvasKeyboardRegion>` (`src/editor/canvas/`) is a single tab stop;
+arrow keys move the **selection** directly (matching Figma's layers
+panel / file managers). Each canvas node gets `tabindex=-1` from
+`CanonicalNode.attachRef` so it can be programmatically focused. The
+keydown handler runs at the document level (some adapters' direct DOM
+listeners would otherwise eat the synthetic event) and gates on
+`containerRef.contains(document.activeElement)` so it never fires
+when focus is outside the canvas. Key map: ArrowDown/Up = pre-order
+next/prev, ArrowRight = first child, ArrowLeft = parent, Delete /
+Backspace = delete (ROOT exempt), Escape = clear selection.
 
-The 4-layer error boundaries catch synchronous render errors. Async
-errors (in `useEffect`, `fetch`, etc.) bypass them. A top-level
-`window.onerror` + `unhandledrejection` listener that routes to the
-telemetry handler would close the gap.
+### 1.5 Toolbox roving tabindex ✅ *(Shipped — Phase 9 Group D)*
 
-### 1.7 localStorage quota near-full banner *(UX)*
+Toolbox is `role="toolbar"` with `aria-orientation="vertical"`. Only
+one drag-handle button is `tabIndex={0}` at a time; arrows move focus
+across section boundaries (Favorites, Recent, each category). Enter
+drops the focused canonical via `actions.add` with selection-aware
+parent + index. F toggles favourite. `/` focuses search. Escape in
+search clears + returns focus to the first component.
 
-Documents that exceed the 5–10 MB localStorage quota fail silently
-(logged to console). A "Storage near full — export documents and delete
-old ones" banner at 80% capacity would warn designers before data loss.
+### 1.6 Async error coverage ✅ *(Shipped — Phase 9 Group E)*
 
-### 1.8 Concurrent edit safety *(Critical → in some workflows)*
+`useGlobalErrorHandler` attaches `window.error` +
+`window.unhandledrejection` listeners; `<AsyncErrorBanner>` shows the
+most recent failure in a fixed-position toast with a Dismiss action.
+Critical async failures (Hydrator deserialize) still bubble through
+ErrorBoundary instead; this handles the non-fatal long tail. Pure
+helpers `normalizeErrorEvent` + `normalizeRejectionEvent` are
+unit-tested (covering Error / string / object / undefined reasons +
+cross-origin "Script error." stripping).
 
-Two browser tabs editing the same document race each other's writes
-through localStorage. Last-write-wins; mid-write reads can see corrupt
-JSON. Mitigations:
+### 1.7 localStorage quota near-full banner ✅ *(Shipped — Phase 9 Group F)*
 
-- Detect cross-tab changes via `storage` event; refuse to save when the
-  in-memory document is stale.
-- Or accept last-write-wins as the model; document it.
+`documentRegistry.getStorageUsage()` sums every `craftjs-design:*` key
+against a conservative 5 MB ceiling. `documentStore.reportWrite()`
+calls this after every save / index write. ≥80% surfaces
+`<StorageQuotaBanner>` (dismissable; dismiss state in sessionStorage so
+it survives reload but resets across tabs). Actual `QuotaExceededError`
+(detected for both `'QuotaExceededError'` and Firefox's
+`'NS_ERROR_DOM_QUOTA_REACHED'`) raises a blocking
+`<StorageQuotaErrorModal>` with "Continue without saving" + "Open
+documents menu" actions.
 
-### 1.9 Malformed craftJson hardening *(UX)*
+### 1.8 Concurrent edit safety ✅ *(Shipped — Phase 9 Group F)*
 
-The document envelope is Zod-validated but `craftJson` is opaque to us.
-A maliciously-mutated craftJson (or a Craft.js version bump that changes
-the shape) can crash `actions.deserialize`. Today the Hydrator
-try/catches and logs; designers see an empty canvas. Better:
+`useConcurrentEditWatcher` attaches a `window.storage` listener.
+`decideStorageEvent(event, activeId)` (pure, tested) classifies each
+event as ignore / reload-index / conflict. Index changes auto-sync
+via `documentStore.reloadIndexFromStorage()` (no write-back, so no
+ping-pong). Active-doc blob changes raise `<ConcurrentEditBanner>`
+with two actions: Reload (apply remote via `applyEnvelopeSafely`) or
+Overwrite (save local snapshot, blowing away the other tab's write).
 
-- Surface a "this document failed to load" message + Export-as-text
-  fallback so the user doesn't think the doc vanished.
-- Validate the Craft tree integrity (every node references a valid type,
-  every parent ref resolves, etc.) before deserialize.
+### 1.9 Malformed craftJson hardening ✅ *(Shipped — Phase 9 Group E)*
 
-### 1.10 Hydration race conditions *(UX)*
+`validateCraftJson` runs before every `actions.deserialize`: checks
+that the string parses, has ROOT, every `parent` / `nodes` /
+`linkedNodes` ref resolves, every type is `'div'` or a registered
+canonical. Failures (or a thrown deserialize) set
+`editorStore.malformedDocument`; Editor.tsx swaps the canvas Frame for
+`<MalformedDocumentBanner>` with three recovery actions: Show raw JSON
+(read-only viewer), Export raw (downloads the broken envelope as
+JSON), Reset to empty (archives the broken envelope under
+`craftjs-design:doc:<id>:broken:<timestamp>` before writing the Empty
+template into the doc's slot).
 
-The `hydrated` module-level flag prevents re-restore on remount, but
-nothing protects against rapid document switches during initial load.
-Could surface as flickering content or stale tree state. Audit by
-deliberate stress-testing.
+### 1.10 Hydration race conditions ✅ *(Shipped — Phase 9 Group E)*
+
+`applyEnvelopeSafely` returns `Promise<ApplyEnvelopeResult>` and routes
+work through a module-level promise queue + generation counter. Rapid
+apply calls (e.g., user clicks doc B while doc A is mid-load) collapse
+to "latest wins" — only the final envelope reaches `deserialize`.
+Hydrator's module-level `hydrated` flag is intentionally narrow:
+"initial restore from localStorage on first mount." Document switching
+goes exclusively through `useDocumentSwitcher`; the two paths share
+the same queue so they can't race against each other either.
 
 ---
 
