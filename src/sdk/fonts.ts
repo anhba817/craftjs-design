@@ -26,4 +26,5 @@ export type { FontToken } from '../registry/fonts'
 export {
   registerFontToken,
   unregisterFontToken,
+  listFontTokens,
 } from '../registry/fonts'

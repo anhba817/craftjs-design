@@ -178,107 +178,140 @@ the same queue so they can't race against each other either.
 
 ## 2. SDK Maturity — making the boundary publish-ready
 
-### 2.1 Publish `@design/sdk` + `@design/editor` to npm *(Production-blocker)*
+### 2.1 npm publish ✅ *(Shipped — Phase 10 Group A + G)*
 
-Today the SDK is consumable only via local install. To make this a real
-library, we need:
+Package name `@crafted-design/editor` decided via Group A user choice.
+Single-package design with subpath exports:
 
-- Real npm package names (negotiate `@design/*` namespace or pick alternatives).
-- Stable semver: `0.1.0` for initial public preview, `1.0.0` once API freezes.
-- `package.json` `exports` field for subpath access (`@design/editor/sdk`).
-- Two separate packages OR one with two entry points — design decision.
+- `@crafted-design/editor` → `dist-lib/index.js` (full editor)
+- `@crafted-design/editor/sdk` → `dist-lib/sdk.js` (SDK boundary alone)
 
-### 2.2 `.d.ts` emit from dist build *(Production-blocker)*
+`package.json` carries the publish-ready `exports`, `peerDependencies`
+(react ^19, react-dom ^19, @craftjs/core ^0.2.12), `files` whitelist
+(`dist-lib`, README, CHANGELOG, LICENSE), and a `prepublishOnly` script
+that runs `build:dist` + `vitest run`. `publishConfig.tag = "next"` so
+the initial release sits behind the `next` dist-tag until Phase 11
+promotes it. Version stays at `0.1.0-pre.0` until the actual
+`npm publish` (held outside the close-out commit so that requires
+explicit user action with npm credentials).
 
-`tsc -b` runs in typecheck-only mode (`noEmit: true`). Integration
-consumers using TypeScript get no type info from the dist install.
-Add `vite-plugin-dts` or a `tsc --emitDeclarationOnly` post-step.
+### 2.2 `.d.ts` emit from dist build ✅ *(Shipped — Phase 10 Group A)*
 
-### 2.3 CHANGELOG.md + semver discipline *(Production-blocker)*
+`vite-plugin-dts` emits matching `.d.ts` files alongside each entry.
+`dist-lib/main-app.d.ts` is the full-editor entry's declaration;
+`dist-lib/sdk/index.d.ts` is the SDK subpath's. A consumer's
+`tsc --noEmit` resolves every exported type — verified by the
+`examples/sdk-smoke/consumer.tsx` file (touches every SDK export) and
+the editor's own `tsc -b` pass.
 
-Phase plans are informal release notes; they don't map cleanly to a
-public changelog. Need:
+### 2.3 CHANGELOG.md + semver discipline ✅ *(Shipped — Phase 10 Group A)*
 
-- `CHANGELOG.md` following Keep a Changelog format.
-- Conventional commits OR changesets-style discipline for accumulating
-  changes between releases.
-- Documented "what counts as a breaking change" policy — e.g., removing
-  an SDK function = breaking, removing a built-in canonical = breaking,
-  changing the document envelope = needs a migration.
+`CHANGELOG.md` (Keep-a-Changelog format) covers the 0.1.0 initial entry
++ a documented breaking-change policy:
 
-### 2.4 Deprecation policy *(High / DevEx)*
+- Removing an exported SDK function / type = major bump.
+- Removing a built-in canonical = major bump (saved documents reference it).
+- Document envelope shape changes without a migration = major bump.
+- Public hook signature changes = major bump.
+- New exports / new canonicals / new optional envelope fields with
+  defaults = minor or patch.
+- Internal `src/` changes that don't surface via `src/sdk/*` = patch.
 
-Today APIs evolve freely. Once external developers depend on them, we
-need a policy:
+Between `0.x` minors the API may evolve. `1.0.0` freezes the SDK
+surface.
 
-- Deprecated APIs stay for at least one minor version with a console
-  warning.
-- Removed APIs require a major version bump.
-- Migration guide entry for every breaking change.
+### 2.4 Deprecation policy ✅ *(Shipped — Phase 10 Group A)*
 
-### 2.5 SDK boundary lint rule *(High / DevEx)*
+`src/sdk/internal/deprecate.ts` is the once-per-call-site
+`console.warn` helper. Pattern: deprecated form stays exported for at
+least one minor version, fires `deprecate({ api, since, removeIn,
+migration })` on first call per session, the new form is documented
+in the same CHANGELOG entry. No current deprecations exist; the
+helper is in place for the first one.
 
-ESLint `no-restricted-imports` rule blocking `examples/` (and external
-consumers' code) from importing past `@design/sdk`. Phase 6 mentioned
-this; not shipped.
+### 2.5 SDK boundary lint rule ✅ *(Shipped — Phase 10 Group A)*
 
-### 2.6 TypeDoc auto-generated API reference *(High / DevEx)*
+`eslint.config.js`'s `no-restricted-imports` rule scoped to
+`examples/**` blocks any `@/*` alias import. Sanity-checked with a
+synthetic violating import during the Group A landing. The rule's
+documented in `INTEGRATION_GUIDE.md` so integration consumers can
+mirror it for their own source trees.
 
-SDK_GUIDE.md is hand-maintained. Drift between code and docs is
-inevitable. TypeDoc reads JSDoc from `src/sdk/*.ts` and generates a
-browsable reference site. Eliminates a maintenance burden.
+### 2.6 TypeDoc auto-generated API reference ✅ *(Shipped — Phase 10 Group B)*
 
-### 2.7 Hot reload of font tokens *(UX)*
+`npm run docs` regenerates `docs/api/` (markdown + index files,
+checked into the repo). JSDoc audit added param tables + usage
+examples on every register* / hook / helper exported from
+`src/sdk/*.ts`. `SDK_GUIDE.md`'s header now points readers at the
+auto-generated reference as authoritative; SDK_GUIDE is the
+narrative companion.
 
-The Typography panel's Font dropdown captures `listFontTokens()` keyed
-by `[nodeId]`. Post-mount registrations only appear on selection
-change. Port the Phase-7 `registryVersion` pattern: bump a counter on
-register, subscribe via `useSyncExternalStore` in the dropdown.
+### 2.7 Hot reload of font tokens ✅ *(Shipped — Phase 10 Group C)*
 
-### 2.8 Hot reload of adapters *(UX)*
+`subscribeFontRegistry` + `getFontRegistryVersion` exported from
+`src/registry/fonts.ts`. `registerFontToken` / `unregisterFontToken`
+bump the version counter; TypographyPanel's Font dropdown subscribes
+via `useSyncExternalStore`. Replaces the prior `[nodeId]`-trigger
+hack that only refreshed on selection change.
 
-Same pattern as fonts and canonicals — registering an adapter post-mount
-doesn't update the AdapterSwitcher's dropdown. Less common in practice
-but worth the symmetry.
+### 2.8 Hot reload of adapters ✅ *(Shipped — Phase 10 Group C)*
 
-### 2.9 Hot reload of themes *(UX)*
+`subscribeAdapterRegistry` + `getAdapterRegistryVersion` in
+`src/adapters/AdapterContext.tsx`. New `unregisterAdapter()`
+function (was missing). AdapterSwitcher subscribes.
 
-Same pattern.
+### 2.9 Hot reload of themes ✅ *(Shipped — Phase 10 Group C)*
 
-### 2.10 Hot reload of templates *(UX)*
+`subscribeThemeRegistry` + `getThemeRegistryVersion` in
+`src/themes/registry.ts`. New `unregisterTheme()` function.
+ThemeSwitcher subscribes.
 
-Same pattern. Template picker captures the list on open; new templates
-appear on next open. Could refresh inline.
+### 2.10 Hot reload of templates ✅ *(Shipped — Phase 10 Group C)*
 
-### 2.11 Stable per-tab ids in Tabs *(UX)*
+`subscribeTemplateRegistry` + `getTemplateRegistryVersion` in
+`src/persistence/templates/registry.ts`. New `unregisterTemplate()`
+function. TemplatePicker subscribes — registrations show without
+the user having to close + reopen the popover.
 
-Today renaming a tab's `value` orphans its canvas content (the linked
-node is keyed by `value`, not a stable id). Fix:
+### 2.11 Stable per-tab ids in Tabs ✅ *(Shipped — Phase 10 Group D)*
 
-- Add `id: z.string()` field to each tab object.
-- Auto-generate id in ArrayField's "Add" handler.
-- `canvasSlots` function uses `id` instead of `value`.
-- Migration converts old documents.
+Each tab now carries a stable `id`; `canvasSlots` keys on `id` rather
+than the user-authored `value` field. Renaming `value` no longer
+orphans canvas children. `defaultValueFor` recognises ZodDefault so
+new tabs auto-generate `tab-<base36-random>` ids. Existing documents
+migrate via `migrateTabsIdsV10` in `src/persistence/migrations.ts`,
+which injects ids that preserve pre-Phase-10 slot keys bit-for-bit
+(the migration test asserts this invariant).
 
-### 2.12 Nested ColorPicker per gradient stop *(UX)*
+### 2.12 Nested ColorPicker per gradient stop ✅ *(Shipped — Phase 10 Group E)*
 
-Stop colors are hex-input only today. Opening a full ColorPicker
-(without gradient recursion) for each stop would let designers use
-tokens / sliders / eyedropper per stop. Z-index + popover nesting
-concerns; doable but careful.
+`GradientEditor`'s per-stop color input is now a nested
+`<ColorPicker allowGradient={false}>`. Token picks resolve to hex
+via `getComputedStyle` + an rgb-to-hex normaliser so the gradient
+string stays portable across theme swaps. The nested popover stacks
+correctly above the outer GradientEditor popover via Radix's
+mount-order stacking.
 
-### 2.13 Per-stop drag on gradient preview bar *(UX)*
+### 2.13 Per-stop drag on gradient preview bar ✅ *(Shipped — Phase 10 Group E)*
 
-Today stop positions are numeric inputs (0–100). Standard gradient UX is
-drag-along-bar with handles per stop. ~Figma's experience.
+`GradientPreviewBar` renders a draggable handle per stop at
+`left: <position>%`. Direct-DOM mutation during drag (mirroring the
+Phase 9 ResizeOverlay + ColorPicker patterns); one `onChange`
+commit fires on `pointerup`. Numeric input stays as the precise /
+keyboard input path.
 
-### 2.14 Real Chakra adapter *(Ecosystem)*
+### 2.14 Real Chakra adapter ✅ *(Shipped — Phase 10 Group F)*
 
-`examples/adapter-chakra/lib.tsx` is a mock primitive library. Real
-deal: install `@chakra-ui/react` + emotion peers, swap the mock for
-real Chakra components, ship `ChakraProvider` as the adapter Wrapper.
-30 MB of node_modules; weighs against keeping it in the editor's repo.
-Could live in a separate companion package.
+`examples/adapter-chakra/` now uses real `@chakra-ui/react` v3
+primitives across all 20 canonicals. `<ChakraProvider
+value={defaultSystem}>` installed via the adapter's Wrapper field.
+The mock `lib.tsx` is gone; each component file imports its Chakra
+primitive directly. Bundle delta: roughly +200 KB raw / +50 KB
+gzipped via the side-effect import in `App.tsx`; production hosts
+using only shadcn / MUI should remove that import. The
+`examples/adapter-chakra/README.md` covers the dependencies + the
+Phase 11+ candidate to extract this folder into a standalone
+`@crafted-design/adapter-chakra` workspace package.
 
 ---
 

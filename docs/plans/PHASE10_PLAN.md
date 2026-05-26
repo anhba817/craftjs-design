@@ -373,3 +373,164 @@ Every Section 2 item from PRODUCTION_READINESS.md is in one of these states:
 No item is left unaddressed.
 
 When all 14 items satisfy this bar, Phase 10 is complete and Phase 11 (Section 3 — Designer UX) is unblocked.
+
+---
+
+## Close-out (2026-05-25)
+
+**Status:** Section 2 complete. All 14 items shipped, no deferrals. The
+actual `npm publish` invocation is held outside the close-out — it
+requires npm credentials + a real-world side effect that has to be done
+by the user, not the close-out commit.
+
+### Path taken per item
+
+| § | Item | Path |
+|---|---|---|
+| 2.1 | npm publish | Single package `@crafted-design/editor`; subpath exports for the SDK at `/sdk`. Version pinned at `0.1.0-pre.0`; `publishConfig.tag = "next"`. Actual publish deferred to user-driven invocation. |
+| 2.2 | `.d.ts` emit | `vite-plugin-dts` integrated; emits `dist-lib/main-app.d.ts` + `dist-lib/sdk/index.d.ts`. |
+| 2.3 | CHANGELOG | `CHANGELOG.md` initial. Breaking-change policy in the top section. |
+| 2.4 | Deprecation policy | `src/sdk/internal/deprecate.ts` helper. No current deprecations; helper is in place for the first one. |
+| 2.5 | SDK boundary lint | `eslint.config.js` `no-restricted-imports` rule scoped to `examples/**`. |
+| 2.6 | TypeDoc | `npm run docs` regenerates `docs/api/`. Markdown output checked in. JSDoc audit added param tables + examples on every SDK export. |
+| 2.7 | Hot-reload fonts | Phase 7 pattern ported. TypographyPanel subscribes. |
+| 2.8 | Hot-reload adapters | Phase 7 pattern ported; new `unregisterAdapter()`. AdapterSwitcher subscribes. |
+| 2.9 | Hot-reload themes | Phase 7 pattern ported; new `unregisterTheme()`. ThemeSwitcher subscribes. |
+| 2.10 | Hot-reload templates | Phase 7 pattern ported; new `unregisterTemplate()`. TemplatePicker subscribes (no more close+reopen). |
+| 2.11 | Stable tab ids | Tabs schema adds `id: z.string().default(() => `tab-<rand>`)`. `defaultValueFor` handles ZodDefault. canvasSlots keys on id. `migrateTabsIdsV10` preserves slot keys for legacy docs. |
+| 2.12 | Nested ColorPicker | Per-stop hex input replaced with `<ColorPicker allowGradient={false}>`. Token picks resolve to hex via getComputedStyle for portable gradient strings. |
+| 2.13 | Drag-along-bar | `GradientPreviewBar` renders one handle per stop; direct-DOM mutation during drag (Phase 9 pattern); one onChange on pointerup. |
+| 2.14 | Real Chakra | All 20 canonicals wired via `@chakra-ui/react@^3` primitives. Mock `lib.tsx` deleted. ChakraProvider in Wrapper. |
+
+### Final SDK surface (`@crafted-design/editor/sdk`)
+
+Grouped exports (counts include both functions and types):
+
+| Surface | Count | Notes |
+|---|---|---|
+| Adapter | 8 | `registerAdapter` / `unregisterAdapter` / `listAdapters` / `useActiveAdapter` + 4 types |
+| Canonical | 12 | All register* / unregister* / get* / list*; 4 types; Tabs helpers (`tabSlotKeys` / `uniqueTabValues` / `TAB_SLOT_PREFIX` / `TabsProps`) |
+| Inspector panels | 5 | `registerPanel` / `unregisterPanel` / `listPanels` / `getPanelsFor` + `PanelDefinition` |
+| Fonts | 4 | `registerFontToken` / `unregisterFontToken` / `listFontTokens` + `FontToken` |
+| Themes | 5 | `registerTheme` / `unregisterTheme` / `getTheme` / `listThemes` + `Theme` |
+| Templates | 5 | `registerTemplate` / `unregisterTemplate` / `getTemplate` / `listTemplates` + `TemplateDefinition` |
+| Hooks | 2 | `useNodeClasses` + `Breakpoint` |
+| Style | 1 | `NodeStyle` |
+
+`examples/sdk-smoke/consumer.tsx` references every export above and
+type-checks under the editor's own `tsc -b` — the file is the
+"published surface looks the way Group A claimed" smoke test.
+
+### Documentation pass
+
+- `PRODUCTION_READINESS.md` § 2: all 14 items rewritten from prose
+  intent to "Shipped — Phase 10 Group X" summaries.
+- `CHANGELOG.md`: 0.1.0 initial entry listing every public surface +
+  bundle-size table; Unreleased section ready for Phase 11.
+- `INTEGRATION_GUIDE.md`: install snippet now uses
+  `@crafted-design/editor@next`, subpath-imports table added,
+  React-18-era language pruned.
+- `SDK_GUIDE.md`: header points at `docs/api/` as authoritative
+  (Group B); narrative content stays.
+- `docs/plans/PHASE10_PLAN.md`: this close-out section.
+
+### Hot-reload symmetry — quick reference
+
+For SDK consumers + future contributors, the four post-Phase-10 hot
+registries follow the same shape as the Phase 7 canonical registry:
+
+| Registry | Subscribe | Version | Bump on |
+|---|---|---|---|
+| Canonicals | `subscribeRegistry` | `getRegistryVersion` | `registerComponent` / `unregisterCanonical` |
+| Fonts | `subscribeFontRegistry` | `getFontRegistryVersion` | `registerFontToken` / `unregisterFontToken` |
+| Adapters | `subscribeAdapterRegistry` | `getAdapterRegistryVersion` | `registerAdapter` / `unregisterAdapter` |
+| Themes | `subscribeThemeRegistry` | `getThemeRegistryVersion` | `registerTheme` / `unregisterTheme` |
+| Templates | `subscribeTemplateRegistry` | `getTemplateRegistryVersion` | `registerTemplate` / `unregisterTemplate` |
+
+The subscribe / version helpers are NOT exposed through the SDK on
+purpose — they're editor implementation detail. SDK consumers
+register; the editor picks up the change automatically.
+
+### Tabs migration coverage
+
+`migrateTabsIdsV10` in `src/persistence/migrations.ts` covers every
+shape the pre-Phase-10 documents can have:
+
+| Input | Migrated id |
+|---|---|
+| Unique non-empty `value` | `id = value` |
+| Empty `value` | `id = _unset_<index>` |
+| Duplicate `value` (1st) | `id = value` |
+| Duplicate `value` (2nd+) | `id = <value>__<n>` |
+| Already-id-bearing | unchanged |
+
+Each preserved-slot-key invariant is tested in `migrations.test.ts`.
+Idempotent — running the migration twice is a no-op.
+
+### Bundle-size delta
+
+| Build | Phase 9 close | Phase 10 close | Delta |
+|---|---:|---:|---:|
+| `npm run build` JS raw | 917 KB | 517 KB | −400 KB |
+| `npm run build` JS gz | 273 KB | 157 KB | −116 KB |
+| `npm run build` CSS raw | 217 KB | 218 KB | +1 KB |
+| `npm run build` CSS gz | 28 KB | 28 KB | — |
+| `npm run build:dist` JS+SDK raw | 1602 KB | 555 KB | −1047 KB |
+| `npm run build:dist` JS+SDK gz | 336 KB | 120 KB | −216 KB |
+| `npm run build:dist` CSS raw | 390 KB | 390 KB | — |
+| `npm run build:dist` CSS gz | 114 KB | 114 KB | — |
+
+The dist drops are driven by Group A's package.json reshape:
+React / React-DOM / @craftjs/core moved into `peerDependencies`,
+plus the two-entry-point chunking that hoists the shared SDK code
+into a single `sdk-*.js` chunk rather than inlining it into the
+full-editor bundle. Vite 8's tree-shaking improvements amplify the
+gain.
+
+Chakra IS bundled (via the side-effect import in App.tsx), but its
+dot-notation compound exports tree-shake well — only the ~20
+primitives the editor actually instantiates ship. Hosts that don't
+want Chakra remove the `import '../examples/adapter-chakra'` line
+in their fork of `App.tsx` to drop those primitives entirely.
+
+### Tests added
+
+Total: 325 (was 282 at Phase 9 close — +43 in Phase 10):
+
+- `deprecate.test.ts` — 4
+- `fonts.test.ts` (subscription) — 7
+- `AdapterContext.test.ts` — 7
+- `themes/registry.test.ts` — 7
+- `templates/registry.test.ts` (subscription) — 5
+- `tabs.test.ts` (slot keys + default id) — 6
+- `migrations.test.ts` (Tabs id injection) — 7
+
+### Files touched
+
+| Area | Files |
+|---|---|
+| Group A | `package.json`, `package-lock.json`, `vite.config.dist.ts`, `eslint.config.js`, `CHANGELOG.md`, `src/sdk/index.ts`, `src/sdk/internal/{deprecate,deprecate.test}.{ts,tsx}` |
+| Group B | `typedoc.json`, `docs/api/**`, JSDoc additions to `src/registry/registry.ts`, `src/registry/fonts.ts`, `src/editor/inspector/panel-registry.ts`, `src/adapters/AdapterContext.tsx`, `src/editor/inspector/shared/useNodeClasses.ts`; `src/sdk/hooks.ts` `Breakpoint` re-export; `docs/SDK_GUIDE.md` |
+| Group C | `src/registry/fonts.ts`, `src/adapters/AdapterContext.tsx`, `src/themes/registry.ts`, `src/persistence/templates/registry.ts`; `src/editor/inspector/TypographyPanel.tsx`, `src/editor/AdapterSwitcher.tsx`, `src/editor/ThemeSwitcher.tsx`, `src/editor/documents/TemplatePicker.tsx`; 4 new test files |
+| Group D | `src/registry/components/tabs.ts`, `src/editor/inspector/fields/defaults.ts`, `src/persistence/migrations.ts`, `src/adapters/shadcn/components/Tabs.tsx`, `src/adapters/mui/components/Tabs.tsx`, `src/registry/components/tabs.test.ts`, `src/persistence/migrations.test.ts` |
+| Group E | `src/editor/inspector/shared/GradientEditor.tsx` |
+| Group F | `examples/adapter-chakra/lib.tsx` (deleted), `examples/adapter-chakra/Wrapper.tsx` (new), `examples/adapter-chakra/components/*.tsx` (20 files); `examples/adapter-chakra/index.ts`; `examples/adapter-chakra/README.md`; `src/sdk/canonical.ts` (Tabs helper re-exports); `package.json` (+@chakra-ui/react) |
+| Group G | `examples/sdk-smoke/consumer.tsx`, `src/sdk/{fonts,adapter,themes,templates}.ts`, `src/sdk/index.ts`, `CHANGELOG.md`, `docs/PRODUCTION_READINESS.md`, `docs/INTEGRATION_GUIDE.md`, `docs/plans/PHASE10_PLAN.md` |
+
+### Pending: the actual `npm publish`
+
+The close-out commit prepares everything but the publish itself:
+
+1. Bump `package.json` `version` from `0.1.0-pre.0` to `0.1.0`.
+2. `git tag v0.1.0`.
+3. `npm publish --tag next`.
+4. Verify install in a sandbox:
+   ```bash
+   mkdir /tmp/sdk-smoke && cd /tmp/sdk-smoke
+   npm init -y
+   npm install react@19 react-dom@19 @crafted-design/editor@next
+   ./node_modules/.bin/tsc --noEmit -e "import { registerAdapter } from '@crafted-design/editor/sdk'"
+   ```
+
+Phase 10 is complete pending that publish. Phase 11 (Section 3 —
+Designer UX) is unblocked.

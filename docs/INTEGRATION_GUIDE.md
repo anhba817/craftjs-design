@@ -6,28 +6,41 @@ The shipped artifact is a Vite library-mode bundle: an ES module exporting
 `<Editor />` plus the full SDK. React, React DOM, and Craft.js are
 externalized as peer dependencies — your host app provides them.
 
-This guide assumes a Vite + React 18 host. React 19 hosts work via Craft.js's
-`peerDependencies` (which accept `^16.8.0 || ^17 || ^18 || ^19`), but the
-editor's own dev environment is React 18 today. See `PHASE8_PLAN.md`'s
-close-out for the React 19 status.
+This guide assumes a Vite + React 19 host (the editor's own development
+target). Older React versions are not supported — the React 19 ref-as-prop
+semantics + the unified `Fragment` are load-bearing.
 
 ## Install
 
 ```bash
-npm install @design/editor   # placeholder — package name TBD at publish
+# Initial `0.1.0` preview lives behind the `next` dist-tag — opt in
+# explicitly to avoid surprises until Phase 11 promotes it to `latest`.
+npm install @crafted-design/editor@next react@19 react-dom@19 @craftjs/core@^0.2.12
 ```
 
-Peer dependencies:
+`@emotion/react`, `@emotion/styled`, and `@mui/material` are bundled into
+the editor build — you don't need to install them separately. If you
+strip the Chakra example or MUI adapter from your fork, you can also
+omit the matching peer chain.
 
-```bash
-npm install react@^19 react-dom@^19 @craftjs/core@^0.2.12
-```
+## Subpath exports
+
+Two entry points:
+
+| Import path | What you get |
+|---|---|
+| `@crafted-design/editor` | Full `<Editor />` component + the editor's own dependencies. Pull this when you want to render the editor itself. |
+| `@crafted-design/editor/sdk` | SDK-only surface (`registerAdapter`, `registerCanonical`, `registerPanel`, `registerTheme`, `registerTemplate`, `registerFontToken`, `useNodeClasses`, all the matching types). No editor UI — use this when authoring a canonical / adapter / panel without pulling in `<Editor />`. |
+| `@crafted-design/editor/index.css` | Tailwind CSS bundle. Import once per page; no JS overhead. |
+
+`.d.ts` files ship alongside both JS entries so TypeScript hosts resolve
+types without configuration.
 
 ## Minimal embed
 
 ```tsx
-import { Editor } from '@design/editor'
-import '@design/editor/dist-lib/index.css' // Tailwind CSS bundle
+import { Editor } from '@crafted-design/editor'
+import '@crafted-design/editor/index.css'
 
 function App() {
   return <Editor />

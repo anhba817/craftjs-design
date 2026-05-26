@@ -29,6 +29,7 @@ export type {
 
 export {
   registerAdapter,
+  unregisterAdapter,
   listAdapters,
   useActiveAdapter,
 } from '../adapters/AdapterContext'
