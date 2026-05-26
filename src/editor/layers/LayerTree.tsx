@@ -113,20 +113,30 @@ export function LayerTree() {
     })
   }
 
-  // Phase 11 § 3.4 — container-level click handler. Resolves the
-  // clicked row by walking up from event.target to the nearest
-  // `[data-layer-id]` element. This avoids per-row onClick closures
-  // that could capture a stale `id` if React's render → DOM-listener
-  // sync somehow lagged (the first cut was passing per-row inline
-  // closures that selected the previously-clicked row on subsequent
-  // clicks — the cause was elusive, the DOM-delegate pattern is
-  // unconditionally robust).
-  const handleContainerClick = (e: React.MouseEvent) => {
+  // Phase 11 § 3.4 — container-level mousedown handler.
+  //
+  // Why mousedown and not click: when a row is `draggable=true`,
+  // the browser may delay or suppress the click event depending on
+  // tiny mouse movements between mousedown and mouseup (drag-prep
+  // hysteresis). That manifested as an off-by-one selection bug
+  // where the first click did nothing visible and subsequent
+  // clicks appeared to select the PREVIOUS row's id. Mousedown
+  // fires immediately on press, bypassing the drag-prep interaction
+  // entirely. This is also what Craft's own canvas connector uses
+  // for selection, so the layer-tree and canvas now behave
+  // consistently.
+  //
+  // Row resolution: walks up from event.target to the nearest
+  // `[data-layer-id]` so the id comes from the live DOM, not a
+  // captured closure that might lag a render behind.
+  const handleContainerMouseDown = (e: React.MouseEvent) => {
+    // Only react to the primary button. Right-click is right-click,
+    // middle-click is ignored.
+    if (e.button !== 0) return
     const target = e.target as HTMLElement | null
     if (!target) return
-    // Chevron clicks stopPropagation in the button itself; we should
-    // never see them here. Defensive guard if the chevron's
-    // stopPropagation ever regresses.
+    // Chevron button stopPropagation()s its mousedown so this guard
+    // is defensive belt-and-suspenders.
     if (target.closest('[data-chevron]')) return
     const rowEl = target.closest('[data-layer-id]') as HTMLElement | null
     if (!rowEl) return
@@ -282,7 +292,7 @@ export function LayerTree() {
         ref={scrollerRef}
         role="tree"
         aria-label="Layer tree"
-        onClick={handleContainerClick}
+        onMouseDown={handleContainerMouseDown}
         className="min-h-0 flex-1 overflow-y-auto"
       >
         {rows.map(renderRow)}
@@ -295,7 +305,7 @@ export function LayerTree() {
       ref={scrollerRef}
       role="tree"
       aria-label="Layer tree"
-      onClick={handleContainerClick}
+      onMouseDown={handleContainerMouseDown}
       className="min-h-0 flex-1 overflow-y-auto"
     >
       <div
@@ -405,9 +415,15 @@ function LayerRow({
         <button
           type="button"
           data-chevron
+          onMouseDown={(e) => {
+            // The container's mousedown delegate runs on the bubble
+            // phase too — stopPropagation keeps a chevron click from
+            // doubling as a row-select.
+            e.stopPropagation()
+          }}
           onClick={(e) => {
-            // Stop propagation so the row's container delegate
-            // doesn't also fire selectNode on chevron click.
+            // Defensive: stop click bubbling too, in case any
+            // ancestor ever listens to click directly.
             e.stopPropagation()
             onChevronClick()
           }}
