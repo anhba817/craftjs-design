@@ -195,6 +195,13 @@ export function CanvasKeyboardRegion({ children }: { children: ReactNode }) {
           return
         }
       }
+      // Phase 11 § 3.11 — when inline text edit is active, defer ALL
+      // keys to the editable region even if the keydown bubbled to
+      // a non-editable target. Defensive — the isContentEditable
+      // check above already handles the common case where focus is
+      // on the span, but stray keydowns (e.g. via global hotkeys)
+      // should not navigate the canvas while editing.
+      if (useEditorStore.getState().editingTextNode !== null) return
       // Only act when focus is somewhere inside the canvas region.
       const active = document.activeElement
       if (!active || !containerRef.current?.contains(active)) return

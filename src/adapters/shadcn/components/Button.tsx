@@ -1,4 +1,7 @@
+import { useNode } from '@craftjs/core'
 import { Button as ShadcnButtonImpl } from '@/components/ui/button'
+import { EditableText } from '@/editor/text-edit/EditableText'
+import { useEditorStore } from '@/state/editorStore'
 import type { AdapterRenderProps } from '../../types'
 
 const INTENT_TO_VARIANT = {
@@ -24,6 +27,9 @@ export function ShadcnButton({
     intent: Intent
     disabled: boolean
   }
+  const { id } = useNode()
+  const setEditingTextNode = useEditorStore((s) => s.setEditingTextNode)
+
   return (
     <ShadcnButtonImpl
       ref={rootRef as never}
@@ -31,8 +37,12 @@ export function ShadcnButton({
       disabled={disabled}
       className={className}
       style={inlineStyle}
+      onDoubleClick={(e) => {
+        e.stopPropagation()
+        setEditingTextNode(id)
+      }}
     >
-      {label}
+      <EditableText text={label} propPath="label" />
     </ShadcnButtonImpl>
   )
 }

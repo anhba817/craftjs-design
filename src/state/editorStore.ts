@@ -91,6 +91,18 @@ interface EditorStore {
   setSelection: (ids: string[]) => void
   toggleSelection: (id: string) => void
   clearSelection: () => void
+
+  // Phase 11 § 3.11 — inline text editing. When non-null, the
+  // adapter impl for that node renders a contentEditable span
+  // instead of static text. The editable commits on blur and
+  // unsets this flag. Cleared on document switch alongside
+  // selection / clipboard.
+  //
+  // Why a single id (not a Set): only one text node can be in
+  // edit mode at a time — `contentEditable` requires DOM focus,
+  // and focus is single. Multi-edit is meaningless here.
+  editingTextNode: string | null
+  setEditingTextNode: (id: string | null) => void
 }
 
 export interface StorageSaveFailedInfo {
@@ -191,4 +203,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
       return { selection: next }
     }),
   clearSelection: () => set({ selection: [] }),
+
+  editingTextNode: null,
+  setEditingTextNode: (id) => set({ editingTextNode: id }),
 }))

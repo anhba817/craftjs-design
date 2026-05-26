@@ -119,5 +119,7 @@ function runApply(
   // paste should NOT splice doc A's tree into doc B).
   useEditorStore.getState().clearSelection()
   useEditorStore.getState().setClipboard(null)
+  // Phase 11 § 3.11 — likewise the editing-text node id is stale.
+  useEditorStore.getState().setEditingTextNode(null)
   return { ok: true }
 }

@@ -48,3 +48,39 @@ export { useNodeClassesMulti } from '../editor/inspector/shared/useNodeClassesMu
  * state, not part of the saved document.
  */
 export type { Breakpoint } from '../state/editorStore'
+
+/**
+ * Phase 11 § 3.11 — inline text-edit primitive for adapter impls.
+ *
+ * Renders text in two modes: (a) display = a React Fragment, no
+ * extra DOM wrapper, parent's typography applies directly; (b) edit
+ * = a `contentEditable` span that commits keystrokes via throttled
+ * setProp so the entire edit gesture coalesces into one undo step.
+ *
+ * Adapter impls put `<EditableText text={content} propPath="content" />`
+ * inside their root element and wire `onDoubleClick` on the root to
+ * `useStartTextEdit()` to enter edit mode.
+ *
+ * @example
+ * ```tsx
+ * import { EditableText, useStartTextEdit } from '@design/sdk'
+ *
+ * function MyText({ props, rootRef }: AdapterRenderProps) {
+ *   const { content } = props as { content: string }
+ *   const startEdit = useStartTextEdit()
+ *   return (
+ *     <p ref={rootRef} onDoubleClick={(e) => { e.stopPropagation(); startEdit() }}>
+ *       <EditableText text={content} propPath="content" multiline />
+ *     </p>
+ *   )
+ * }
+ * ```
+ */
+export { EditableText } from '../editor/text-edit/EditableText'
+
+/**
+ * Phase 11 § 3.11 — companion to `EditableText`. Adapter impls call
+ * this in their root element's `onDoubleClick` handler to switch
+ * the corresponding text region into edit mode.
+ */
+export { useStartTextEdit } from '../editor/text-edit/useStartTextEdit'

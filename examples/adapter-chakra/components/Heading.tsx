@@ -1,5 +1,6 @@
 import { Heading } from '@chakra-ui/react'
 import type { AdapterRenderProps } from '@design/sdk'
+import { EditableText, useStartTextEdit } from '@design/sdk'
 
 type HeadingSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl'
 const LEVEL_TO_SIZE: Record<string, HeadingSize> = {
@@ -18,6 +19,7 @@ export function ChakraHeadingImpl({
   inlineStyle,
 }: AdapterRenderProps) {
   const { level, content } = props as { level: string; content: string }
+  const startEdit = useStartTextEdit()
   return (
     <Heading
       ref={rootRef as never}
@@ -25,8 +27,12 @@ export function ChakraHeadingImpl({
       size={LEVEL_TO_SIZE[level] ?? 'xl'}
       className={className}
       style={inlineStyle}
+      onDoubleClick={(e) => {
+        e.stopPropagation()
+        startEdit()
+      }}
     >
-      {content}
+      <EditableText text={content} propPath="content" />
     </Heading>
   )
 }

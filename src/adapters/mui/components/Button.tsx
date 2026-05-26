@@ -1,4 +1,7 @@
+import { useNode } from '@craftjs/core'
 import MuiButton from '@mui/material/Button'
+import { EditableText } from '@/editor/text-edit/EditableText'
+import { useEditorStore } from '@/state/editorStore'
 import type { AdapterRenderProps } from '../../types'
 
 const INTENT_TO_COLOR = {
@@ -24,6 +27,8 @@ export function MaterialButton({
     intent: Intent
     disabled: boolean
   }
+  const { id } = useNode()
+  const setEditingTextNode = useEditorStore((s) => s.setEditingTextNode)
   return (
     <MuiButton
       ref={rootRef as never}
@@ -32,8 +37,12 @@ export function MaterialButton({
       disabled={disabled}
       sx={sx}
       style={inlineStyle}
+      onDoubleClick={(e: React.MouseEvent) => {
+        e.stopPropagation()
+        setEditingTextNode(id)
+      }}
     >
-      {label}
+      <EditableText text={label} propPath="label" />
     </MuiButton>
   )
 }

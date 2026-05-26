@@ -1,5 +1,6 @@
 import { Button } from '@chakra-ui/react'
 import type { AdapterRenderProps } from '@design/sdk'
+import { EditableText, useStartTextEdit } from '@design/sdk'
 
 const INTENT_TO_VARIANT: Record<string, 'solid' | 'outline' | 'ghost'> = {
   primary: 'solid',
@@ -23,6 +24,7 @@ export function ChakraButtonImpl({
     intent: 'primary' | 'secondary' | 'ghost'
     disabled: boolean
   }
+  const startEdit = useStartTextEdit()
   return (
     <Button
       ref={rootRef as never}
@@ -31,8 +33,12 @@ export function ChakraButtonImpl({
       variant={INTENT_TO_VARIANT[intent] ?? 'solid'}
       colorPalette={INTENT_TO_PALETTE[intent] ?? 'teal'}
       disabled={disabled}
+      onDoubleClick={(e) => {
+        e.stopPropagation()
+        startEdit()
+      }}
     >
-      {label}
+      <EditableText text={label} propPath="label" />
     </Button>
   )
 }
