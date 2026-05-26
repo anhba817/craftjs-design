@@ -1,7 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useRef } from 'react'
 import { cn } from '@/lib/utils'
-import { normalizeHex } from './color-conversions'
+import { ColorPicker, type ColorPickerValue } from './ColorPicker'
 import {
   MAX_STOPS,
   MIN_STOPS,
@@ -21,6 +21,15 @@ import {
 // insertion order so designers can edit a stop in place without it jumping
 // when its position changes. gradientToCss sorts before emitting CSS so the
 // rendered output is always positionally consistent.
+//
+// Phase 10 § 2.12 — per-stop color editing uses a nested ColorPicker
+// (allowGradient=false). Tokens picked inside resolve to a hex via
+// getComputedStyle so the gradient string stays portable.
+//
+// Phase 10 § 2.13 — the preview bar carries draggable handles per stop.
+// Direct-DOM mutation during the drag (mirroring Phase 9's ResizeOverlay
+// and ColorPicker patterns) keeps the React render path quiet until
+// pointerup; the numeric input field stays as the precise-input path.
 export function GradientEditor({
   gradient,
   onChange,
@@ -28,7 +37,6 @@ export function GradientEditor({
   gradient: Gradient
   onChange: (g: Gradient) => void
 }) {
-  const preview = gradientToCss(gradient)
   const canAdd = gradient.stops.length < MAX_STOPS
 
   const setType = (type: GradientType) => {
@@ -49,10 +57,11 @@ export function GradientEditor({
 
   return (
     <div className="space-y-2">
-      <div
-        aria-hidden
-        className="h-8 w-full rounded border border-gray-300"
-        style={{ background: preview }}
+      <GradientPreviewBar
+        gradient={gradient}
+        onCommitStopPosition={(index, position) =>
+          onChange(updateStop(gradient, index, { position }))
+        }
       />
 
       <TypeToggle type={gradient.type} onChange={setType} />
@@ -112,6 +121,99 @@ export function GradientEditor({
           ))}
         </div>
       </div>
+    </div>
+  )
+}
+
+// Phase 10 § 2.13 — the gradient preview bar carries one draggable
+// handle per stop. pointerdown on a handle records the starting
+// position + bar width; document-level pointermove updates the
+// handle's `left` directly (no React render); pointerup commits via
+// onCommitStopPosition. This mirrors the ResizeOverlay drag pattern:
+// one onChange per gesture instead of one per pointer tick.
+function GradientPreviewBar({
+  gradient,
+  onCommitStopPosition,
+}: {
+  gradient: Gradient
+  onCommitStopPosition: (index: number, position: number) => void
+}) {
+  const preview = gradientToCss(gradient)
+  const barRef = useRef<HTMLDivElement | null>(null)
+  const handleRefs = useRef<(HTMLButtonElement | null)[]>([])
+
+  const startDrag = (
+    e: React.PointerEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    // Pre-condition: don't let the parent's drop-targets / connectors steal
+    // the pointer (Tabs canvases use pointer events for selection).
+    e.preventDefault()
+    e.stopPropagation()
+    const barWidth = barRef.current?.clientWidth ?? 1
+    const startX = e.clientX
+    const startPosition = gradient.stops[index].position
+    const handle = handleRefs.current[index]
+    let latest = startPosition
+
+    const onMove = (mv: PointerEvent) => {
+      const dx = mv.clientX - startX
+      latest = Math.max(
+        0,
+        Math.min(100, startPosition + (dx / barWidth) * 100),
+      )
+      if (handle) handle.style.left = `${latest}%`
+    }
+
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove)
+      document.removeEventListener('pointerup', onUp)
+      document.removeEventListener('pointercancel', onUp)
+      onCommitStopPosition(index, Math.round(latest))
+    }
+
+    document.addEventListener('pointermove', onMove)
+    document.addEventListener('pointerup', onUp)
+    document.addEventListener('pointercancel', onUp)
+  }
+
+  return (
+    <div className="relative w-full pb-2">
+      <div
+        ref={barRef}
+        aria-hidden
+        className="h-8 w-full rounded border border-gray-300"
+        style={{ background: preview }}
+      />
+      {/* Handle layer overlaid on the bar's bottom edge. position:absolute
+          relative to the outer wrapper; left is per-stop position %. */}
+      {gradient.stops.map((stop, index) => (
+        <button
+          key={index}
+          type="button"
+          ref={(el) => {
+            handleRefs.current[index] = el
+          }}
+          onPointerDown={(e) => startDrag(e, index)}
+          aria-label={`Drag stop ${index + 1} position`}
+          style={{
+            position: 'absolute',
+            left: `${stop.position}%`,
+            bottom: 0,
+            transform: 'translate(-50%, 50%)',
+            width: 14,
+            height: 14,
+            borderRadius: '50%',
+            backgroundColor: stop.color,
+            border: '2px solid white',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+            cursor: 'grab',
+            // touchAction: 'none' prevents the browser's scroll gesture
+            // from hijacking horizontal drags on touch devices.
+            touchAction: 'none',
+          }}
+        />
+      ))}
     </div>
   )
 }
@@ -179,9 +281,49 @@ function RangeRow({
   )
 }
 
-// Per-stop editor row. Hex input is locally controlled — commits on blur or
-// Enter so the user typing mid-edit doesn't fire onChange with a malformed
-// value. Position input commits on every change (numeric, can't be partial).
+/**
+ * Resolves a CSS variable (`--<token>`) to a 6-char hex string. The
+ * stop expects a hex literal; the parent canvas uses CSS variables
+ * inline, but the gradient string serialises to JSON and is portable
+ * across themes. Returning hex avoids surprising the user when they
+ * switch themes — the gradient stays as picked.
+ *
+ * Returns null when the token isn't defined or computes to a colour
+ * shape we can't parse (e.g., oklch() in older browsers without
+ * computed-value normalisation).
+ */
+function resolveTokenToHex(token: string): string | null {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return null
+  }
+  let probe: HTMLDivElement | null = null
+  try {
+    probe = document.createElement('div')
+    probe.style.color = `var(--${token})`
+    probe.style.position = 'absolute'
+    probe.style.visibility = 'hidden'
+    document.body.appendChild(probe)
+    const computed = window.getComputedStyle(probe).color
+    return parseRgbToHex(computed)
+  } catch {
+    return null
+  } finally {
+    if (probe) probe.remove()
+  }
+}
+
+function parseRgbToHex(value: string): string | null {
+  const m = value.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/)
+  if (!m) return null
+  const toHex = (n: string) => Number(n).toString(16).padStart(2, '0')
+  return `#${toHex(m[1])}${toHex(m[2])}${toHex(m[3])}`
+}
+
+// Per-stop editor row. Phase 10 — color cell is a nested ColorPicker
+// (allowGradient=false). Token picks resolve to hex via
+// resolveTokenToHex so the saved gradient string stays portable. The
+// position numeric input stays for precise input alongside the
+// drag-along-bar handle above.
 function StopRow({
   color,
   position,
@@ -195,44 +337,29 @@ function StopRow({
   onChange: (patch: { color?: string; position?: number }) => void
   onDelete: () => void
 }) {
-  const [hexInput, setHexInput] = useState(color)
-
-  useEffect(() => {
-    setHexInput(color)
-  }, [color])
-
-  const commitColor = () => {
-    const normalized = normalizeHex(hexInput)
-    if (normalized && normalized !== color) {
-      onChange({ color: normalized })
-    } else if (!normalized) {
-      setHexInput(color)
+  const handleColorChange = (v: ColorPickerValue) => {
+    if (v.kind === 'hex') {
+      if (v.hex && v.hex !== color) onChange({ color: v.hex })
+    } else if (v.kind === 'token') {
+      const hex = resolveTokenToHex(v.token)
+      if (hex && hex !== color) onChange({ color: hex })
     }
+    // 'gradient' kind is blocked by allowGradient=false on ColorPicker.
+    // 'unset' kind doesn't apply to a stop (a stop must have a colour).
   }
 
   return (
     <div className="flex items-center gap-1.5">
-      <div
-        aria-hidden
-        className="h-5 w-5 shrink-0 rounded border border-gray-300"
-        style={{ background: color }}
-      />
-      <input
-        type="text"
-        value={hexInput}
-        onChange={(e) => setHexInput(e.target.value)}
-        onBlur={commitColor}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            commitColor()
-            ;(e.currentTarget as HTMLInputElement).blur()
-          } else if (e.key === 'Escape') {
-            setHexInput(color)
-            ;(e.currentTarget as HTMLInputElement).blur()
-          }
-        }}
-        className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-1.5 py-0.5 text-[11px] text-gray-700"
-      />
+      {/* ColorPicker's trigger is `flex w-full` — wrapping it in a
+          flex-1 box constrains the width so the row layout stays
+          compact. The popover that opens from the trigger sits above
+          this row via Radix's portal. */}
+      <div className="min-w-0 flex-1">
+        <ColorPicker
+          value={{ kind: 'hex', hex: color }}
+          onChange={handleColorChange}
+        />
+      </div>
       <input
         type="number"
         value={position}
@@ -244,6 +371,7 @@ function StopRow({
             onChange({ position: Math.max(0, Math.min(100, Math.round(v))) })
           }
         }}
+        aria-label="Stop position percent"
         className="w-11 rounded border border-gray-300 bg-white px-1 py-0.5 text-right text-[11px] tabular-nums text-gray-700"
       />
       <button
