@@ -31,18 +31,30 @@ interface NodeContextMenuProps {
 }
 
 export function NodeContextMenu({ children }: NodeContextMenuProps) {
-  const { actions, query } = useEditor()
+  // Subscribing to selection via the collector is REQUIRED — calling
+  // useEditor() without a collector returns actions+query only and
+  // doesn't re-render on state changes. Without this, the menu's
+  // `disabled` props were captured at first render (no selection →
+  // every item greyed) and never updated when handleContextMenu
+  // called actions.selectNode below.
+  const { actions, query, selectedId } = useEditor((state) => {
+    const ids = state.events.selected
+      ? Array.from(state.events.selected)
+      : []
+    return { selectedId: (ids[0] as string | undefined) ?? null }
+  })
   const { copy, cut, paste, duplicate } = useClipboardActions()
   const clipboard = useEditorStore((s) => s.clipboard)
 
   // Phase 11 — right-click should ALWAYS select the clicked node before
-  // the menu opens, otherwise the user's first right-click on a fresh
-  // document (no prior selection) gets every item disabled because
-  // canCutCopy / canWrap key off selection. Craft.js's default
-  // connector handles left-click selection but doesn't fire on
-  // contextmenu, so we resolve the target here by walking up from
-  // event.target to the nearest [data-craft-node-id] (stamped on every
-  // canvas node by CanonicalNode.attachRef).
+  // the menu opens. Craft.js's default connector handles left-click
+  // selection but doesn't fire on contextmenu, so we resolve the
+  // target here by walking up from event.target to the nearest
+  // [data-craft-node-id] (stamped on every canvas node by
+  // CanonicalNode.attachRef) and call actions.selectNode. The
+  // useEditor subscription above ensures the menu re-renders before
+  // Radix shows it, so the items pick up the new selection's enabled
+  // state.
   const handleContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
     const startEl = event.target as HTMLElement | null
     if (!startEl) return
@@ -52,18 +64,16 @@ export function NodeContextMenu({ children }: NodeContextMenuProps) {
     if (!nodeId) return
     // Only re-select when the right-click hits a DIFFERENT node from
     // the current selection — avoids redundant Craft dispatches.
-    const currentSelection = query.getEvent('selected').first()
-    if (currentSelection !== nodeId) {
+    if (selectedId !== nodeId) {
       actions.selectNode(nodeId)
     }
   }
 
-  // The target node is whatever's currently selected when the user
-  // right-clicks. The handleContextMenu above ensures selection is in
-  // sync before the menu opens.
-  const getTarget = (): string | null => {
-    return query.getEvent('selected').first() ?? null
-  }
+  // The target node is the current selection. handleContextMenu
+  // synchronously updates it before Radix opens the menu; the
+  // useEditor subscription above re-renders us so disabled props
+  // reflect the new selection.
+  const getTarget = (): string | null => selectedId
 
   const handleCopy = () => {
     const id = getTarget()
