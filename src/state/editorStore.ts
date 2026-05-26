@@ -66,6 +66,14 @@ interface EditorStore {
 
   concurrentEditConflict: ConcurrentEditConflict | null
   setConcurrentEditConflict: (info: ConcurrentEditConflict | null) => void
+
+  // Phase 11 § 3.2 — internal clipboard. Holds a serialised NodeTree
+  // copied via the clipboard helper. System clipboard isn't used (the
+  // browser permission model requires explicit user gestures per tab,
+  // which the editor's keyboard shortcuts don't always carry). Survives
+  // across editor remounts in the same tab; cleared on document switch.
+  clipboard: unknown | null
+  setClipboard: (tree: unknown | null) => void
 }
 
 export interface StorageSaveFailedInfo {
@@ -138,4 +146,7 @@ export const useEditorStore = create<EditorStore>()((set) => ({
 
   concurrentEditConflict: null,
   setConcurrentEditConflict: (info) => set({ concurrentEditConflict: info }),
+
+  clipboard: null,
+  setClipboard: (tree) => set({ clipboard: tree }),
 }))

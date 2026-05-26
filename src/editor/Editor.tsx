@@ -8,6 +8,8 @@ import { useEditorStore } from '../state/editorStore'
 import { ThemeProvider } from '../themes/ThemeProvider'
 import { CanvasKeyboardRegion } from './canvas/CanvasKeyboardRegion'
 import { ResizeOverlay } from './canvas/ResizeOverlay'
+import { NodeContextMenu } from './clipboard/NodeContextMenu'
+import { useClipboardKeyboard } from './clipboard/useClipboardKeyboard'
 import { AsyncErrorBanner } from './errors/AsyncErrorBanner'
 import { ErrorBoundary } from './errors/ErrorBoundary'
 import { MalformedDocumentBanner } from './errors/MalformedDocumentBanner'
@@ -82,6 +84,8 @@ export function Editor() {
               version wins. */}
           <ConcurrentEditBanner />
           <ConcurrentEditWatcherMount />
+          {/* Phase 11 § 3.2 — global Cmd+C/X/V/D clipboard shortcuts. */}
+          <ClipboardKeyboardMount />
           <div className="flex min-h-0 flex-1">
             <ErrorBoundary fallback={ToolboxErrorFallback}>
               <Toolbox />
@@ -92,16 +96,18 @@ export function Editor() {
                   {malformedDocument ? (
                     <MalformedDocumentBanner />
                   ) : (
-                    <CanvasKeyboardRegion>
-                      <Frame>
-                        <Element
-                          is={Root}
-                          canvas
-                          nodeProps={boxDef.defaults.props}
-                          style={boxDef.defaults.style}
-                        />
-                      </Frame>
-                    </CanvasKeyboardRegion>
+                    <NodeContextMenu>
+                      <CanvasKeyboardRegion>
+                        <Frame>
+                          <Element
+                            is={Root}
+                            canvas
+                            nodeProps={boxDef.defaults.props}
+                            style={boxDef.defaults.style}
+                          />
+                        </Frame>
+                      </CanvasKeyboardRegion>
+                    </NodeContextMenu>
                   )}
                 </ErrorBoundary>
               </main>
@@ -124,5 +130,13 @@ export { ErrorBoundary, TopShellErrorFallback }
 // here as a no-op component is the simplest fix.
 function ConcurrentEditWatcherMount() {
   useConcurrentEditWatcher()
+  return null
+}
+
+// Phase 11 § 3.2 — global keyboard listener for Cmd+C / X / V / D.
+// Same mount-host pattern as above so the hook can use useEditor's
+// context without inverting the tree.
+function ClipboardKeyboardMount() {
+  useClipboardKeyboard()
   return null
 }
