@@ -70,6 +70,45 @@ function migrateTabsPropsV7(tree: CraftTree): void {
   }
 }
 
+// Phase 10 § 2.11 — Tabs gain a stable `id` per tab so renaming `value`
+// doesn't orphan canvas content. For legacy documents missing the field,
+// we synthesise an id that PRESERVES the slot key the prior canvasSlots
+// produced (`tab-${uniqueTabValues(tabs)[i]}`) so the existing canvas
+// children stay attached to their tabs across the migration boundary.
+//
+// Idempotent — tabs that already have an id are untouched.
+function migrateTabsIdsV10(tree: CraftTree): void {
+  for (const nodeId of Object.keys(tree)) {
+    const node = tree[nodeId]
+    if (node.displayName !== 'Tabs') continue
+    const tabs = node.props?.nodeProps?.tabs
+    if (!Array.isArray(tabs)) continue
+    // Build the same unique-values sequence canvasSlots used pre-Phase-10
+    // so injected ids hash to identical slot keys.
+    const seen = new Set<string>()
+    const slotIds: string[] = []
+    for (let i = 0; i < tabs.length; i++) {
+      const tab = tabs[i] as { value?: unknown } | null
+      const value =
+        tab && typeof tab.value === 'string' && tab.value ? tab.value : `_unset_${i}`
+      let candidate = value
+      let suffix = 1
+      while (seen.has(candidate)) {
+        candidate = `${value}__${suffix}`
+        suffix++
+      }
+      seen.add(candidate)
+      slotIds.push(candidate)
+    }
+    for (let i = 0; i < tabs.length; i++) {
+      const tab = tabs[i]
+      if (!tab || typeof tab !== 'object') continue
+      if (typeof (tab as { id?: unknown }).id === 'string') continue
+      ;(tab as Record<string, unknown>).id = slotIds[i]
+    }
+  }
+}
+
 export function migrateDocument(doc: EditorDocument): EditorDocument {
   let tree: CraftTree
   try {
@@ -82,6 +121,7 @@ export function migrateDocument(doc: EditorDocument): EditorDocument {
 
   migrateCardPropsV6(tree)
   migrateTabsPropsV7(tree)
+  migrateTabsIdsV10(tree)
 
   return { ...doc, craftJson: JSON.stringify(tree) }
 }

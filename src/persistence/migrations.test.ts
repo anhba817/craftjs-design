@@ -114,10 +114,15 @@ describe('migrateDocument — Phase 7 Tabs content strip', () => {
       craftJson: JSON.stringify(tree),
     }
     const out = JSON.parse(migrateDocument(doc).craftJson)
+    // Phase 10 also runs and injects `id` per tab. The v7 invariant is
+    // that `content` is gone; the ids piggyback.
     expect(out['node-tabs'].props.nodeProps.tabs).toEqual([
-      { value: 'a', label: 'A' },
-      { value: 'b', label: 'B' },
+      { id: 'a', value: 'a', label: 'A' },
+      { id: 'b', value: 'b', label: 'B' },
     ])
+    for (const t of out['node-tabs'].props.nodeProps.tabs) {
+      expect(t).not.toHaveProperty('content')
+    }
   })
 
   it('leaves non-Tabs nodes alone', () => {
@@ -144,7 +149,7 @@ describe('migrateDocument — Phase 7 Tabs content strip', () => {
         displayName: 'Tabs',
         props: {
           nodeProps: {
-            tabs: [{ value: 'a', label: 'A' }],
+            tabs: [{ id: 'tab-a', value: 'a', label: 'A' }],
             defaultValue: 'a',
           },
         },
@@ -158,5 +163,198 @@ describe('migrateDocument — Phase 7 Tabs content strip', () => {
     const once = migrateDocument(doc)
     const twice = migrateDocument(once)
     expect(twice).toEqual(once)
+  })
+})
+
+// Phase 10 § 2.11 — Tabs gain a stable `id` field per tab so renaming
+// `value` doesn't orphan canvas content. The migration injects ids that
+// PRESERVE the slot key the pre-Phase-10 canvasSlots produced.
+describe('migrateDocument — Phase 10 Tabs id injection', () => {
+  it('injects id matching value for unique non-empty values', () => {
+    const tree = {
+      'node-tabs': {
+        displayName: 'Tabs',
+        props: {
+          nodeProps: {
+            tabs: [
+              { value: 'overview', label: 'Overview' },
+              { value: 'details', label: 'Details' },
+            ],
+            defaultValue: 'overview',
+          },
+        },
+      },
+    }
+    const doc = {
+      version: 1 as const,
+      adapterId: 'shadcn',
+      craftJson: JSON.stringify(tree),
+    }
+    const out = JSON.parse(migrateDocument(doc).craftJson)
+    const tabs = out['node-tabs'].props.nodeProps.tabs
+    expect(tabs[0].id).toBe('overview')
+    expect(tabs[1].id).toBe('details')
+  })
+
+  it('injects _unset_<index> ids for empty values (preserves the old slot key)', () => {
+    const tree = {
+      'node-tabs': {
+        displayName: 'Tabs',
+        props: {
+          nodeProps: {
+            tabs: [
+              { value: '', label: 'A' },
+              { value: '', label: 'B' },
+            ],
+            defaultValue: '',
+          },
+        },
+      },
+    }
+    const doc = {
+      version: 1 as const,
+      adapterId: 'shadcn',
+      craftJson: JSON.stringify(tree),
+    }
+    const out = JSON.parse(migrateDocument(doc).craftJson)
+    const tabs = out['node-tabs'].props.nodeProps.tabs
+    expect(tabs[0].id).toBe('_unset_0')
+    expect(tabs[1].id).toBe('_unset_1')
+  })
+
+  it('suffixes duplicate values the same way pre-Phase-10 canvasSlots did', () => {
+    const tree = {
+      'node-tabs': {
+        displayName: 'Tabs',
+        props: {
+          nodeProps: {
+            tabs: [
+              { value: 'x', label: 'A' },
+              { value: 'x', label: 'B' },
+              { value: 'x', label: 'C' },
+            ],
+            defaultValue: 'x',
+          },
+        },
+      },
+    }
+    const doc = {
+      version: 1 as const,
+      adapterId: 'shadcn',
+      craftJson: JSON.stringify(tree),
+    }
+    const out = JSON.parse(migrateDocument(doc).craftJson)
+    const tabs = out['node-tabs'].props.nodeProps.tabs
+    expect(tabs[0].id).toBe('x')
+    expect(tabs[1].id).toBe('x__1')
+    expect(tabs[2].id).toBe('x__2')
+  })
+
+  it('leaves existing ids alone', () => {
+    const tree = {
+      'node-tabs': {
+        displayName: 'Tabs',
+        props: {
+          nodeProps: {
+            tabs: [
+              { id: 'pre-existing', value: 'a', label: 'A' },
+              { value: 'b', label: 'B' },
+            ],
+            defaultValue: 'a',
+          },
+        },
+      },
+    }
+    const doc = {
+      version: 1 as const,
+      adapterId: 'shadcn',
+      craftJson: JSON.stringify(tree),
+    }
+    const out = JSON.parse(migrateDocument(doc).craftJson)
+    const tabs = out['node-tabs'].props.nodeProps.tabs
+    expect(tabs[0].id).toBe('pre-existing') // untouched
+    expect(tabs[1].id).toBe('b') // injected
+  })
+
+  it('only fires on Tabs nodes, not other types', () => {
+    const tree = {
+      'node-other': {
+        displayName: 'Box',
+        props: {
+          nodeProps: {
+            tabs: [{ value: 'a', label: 'A' }], // a Box with a tabs-shaped prop
+          },
+        },
+      },
+    }
+    const doc = {
+      version: 1 as const,
+      adapterId: 'shadcn',
+      craftJson: JSON.stringify(tree),
+    }
+    const out = JSON.parse(migrateDocument(doc).craftJson)
+    // No id injected — migrateTabsIdsV10 ignored a non-Tabs node.
+    expect(out['node-other'].props.nodeProps.tabs[0]).not.toHaveProperty('id')
+  })
+
+  it('is idempotent', () => {
+    const tree = {
+      'node-tabs': {
+        displayName: 'Tabs',
+        props: {
+          nodeProps: {
+            tabs: [
+              { value: 'a', label: 'A' },
+              { value: '', label: 'B' },
+            ],
+            defaultValue: 'a',
+          },
+        },
+      },
+    }
+    const doc = {
+      version: 1 as const,
+      adapterId: 'shadcn',
+      craftJson: JSON.stringify(tree),
+    }
+    const once = migrateDocument(doc)
+    const twice = migrateDocument(once)
+    expect(twice).toEqual(once)
+  })
+
+  it('slot key after migration matches the pre-Phase-10 slot key', () => {
+    // The whole point: documents survive the migration without losing
+    // canvas children. The pre-Phase-10 slot key was
+    // `tab-${uniqueTabValues(tabs)[i]}`; the post-Phase-10 slot key is
+    // `tab-${tabs[i].id}`. The migration injects `id = uniqueTabValues[i]`
+    // so the two strings match.
+    const tree = {
+      'node-tabs': {
+        displayName: 'Tabs',
+        props: {
+          nodeProps: {
+            tabs: [
+              { value: 'a', label: 'A' },
+              { value: '', label: 'B' },
+              { value: 'a', label: 'C' }, // duplicate
+            ],
+            defaultValue: 'a',
+          },
+        },
+      },
+    }
+    const doc = {
+      version: 1 as const,
+      adapterId: 'shadcn',
+      craftJson: JSON.stringify(tree),
+    }
+    const out = JSON.parse(migrateDocument(doc).craftJson)
+    const tabs = out['node-tabs'].props.nodeProps.tabs
+    // The post-Phase-10 slot key is `tab-<id>`; the pre-Phase-10 slot key
+    // was `tab-<uniqueTabValues[i]>`. Asserting id === unique-value
+    // proves the slot keys are identical.
+    expect(tabs[0].id).toBe('a')
+    expect(tabs[1].id).toBe('_unset_1')
+    expect(tabs[2].id).toBe('a__1')
   })
 })

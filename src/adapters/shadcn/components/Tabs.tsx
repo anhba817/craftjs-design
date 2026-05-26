@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
-import { TAB_SLOT_PREFIX, uniqueTabValues } from '@/registry/components/tabs'
+import { tabSlotKeys, uniqueTabValues } from '@/registry/components/tabs'
 import type { AdapterRenderProps } from '../../types'
 
 export function ShadcnTabs({
@@ -11,14 +11,14 @@ export function ShadcnTabs({
   slotChildren = {},
 }: AdapterRenderProps) {
   const { tabs, defaultValue } = props as {
-    tabs: { value: string; label: string }[]
+    tabs: { id?: string; value: string; label: string }[]
     defaultValue: string
   }
 
-  // Synthetic per-tab render values — see uniqueTabValues' docstring. Without
-  // these, multiple tabs with duplicate or empty `value` (e.g., freshly-added
-  // tabs from the PropsPanel "+Add" button default to value="") collide in
-  // Radix's panel switching and all their content panels render at once.
+  // Phase 10 § 2.11 — slot keys come from `tab.id` via tabSlotKeys; the
+  // Radix `value` prop still uses `uniqueTabValues` since the user-authored
+  // `value` field can still be empty or duplicated.
+  const slotKeys = tabSlotKeys(tabs)
   const renderValues = uniqueTabValues(tabs)
   const defaultIndex = Math.max(
     0,
@@ -38,19 +38,19 @@ export function ShadcnTabs({
         style={composedInlineStyles.tabs}
       >
         {tabs.map((t, i) => (
-          <TabsTrigger key={renderValues[i]} value={renderValues[i]}>
+          <TabsTrigger key={slotKeys[i]} value={renderValues[i]}>
             {t.label}
           </TabsTrigger>
         ))}
       </TabsList>
       {tabs.map((_, i) => (
         <TabsContent
-          key={renderValues[i]}
+          key={slotKeys[i]}
           value={renderValues[i]}
           className={cn(composedClasses.content)}
           style={composedInlineStyles.content}
         >
-          {slotChildren[`${TAB_SLOT_PREFIX}${renderValues[i]}`]}
+          {slotChildren[slotKeys[i]]}
         </TabsContent>
       ))}
     </Tabs>

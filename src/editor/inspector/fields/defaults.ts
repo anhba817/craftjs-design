@@ -7,7 +7,27 @@ import { z } from 'zod'
 // Returns `null` for kinds we don't know how to default. Callers (specifically
 // the "Add" button) should skip insertion in that case rather than poisoning
 // the array with nulls.
+//
+// Phase 10 § 2.11 — ZodDefault handling. Schemas like
+// `z.string().default(() => `tab-${random}`)` (the Tabs `id` field)
+// rely on this path to seed a fresh id on each "+ Add". Without the
+// ZodDefault check, the wrapper would fall through to `null` and the
+// caller would skip insertion, breaking the Add button.
 export function defaultValueFor(schema: z.ZodType): unknown {
+  if (schema instanceof z.ZodDefault) {
+    // Zod stores the default as a function or a value on `_def.defaultValue`.
+    // The function form is how we get a fresh id per call.
+    const def = (
+      schema as unknown as { _def: { defaultValue: unknown } }
+    )._def.defaultValue
+    return typeof def === 'function' ? (def as () => unknown)() : def
+  }
+  if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
+    // Recurse into the inner type so an `id?` doesn't fall through to null.
+    const inner = (schema as unknown as { _def: { innerType: z.ZodType } })
+      ._def.innerType
+    return defaultValueFor(inner)
+  }
   if (schema instanceof z.ZodString) return ''
   if (schema instanceof z.ZodNumber) return 0
   if (schema instanceof z.ZodBoolean) return false
