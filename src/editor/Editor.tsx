@@ -8,6 +8,7 @@ import { useEditorStore } from '../state/editorStore'
 import { ThemeProvider } from '../themes/ThemeProvider'
 import { CanvasKeyboardRegion } from './canvas/CanvasKeyboardRegion'
 import { ResizeOverlay } from './canvas/ResizeOverlay'
+import { SecondarySelectionOutlines } from './canvas/SecondarySelectionOutlines'
 import { NodeContextMenu } from './clipboard/NodeContextMenu'
 import { useClipboardKeyboard } from './clipboard/useClipboardKeyboard'
 import { useMultiSelectClick } from './selection/useMultiSelectClick'
@@ -69,6 +70,11 @@ export function Editor() {
         <Hydrator />
         <ResolverUpdater />
         <ResizeOverlay />
+        {/* Phase 11 § 3.3 — dashed outlines for every non-primary
+            selection so multi-select is visible on the canvas. The
+            ResizeOverlay only renders for the primary (it owns the
+            8 handles too). */}
+        <SecondarySelectionOutlines />
         {/* Phase 9 § 1.6 — toast for uncaught async errors (effects,
             event handlers, fetch promises) that the React render-path
             ErrorBoundaries don't see. Critical async failures
