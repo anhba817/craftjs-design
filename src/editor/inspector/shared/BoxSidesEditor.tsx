@@ -18,6 +18,13 @@ interface BoxSidesEditorProps {
   //   shorthand:'4' → { p: '4', pt/pr/pb/pl: undefined }
   //   sides:{top:'2',right:'4'} → { p: undefined, pt: '2', pr: '4', pb: …, pl: … }
   onChange: (next: BoxSidesValue) => void
+  // Phase 11 § 3.3 — in multi-select mode the panel passes `mixed: true`
+  // when at least one node disagrees on the value. The editor renders
+  // forced-linked mode with an empty shorthand input + the placeholder
+  // so the user sees an explicit "—" rather than a misleading per-side
+  // breakdown of the primary node.
+  mixed?: boolean
+  placeholder?: string
 }
 
 const SIDES: readonly Side[] = ['top', 'right', 'bottom', 'left'] as const
@@ -43,9 +50,14 @@ export function BoxSidesEditor({
   value,
   options,
   onChange,
+  mixed = false,
+  placeholder,
 }: BoxSidesEditorProps) {
   const hasSides = value.sides && SIDES.some((s) => value.sides?.[s])
-  const [linked, setLinked] = useState(!hasSides)
+  // In mixed mode we force linked-only to avoid showing a primary-node
+  // per-side breakdown that would mislead the user. The "⌗ linked"
+  // toggle is also disabled.
+  const [linked, setLinked] = useState(mixed || !hasSides)
 
   const link = () => {
     setLinked(true)
@@ -79,7 +91,8 @@ export function BoxSidesEditor({
         <button
           type="button"
           onClick={linked ? unlink : link}
-          className="text-[10px] uppercase tracking-wide text-gray-500 hover:text-gray-700"
+          disabled={mixed}
+          className="text-[10px] uppercase tracking-wide text-gray-500 hover:text-gray-700 disabled:opacity-40 disabled:hover:text-gray-500"
           aria-label={linked ? 'Unlink sides' : 'Link sides'}
         >
           {linked ? '⌗ linked' : '⌗ unlinked'}
@@ -87,8 +100,9 @@ export function BoxSidesEditor({
       </div>
       {linked ? (
         <NumericInput
-          value={value.shorthand ?? ''}
+          value={mixed ? '' : (value.shorthand ?? '')}
           tokens={options}
+          placeholder={placeholder}
           onChange={(v) => onChange({ shorthand: v === '' ? undefined : v, sides: undefined })}
         />
       ) : (

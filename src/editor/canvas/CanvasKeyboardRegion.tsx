@@ -1,5 +1,6 @@
 import { useEditor } from '@craftjs/core'
 import { useCallback, useEffect, useRef, type ReactNode } from 'react'
+import { useEditorStore } from '@/state/editorStore'
 
 // Phase 9 Group D / PRODUCTION_READINESS § 1.4 — canvas keyboard navigation.
 //
@@ -246,27 +247,59 @@ export function CanvasKeyboardRegion({ children }: { children: ReactNode }) {
         }
         case 'Delete':
         case 'Backspace': {
-          if (!selectedId || selectedId === 'ROOT') return
+          // Phase 11 § 3.3 — delete EVERY node in editorStore.selection,
+          // not just the keyboard-region's primary. Coalesce under one
+          // history rate so the whole multi-delete is one undo step.
+          const selection = useEditorStore.getState().selection
+          const deletable = selection.filter((id) => {
+            try {
+              return !query.node(id).isRoot()
+            } catch {
+              return false
+            }
+          })
+          if (deletable.length === 0) return
           e.preventDefault()
-          // Decide the next selection before deleting: prefer the next
-          // sibling (preserves reading order), then previous sibling,
-          // then parent.
-          const node = getNode(selectedId)
+          // Decide the next selection from the FIRST deletable node's
+          // neighborhood — prefer the next sibling (preserves reading
+          // order), then previous sibling, then parent. Skip any
+          // candidate that's itself in the to-delete set.
+          const anchorId = deletable[0]
+          const node = getNode(anchorId)
           const parentId = node?.data.parent ?? null
           let nextSelect: string | null = parentId
           if (parentId) {
             const parent = getNode(parentId)
             const siblings = parent?.data.nodes ?? []
-            const idx = siblings.indexOf(selectedId)
-            if (idx >= 0 && idx < siblings.length - 1) {
-              nextSelect = siblings[idx + 1]
-            } else if (idx > 0) {
-              nextSelect = siblings[idx - 1]
+            const toDeleteSet = new Set(deletable)
+            const survivingAfter = siblings
+              .slice(siblings.indexOf(anchorId) + 1)
+              .find((s: string) => !toDeleteSet.has(s))
+            const survivingBefore = siblings
+              .slice(0, siblings.indexOf(anchorId))
+              .reverse()
+              .find((s: string) => !toDeleteSet.has(s))
+            nextSelect = survivingAfter ?? survivingBefore ?? parentId
+          }
+          // history.throttle(0) coalesces synchronous calls into one
+          // undo entry; we still delete in two passes (children first)
+          // because Craft errors when you delete a node whose
+          // descendant is in the to-delete set already (the descendant
+          // is gone but we still target it). Sort by depth descending.
+          const sorted = sortByDepthDesc(deletable, getNode)
+          const throttled = actions.history.throttle(0)
+          for (const id of sorted) {
+            try {
+              throttled.delete(id)
+            } catch {
+              // Node was already removed (could happen if a parent
+              // got deleted first despite the sort). Ignore.
             }
           }
-          actions.delete(selectedId)
-          // Wait for Craft's reconciliation so the new target's DOM exists
-          // by the time we ask it to scrollIntoView.
+          // Clear the multi-selection so the Inspector / breadcrumbs
+          // don't briefly point at dead ids. The next requestAnimationFrame
+          // sets the survivor.
+          useEditorStore.getState().clearSelection()
           requestAnimationFrame(() => select(nextSelect))
           break
         }
@@ -298,4 +331,26 @@ export function CanvasKeyboardRegion({ children }: { children: ReactNode }) {
       {children}
     </div>
   )
+}
+
+// Phase 11 § 3.3 — sort node ids by depth descending. Deepest nodes
+// come first so deleting them doesn't orphan parent references. Used
+// by the multi-delete path to avoid Craft's "node not found" error
+// when a parent in the to-delete set is removed before its child.
+function sortByDepthDesc(
+  ids: readonly string[],
+  getNode: (id: string) => NodeQueryShape | null,
+): string[] {
+  const depth = (id: string): number => {
+    let d = 0
+    let cur: string | null | undefined = id
+    while (cur) {
+      const n = getNode(cur)
+      cur = n?.data.parent ?? null
+      if (cur) d++
+      if (d > 1024) break // pathological loop guard
+    }
+    return d
+  }
+  return [...ids].sort((a, b) => depth(b) - depth(a))
 }

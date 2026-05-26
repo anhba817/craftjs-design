@@ -6,7 +6,8 @@ import {
 import type { SpacingSlice, SpacingValue } from '@/style/tw-classes'
 import { BoxSidesEditor } from './shared/BoxSidesEditor'
 import type { BoxSidesValue } from './shared/BoxSidesEditor'
-import { useNodeClasses } from './shared/useNodeClasses'
+import { mergeSlices } from './shared/mergeSlices'
+import { useNodeClassesMulti } from './shared/useNodeClassesMulti'
 
 // Inspector ignores px/py shorthands — they pass through unchanged in the slice
 // but the editor's 4-side model can't represent them.
@@ -41,13 +42,42 @@ function readMargin(slice: SpacingSlice, inline: Record<string, string>): BoxSid
   return {}
 }
 
-export function SpacingPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
-  const { classString, inlineStyle, writeClasses, writeInline } =
-    useNodeClasses(nodeId, slot)
-  const { slice } = parseSpacing(classString)
+// Phase 11 § 3.3 — spacing keys that participate in the padding /
+// margin merged-value check.
+const PADDING_KEYS = ['p', 'pt', 'pr', 'pb', 'pl'] as const
+const MARGIN_KEYS = ['m', 'mt', 'mr', 'mb', 'ml'] as const
+const PADDING_INLINE = ['padding'] as const
+const MARGIN_INLINE = ['margin'] as const
+
+export function SpacingPanel({
+  nodeIds,
+  slot = 'root',
+}: {
+  nodeId: string
+  nodeIds: readonly string[]
+  slot?: string
+}) {
+  const { classStrings, inlineStyles, writeClassesAll, writeInlineAll } =
+    useNodeClassesMulti(nodeIds, slot)
+  const slices: Record<string, string | undefined>[] = classStrings.map(
+    (cs) => parseSpacing(cs).slice as Record<string, string | undefined>,
+  )
+  const { merged, mixed } = mergeSlices(slices)
+  const { merged: mergedInline, mixed: mixedInline } = mergeSlices(
+    inlineStyles as readonly Record<string, string>[],
+  )
+
+  // BoxSidesEditor lacks a per-side mixed marker, so we treat the whole
+  // box as mixed if ANY relevant key disagrees across nodes.
+  const padMixed =
+    PADDING_KEYS.some((k) => mixed.has(k)) ||
+    PADDING_INLINE.some((k) => mixedInline.has(k))
+  const marginMixed =
+    MARGIN_KEYS.some((k) => mixed.has(k)) ||
+    MARGIN_INLINE.some((k) => mixedInline.has(k))
 
   const update = (patch: Partial<SpacingSlice>) => {
-    writeClasses(mergeSpacing(classString, patch))
+    writeClassesAll((current) => mergeSpacing(current, patch))
   }
 
   // Handles a BoxSidesValue → slice + inline writes for padding OR margin.
@@ -75,16 +105,16 @@ export function SpacingPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?:
     if (value.shorthand !== undefined) {
       if (isSpacingToken(value.shorthand)) {
         update({ ...sliceClear, [shortField]: value.shorthand })
-        writeInline(cssShorthand, undefined)
+        writeInlineAll(cssShorthand, undefined)
       } else {
         update(sliceClear)
-        writeInline(cssShorthand, value.shorthand)
+        writeInlineAll(cssShorthand, value.shorthand)
       }
       return
     }
 
     if (value.sides) {
-      writeInline(cssShorthand, undefined)
+      writeInlineAll(cssShorthand, undefined)
       const patch: Partial<SpacingSlice> = { ...sliceClear }
       for (const side of ['top', 'right', 'bottom', 'left'] as const) {
         const v = value.sides[side]
@@ -99,15 +129,19 @@ export function SpacingPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?:
 
     // Cleared
     update(sliceClear)
-    writeInline(cssShorthand, undefined)
+    writeInlineAll(cssShorthand, undefined)
   }
 
   return (
     <section className="space-y-3">
       <BoxSidesEditor
         label="Padding"
-        value={readPad(slice, inlineStyle)}
+        value={
+          padMixed ? {} : readPad(merged as SpacingSlice, mergedInline as Record<string, string>)
+        }
         options={SPACING_VALUES}
+        mixed={padMixed}
+        placeholder={padMixed ? '— Mixed' : undefined}
         onChange={(next) =>
           applyTo(next, 'padding', 'p', 'px', 'py', {
             top: 'pt', right: 'pr', bottom: 'pb', left: 'pl',
@@ -116,8 +150,12 @@ export function SpacingPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?:
       />
       <BoxSidesEditor
         label="Margin"
-        value={readMargin(slice, inlineStyle)}
+        value={
+          marginMixed ? {} : readMargin(merged as SpacingSlice, mergedInline as Record<string, string>)
+        }
         options={SPACING_VALUES}
+        mixed={marginMixed}
+        placeholder={marginMixed ? '— Mixed' : undefined}
         onChange={(next) =>
           applyTo(next, 'margin', 'm', 'mx', 'my', {
             top: 'mt', right: 'mr', bottom: 'mb', left: 'ml',

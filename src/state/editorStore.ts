@@ -74,6 +74,23 @@ interface EditorStore {
   // across editor remounts in the same tab; cleared on document switch.
   clipboard: unknown | null
   setClipboard: (tree: unknown | null) => void
+
+  // Phase 11 § 3.3 — multi-selection. This is the editor's source of
+  // truth for which nodes are selected; Craft's events.selected is
+  // mirrored to selection[0] so connectors (resize handles, default
+  // left-click) keep working on a "primary" selection. Empty array
+  // means nothing is selected. Cleared on document switch.
+  //
+  // Why a separate field instead of just reading Craft's Set: Craft's
+  // public action surface only exposes single-node selectNode(id). To
+  // add modifier-click toggle/range semantics we'd have to dispatch
+  // private actions; keeping our own array is simpler and lets the
+  // Inspector / overlays / multi-delete subscribe via the standard
+  // zustand selector pattern without touching @craftjs internals.
+  selection: string[]
+  setSelection: (ids: string[]) => void
+  toggleSelection: (id: string) => void
+  clearSelection: () => void
 }
 
 export interface StorageSaveFailedInfo {
@@ -149,4 +166,29 @@ export const useEditorStore = create<EditorStore>()((set) => ({
 
   clipboard: null,
   setClipboard: (tree) => set({ clipboard: tree }),
+
+  selection: [],
+  setSelection: (ids) => {
+    // Defensive: drop duplicates while preserving order so subscribers
+    // see a stable shape. The modifier-click handler should never feed
+    // duplicates in, but a stray double-toggle in a future caller
+    // shouldn't break reference equality of selection[0].
+    const seen = new Set<string>()
+    const deduped: string[] = []
+    for (const id of ids) {
+      if (!seen.has(id)) {
+        seen.add(id)
+        deduped.push(id)
+      }
+    }
+    set({ selection: deduped })
+  },
+  toggleSelection: (id) =>
+    set((prev) => {
+      const next = prev.selection.includes(id)
+        ? prev.selection.filter((x) => x !== id)
+        : [...prev.selection, id]
+      return { selection: next }
+    }),
+  clearSelection: () => set({ selection: [] }),
 }))

@@ -34,10 +34,20 @@ export interface PanelDefinition {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   applicableTo: (def: CanonicalComponent<any>) => boolean
   /**
-   * The panel UI. Receives the selected node id and the active style
-   * slot (`'root'` for Pattern A canonicals; named slot for Pattern B).
+   * The panel UI. Receives the primary selected node id, the full
+   * selection (length >= 1 in multi-mode), and the active style slot
+   * (`'root'` for Pattern A canonicals; named slot for Pattern B).
+   *
+   * `nodeId === nodeIds[0]` always — panels that don't care about
+   * multi-selection can ignore `nodeIds` and keep operating on a
+   * single node. Style panels opt into multi-mode by reading nodeIds
+   * and routing through useNodeClassesMulti.
    */
-  component: ComponentType<{ nodeId: string; slot: string }>
+  component: ComponentType<{
+    nodeId: string
+    nodeIds: readonly string[]
+    slot: string
+  }>
 }
 
 const panels = new Map<string, PanelDefinition>()

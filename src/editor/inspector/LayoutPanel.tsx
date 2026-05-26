@@ -29,9 +29,10 @@ import type {
   JustifyContent,
   LayoutSlice,
 } from '@/style/tw-classes'
+import { mergeSlices } from './shared/mergeSlices'
 import { PanelRow } from './shared/PanelRow'
 import { ValueSelect } from './shared/ValueSelect'
-import { useNodeClasses } from './shared/useNodeClasses'
+import { useNodeClassesMulti } from './shared/useNodeClassesMulti'
 
 // Icon-augmented option labels. Icons are intentionally generic — alignItems
 // semantics depend on flex-direction (cross axis vs main axis), but inspector
@@ -69,51 +70,74 @@ function renderWithIcon<T extends string>(icons: Record<T, ReactNode>) {
   )
 }
 
-export function LayoutPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
-  const { classString, writeClasses } = useNodeClasses(nodeId, slot)
-  const { slice } = parseLayout(classString)
+export function LayoutPanel({
+  nodeIds,
+  slot = 'root',
+}: {
+  nodeId: string
+  nodeIds: readonly string[]
+  slot?: string
+}) {
+  const { classStrings, writeClassesAll } = useNodeClassesMulti(nodeIds, slot)
+  const slices: Record<string, string | undefined>[] = classStrings.map(
+    (cs) => parseLayout(cs).slice as Record<string, string | undefined>,
+  )
+  const { merged, mixed } = mergeSlices(slices)
   const update = (patch: Partial<LayoutSlice>) => {
-    writeClasses(mergeLayout(classString, patch))
+    writeClassesAll((current) => mergeLayout(current, patch))
   }
+  // ValueSelect uses '' to mean "no value" + placeholder shows "—". For
+  // mixed: pass '' as value and a custom placeholder so the field looks
+  // intentionally blanked rather than empty.
+  function valueOrEmpty<T extends string>(key: string): T | '' {
+    return (mixed.has(key) ? '' : (merged[key] ?? '')) as T | ''
+  }
+  const placeholderFor = (key: string) =>
+    mixed.has(key) ? '— Mixed' : undefined
 
   return (
     <section className="space-y-2">
       <PanelRow label="Display">
-        <ValueSelect
-          value={slice.display ?? ''}
+        <ValueSelect<Display>
+          value={valueOrEmpty<Display>('display')}
           options={DISPLAYS}
-          onChange={(v) => update({ display: v as Display | undefined })}
+          onChange={(v) => update({ display: v })}
+          placeholder={placeholderFor('display')}
         />
       </PanelRow>
       <PanelRow label="Direction">
-        <ValueSelect
-          value={slice.flexDirection ?? ''}
+        <ValueSelect<FlexDir>
+          value={valueOrEmpty<FlexDir>('flexDirection')}
           options={FLEX_DIRS}
-          onChange={(v) => update({ flexDirection: v as FlexDir | undefined })}
+          onChange={(v) => update({ flexDirection: v })}
           renderOption={renderWithIcon(FLEX_DIR_ICONS)}
+          placeholder={placeholderFor('flexDirection')}
         />
       </PanelRow>
       <PanelRow label="Items">
-        <ValueSelect
-          value={slice.alignItems ?? ''}
+        <ValueSelect<AlignItems>
+          value={valueOrEmpty<AlignItems>('alignItems')}
           options={ITEMS}
-          onChange={(v) => update({ alignItems: v as AlignItems | undefined })}
+          onChange={(v) => update({ alignItems: v })}
           renderOption={renderWithIcon(ITEMS_ICONS)}
+          placeholder={placeholderFor('alignItems')}
         />
       </PanelRow>
       <PanelRow label="Justify">
-        <ValueSelect
-          value={slice.justifyContent ?? ''}
+        <ValueSelect<JustifyContent>
+          value={valueOrEmpty<JustifyContent>('justifyContent')}
           options={JUSTIFY}
-          onChange={(v) => update({ justifyContent: v as JustifyContent | undefined })}
+          onChange={(v) => update({ justifyContent: v })}
           renderOption={renderWithIcon(JUSTIFY_ICONS)}
+          placeholder={placeholderFor('justifyContent')}
         />
       </PanelRow>
       <PanelRow label="Gap">
-        <ValueSelect
-          value={slice.gap ?? ''}
+        <ValueSelect<Gap>
+          value={valueOrEmpty<Gap>('gap')}
           options={GAPS}
-          onChange={(v) => update({ gap: v as Gap | undefined })}
+          onChange={(v) => update({ gap: v })}
+          placeholder={placeholderFor('gap')}
         />
       </PanelRow>
     </section>

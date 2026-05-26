@@ -111,5 +111,13 @@ function runApply(
   if (envelope.themeId)
     useEditorStore.getState().setActiveTheme(envelope.themeId)
   useEditorStore.getState().setActiveAdapter(envelope.adapterId)
+  // Phase 11 § 3.3 — selection ids reference nodes in the OLD craftJson
+  // tree. After deserialize swaps the tree they're invalid; clear so
+  // the Inspector / breadcrumbs / overlays don't briefly point at
+  // dead nodes. Also clear the clipboard's tree if it referenced
+  // doc-local ids (the user copies from doc A, switches to doc B —
+  // paste should NOT splice doc A's tree into doc B).
+  useEditorStore.getState().clearSelection()
+  useEditorStore.getState().setClipboard(null)
   return { ok: true }
 }

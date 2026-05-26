@@ -10,6 +10,8 @@ import { CanvasKeyboardRegion } from './canvas/CanvasKeyboardRegion'
 import { ResizeOverlay } from './canvas/ResizeOverlay'
 import { NodeContextMenu } from './clipboard/NodeContextMenu'
 import { useClipboardKeyboard } from './clipboard/useClipboardKeyboard'
+import { useMultiSelectClick } from './selection/useMultiSelectClick'
+import { useSelectionSync } from './selection/useSelectionSync'
 import { AsyncErrorBanner } from './errors/AsyncErrorBanner'
 import { ErrorBoundary } from './errors/ErrorBoundary'
 import { MalformedDocumentBanner } from './errors/MalformedDocumentBanner'
@@ -86,6 +88,15 @@ export function Editor() {
           <ConcurrentEditWatcherMount />
           {/* Phase 11 § 3.2 — global Cmd+C/X/V/D clipboard shortcuts. */}
           <ClipboardKeyboardMount />
+          {/* Phase 11 § 3.3 — mirror Craft's events.selected into
+              editorStore.selection so the Inspector / breadcrumbs /
+              multi-delete can subscribe via the standard zustand
+              selector pattern. */}
+          <SelectionSyncMount />
+          {/* Phase 11 § 3.3 — capture-phase mousedown listener that
+              implements Cmd/Ctrl-click toggle and Shift-click range
+              before Craft's default connector overwrites selection. */}
+          <MultiSelectClickMount />
           <div className="flex min-h-0 flex-1">
             <ErrorBoundary fallback={ToolboxErrorFallback}>
               <Toolbox />
@@ -138,5 +149,20 @@ function ConcurrentEditWatcherMount() {
 // context without inverting the tree.
 function ClipboardKeyboardMount() {
   useClipboardKeyboard()
+  return null
+}
+
+// Phase 11 § 3.3 — keeps editorStore.selection in sync with Craft's
+// events.selected. Same mount-host pattern: must be a child of <Craft>
+// to access the editor context.
+function SelectionSyncMount() {
+  useSelectionSync()
+  return null
+}
+
+// Phase 11 § 3.3 — modifier-click multi-select listener. Capture-phase
+// document handler that runs before Craft's connector mousedown.
+function MultiSelectClickMount() {
+  useMultiSelectClick()
   return null
 }

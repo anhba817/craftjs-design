@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { mergeSize } from '@/style/tw-classes'
 import type { SizeValue } from '@/style/tw-classes'
 import type { NodeStyle } from '@/registry/types'
+import { useEditorStore } from '@/state/editorStore'
 import { snapToSizeToken } from './snap'
 
 type NodeProps = { style: NodeStyle }
@@ -72,17 +73,20 @@ const ALL_HANDLES: readonly HandleKind[] = [
 // see the handle's pointer events. e.stopPropagation() on the handle is a
 // belt-and-suspenders guard against any document-level Craft listener.
 export function ResizeOverlay() {
-  const { actions, selectedId, selectedDom } = useEditor((state, query) => {
-    const ids = state.events.selected ? Array.from(state.events.selected) : []
-    const id = ids[0]
-    if (!id) return { selectedId: null, selectedDom: null }
+  // Phase 11 § 3.3 — read the primary selection from editorStore (not
+  // Craft directly) so multi-select keeps the resize handles scoped
+  // to the FIRST selected node. Multi-resize (gang-resize) is a
+  // Phase 12+ stretch; v1 scopes to primary only.
+  const primaryId = useEditorStore((s) => s.selection[0] ?? null)
+  const { actions, selectedId, selectedDom } = useEditor((_state, query) => {
+    if (!primaryId) return { selectedId: null, selectedDom: null }
     let dom: HTMLElement | null = null
     try {
-      dom = query.node(id).get().dom
+      dom = query.node(primaryId).get().dom
     } catch {
       // Node may have been removed mid-render — treat as no DOM.
     }
-    return { selectedId: id, selectedDom: dom }
+    return { selectedId: primaryId, selectedDom: dom }
   })
 
   const [rect, setRect] = useState<DOMRect | null>(null)

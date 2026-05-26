@@ -22,6 +22,26 @@
 export { useNodeClasses } from '../editor/inspector/shared/useNodeClasses'
 
 /**
+ * Phase 11 § 3.3 — multi-node variant for panels that want to support
+ * multi-selection edits. Reads per-node classStrings + inlineStyles
+ * and exposes write helpers that fan out atomically (one undo entry).
+ *
+ * Single-node panels should keep using `useNodeClasses`; this hook
+ * is for panel authors who want to honor the editor's multi-select
+ * model. Mixed-value detection is left to the caller — typical pattern:
+ *
+ * ```tsx
+ * import { useNodeClassesMulti } from '@design/sdk'
+ *
+ * function MyMultiPanel({ nodeIds, slot }: { nodeIds: readonly string[]; slot: string }) {
+ *   const { classStrings, writeClassesAll } = useNodeClassesMulti(nodeIds, slot)
+ *   // Detect mixed values per field, then writeClassesAll((current) => …)
+ * }
+ * ```
+ */
+export { useNodeClassesMulti } from '../editor/inspector/shared/useNodeClassesMulti'
+
+/**
  * Tailwind v4's responsive breakpoints. `'base'` is the no-prefix bucket
  * (writes to `style.classes`); `'sm'` / `'md'` / `'lg'` / `'xl'` / `'2xl'`
  * write to `style.responsive[<bp>]`. The active breakpoint is editor UI

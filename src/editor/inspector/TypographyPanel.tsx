@@ -20,18 +20,37 @@ import type {
 } from '@/style/tw-classes'
 import { ColorPicker, colorValueFromState } from './shared/ColorPicker'
 import type { ColorPickerValue } from './shared/ColorPicker'
+import { mergeSlices } from './shared/mergeSlices'
 import { PanelRow } from './shared/PanelRow'
 import { ValueSelect } from './shared/ValueSelect'
-import { useNodeClasses } from './shared/useNodeClasses'
+import { useNodeClassesMulti } from './shared/useNodeClassesMulti'
 
-export function TypographyPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
-  const { classString, inlineStyle, writeClasses, writeInline } =
-    useNodeClasses(nodeId, slot)
-  const { slice } = parseTypography(classString)
+export function TypographyPanel({
+  nodeIds,
+  slot = 'root',
+}: {
+  nodeId: string
+  nodeIds: readonly string[]
+  slot?: string
+}) {
+  const { classStrings, inlineStyles, writeClassesAll, writeInlineAll } =
+    useNodeClassesMulti(nodeIds, slot)
+  const slices: Record<string, string | undefined>[] = classStrings.map(
+    (cs) => parseTypography(cs).slice as Record<string, string | undefined>,
+  )
+  const { merged, mixed } = mergeSlices(slices)
+  const { merged: mergedInline, mixed: mixedInline } = mergeSlices(
+    inlineStyles as readonly Record<string, string>[],
+  )
 
   const update = (patch: Partial<TypographySlice>) => {
-    writeClasses(mergeTypography(classString, patch))
+    writeClassesAll((current) => mergeTypography(current, patch))
   }
+  function valueOrEmpty<T extends string>(key: string): T | '' {
+    return (mixed.has(key) ? '' : (merged[key] ?? '')) as T | ''
+  }
+  const placeholderFor = (key: string) =>
+    mixed.has(key) ? '— Mixed' : undefined
 
   // Phase 8 — Font dropdown options come from the runtime font-token registry.
   // Built-ins (sans, heading, mono) are registered at module load by
@@ -58,50 +77,59 @@ export function TypographyPanel({ nodeId, slot = 'root' }: { nodeId: string; slo
   // either set the token AND clear inline, or set inline AND clear the token —
   // the two stay mutually exclusive so the user always sees the value they
   // last picked, not a stale combo.
-  const colorValue = colorValueFromState(slice.textColor, inlineStyle.color)
+  const colorMixed =
+    mixed.has('textColor') || mixedInline.has('color')
+  const colorValue = colorMixed
+    ? colorValueFromState(undefined, undefined)
+    : colorValueFromState(
+        merged.textColor as TextColor | undefined,
+        mergedInline.color,
+      )
   const setColor = (v: ColorPickerValue) => {
     if (v.kind === 'token') {
       update({ textColor: v.token as TextColor })
-      writeInline('color', undefined)
+      writeInlineAll('color', undefined)
     } else if (v.kind === 'hex') {
       update({ textColor: undefined })
-      writeInline('color', v.hex)
+      writeInlineAll('color', v.hex)
     } else {
       update({ textColor: undefined })
-      writeInline('color', undefined)
+      writeInlineAll('color', undefined)
     }
   }
 
   return (
     <section className="space-y-2">
       <PanelRow label="Font">
-        <ValueSelect
-          value={slice.fontFamily ?? ''}
+        <ValueSelect<string>
+          value={valueOrEmpty<string>('fontFamily')}
           options={fontOptions}
-          onChange={(v) =>
-            update({ fontFamily: v === '' ? undefined : v })
-          }
+          onChange={(v) => update({ fontFamily: v ?? undefined })}
+          placeholder={placeholderFor('fontFamily')}
         />
       </PanelRow>
       <PanelRow label="Size">
-        <ValueSelect
-          value={slice.fontSize ?? ''}
+        <ValueSelect<FontSize>
+          value={valueOrEmpty<FontSize>('fontSize')}
           options={FONT_SIZES}
-          onChange={(v) => update({ fontSize: v as FontSize | undefined })}
+          onChange={(v) => update({ fontSize: v })}
+          placeholder={placeholderFor('fontSize')}
         />
       </PanelRow>
       <PanelRow label="Weight">
-        <ValueSelect
-          value={slice.fontWeight ?? ''}
+        <ValueSelect<FontWeight>
+          value={valueOrEmpty<FontWeight>('fontWeight')}
           options={FONT_WEIGHTS}
-          onChange={(v) => update({ fontWeight: v as FontWeight | undefined })}
+          onChange={(v) => update({ fontWeight: v })}
+          placeholder={placeholderFor('fontWeight')}
         />
       </PanelRow>
       <PanelRow label="Align">
-        <ValueSelect
-          value={slice.textAlign ?? ''}
+        <ValueSelect<TextAlign>
+          value={valueOrEmpty<TextAlign>('textAlign')}
           options={TEXT_ALIGNS}
-          onChange={(v) => update({ textAlign: v as TextAlign | undefined })}
+          onChange={(v) => update({ textAlign: v })}
+          placeholder={placeholderFor('textAlign')}
         />
       </PanelRow>
       <PanelRow label="Color">
