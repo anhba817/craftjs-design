@@ -2,6 +2,7 @@ import { useEditor } from '@craftjs/core'
 import { useEffect, useState } from 'react'
 import { getComponentByDisplayName } from '@/registry/registry'
 import { useEditorStore } from '@/state/editorStore'
+import { useEditorImageProvider } from './assets/EditorImageProvider'
 import { ErrorBoundary } from './errors/ErrorBoundary'
 import { PanelErrorFallback } from './errors/fallbacks'
 import { InspectorBreadcrumbs } from './inspector/InspectorBreadcrumbs'
@@ -63,10 +64,19 @@ export function Inspector() {
   // (`componentProps`) is hidden because props don't merge sensibly
   // across different canonical types. Style panels stay and use
   // useNodeClassesMulti via the multi variant.
+  // Phase 11 § 3.10 — the asset-library panel is only useful when the
+  // active image provider can list assets (host-supplied backend).
+  // The panel's applicableTo can't read context, so gate it here:
+  // the Inspector calls the provider hook unconditionally and filters
+  // 'assetLibrary' out when canList is false (the default base64
+  // provider).
+  const imageProviderCanList = useEditorImageProvider().canList
   const allPanels = def ? getPanelsFor(def) : []
-  const panels = isMulti
-    ? allPanels.filter((p) => p.id !== 'componentProps')
-    : allPanels
+  const panels = allPanels.filter((p) => {
+    if (isMulti && p.id === 'componentProps') return false
+    if (p.id === 'assetLibrary' && !imageProviderCanList) return false
+    return true
+  })
   const slots = def?.styleSlots ?? ['root']
 
   // Slot state is per-selection — resets to the first slot when the user

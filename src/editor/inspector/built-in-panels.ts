@@ -1,3 +1,4 @@
+import { AssetLibraryPanel } from '../assets/AssetLibraryPanel'
 import { AppearancePanel } from './AppearancePanel'
 import { EffectsPanel } from './EffectsPanel'
 import { LayoutPanel } from './LayoutPanel'
@@ -73,4 +74,19 @@ registerPanel({
   order: 70,
   applicableTo: () => true,
   component: PropsPanel,
+})
+
+// Phase 11 § 3.10 — asset library. applicableTo can't read the
+// image-provider context (it only gets the canonical def), so the
+// registry marks it applicable everywhere and the Inspector filters
+// it out when the active provider can't list (the default base64
+// provider). When a host supplies a listing-capable provider, this
+// surfaces a thumbnail grid for browsing + inserting uploaded
+// images.
+registerPanel({
+  id: 'assetLibrary',
+  displayName: 'Assets',
+  order: 80,
+  applicableTo: () => true,
+  component: AssetLibraryPanel,
 })

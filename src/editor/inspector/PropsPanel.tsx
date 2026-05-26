@@ -1,8 +1,21 @@
 import { useEditor } from '@craftjs/core'
 import { z } from 'zod'
 import { getComponentByDisplayName } from '@/registry/registry'
+import { ImagePicker } from '../assets/ImagePicker'
 import { PropField } from './fields/PropField'
 import { PanelRow } from './shared/PanelRow'
+
+// Phase 11 § 3.10 — canonical props that should render the image
+// picker instead of a plain text input, keyed by canonical id →
+// prop key. Extend as future canonicals gain image fields
+// (Avatar.src, Card.cover, …).
+const IMAGE_FIELDS: Record<string, ReadonlySet<string>> = {
+  image: new Set(['src']),
+}
+
+function isImageField(canonicalId: string, field: string): boolean {
+  return IMAGE_FIELDS[canonicalId]?.has(field) ?? false
+}
 
 // Auto-generates form controls from each canonical's Zod propsSchema. The
 // recursive PropField dispatcher in ./fields/ handles every kind we support:
@@ -52,11 +65,18 @@ export function PropsPanel({ nodeId }: { nodeId: string }) {
     <section className="space-y-2">
       {Object.entries(shape).map(([key, fieldSchema]) => (
         <PanelRow key={key} label={key}>
-          <PropField
-            schema={fieldSchema}
-            value={nodeProps[key]}
-            onChange={(v) => set(key, v)}
-          />
+          {isImageField(def.id, key) ? (
+            <ImagePicker
+              value={(nodeProps[key] as string | undefined) ?? ''}
+              onChange={(v) => set(key, v)}
+            />
+          ) : (
+            <PropField
+              schema={fieldSchema}
+              value={nodeProps[key]}
+              onChange={(v) => set(key, v)}
+            />
+          )}
         </PanelRow>
       ))}
     </section>

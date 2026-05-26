@@ -22,6 +22,9 @@ const EXPECTED_FUNCTIONS = [
   'unregisterPanel',
   'listPanels',
   'getPanelsFor',
+  // Phase 11 § 3.10 — asset backend integration.
+  'EditorImageProvider',
+  'useEditorImageProvider',
 ] as const
 
 describe('SDK public boundary', () => {

@@ -162,6 +162,67 @@ registerTheme({
 })
 ```
 
+## Asset backends
+
+The Image canonical's `src` field is edited through an `<ImagePicker>`
+(Upload / Library / URL). Where uploaded images actually live is the
+host's decision, wired through `<EditorImageProvider>`.
+
+Without a provider, the editor uses a **default base64 provider**:
+uploads are encoded to inline `data:` URLs and embedded directly in
+the document. This keeps the editor self-contained for demos and
+local use, but inline bytes bloat the saved envelope and can blow the
+localStorage quota — the provider warns in the console above 500 KB.
+The default provider can't enumerate inline URLs, so the Inspector's
+**Assets** panel is hidden and the picker's Library tab falls back to
+scanning the current document's existing Image nodes.
+
+To route uploads to a real backend, wrap the editor:
+
+```tsx
+import { Editor } from '@crafted-design/editor'
+import { EditorImageProvider } from '@crafted-design/editor/sdk'
+
+const backend = {
+  // Persist a file, return its canonical URL.
+  async upload(file: File) {
+    const { url } = await myApi.upload(file)
+    return { url }                       // optionally { url, thumbnail }
+  },
+  // Previously-uploaded assets for the Library grid + Assets panel.
+  async list() {
+    return (await myApi.listImages()).map((url) => ({ url }))
+  },
+  // Optional — enables a delete affordance.
+  async delete(url: string) {
+    await myApi.deleteImage(url)
+  },
+  // Defaults to true when `list` is supplied; pass false to opt out
+  // of the Library grid + Assets panel.
+  // canList: true,
+}
+
+function App() {
+  return (
+    <EditorImageProvider value={backend}>
+      <Editor />
+    </EditorImageProvider>
+  )
+}
+```
+
+The `EditorImageProviderValue` contract:
+
+| Field | Type | Notes |
+|---|---|---|
+| `upload` | `(file: File) => Promise<{ url, thumbnail? }>` | Required. Resolves to the URL written into the node's `src`. |
+| `list` | `() => Promise<{ url, thumbnail? }[]>` | Required. Powers the Library grid + Assets inspector panel. |
+| `delete` | `(url: string) => Promise<void>` | Optional. Surfaces a delete button when present. |
+| `canList` | `boolean` | Defaults to `true` when you pass a custom provider. Set `false` to hide the Library grid / Assets panel. |
+
+Read the active provider from a custom panel or component with
+`useEditorImageProvider()`.
+
 ## Persistence
 
 The editor's default storage is localStorage under
