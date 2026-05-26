@@ -2,6 +2,7 @@ import {
   ChevronDown,
   Copy,
   FilePlus,
+  HelpCircle,
   Pencil,
   Trash2,
 } from 'lucide-react'
@@ -16,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { useDocumentStore } from '@/persistence/documentStore'
+import { reopenOnboardingTour } from '../discoverability/OnboardingTour'
 import { TemplatePicker } from './TemplatePicker'
 import { useDocumentSwitcher } from './useDocumentSwitcher'
 
@@ -166,6 +168,16 @@ export function DocumentMenu() {
             }}
           />
         </div>
+
+        <DropdownMenuSeparator />
+
+        {/* Phase 11 § 3.8 — replay the first-load tour. Clears the
+            localStorage flag and re-fires the show-onboarding
+            event so OnboardingTour reopens at step 1. */}
+        <DropdownMenuItem onSelect={() => reopenOnboardingTour()}>
+          <HelpCircle size={14} className="text-gray-500" />
+          Show tour again
+        </DropdownMenuItem>
 
         {documents.length > 1 && (
           <>

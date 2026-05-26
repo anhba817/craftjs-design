@@ -85,7 +85,10 @@ export function SaveLoadBar() {
   }
 
   return (
-    <header className="flex items-center gap-2 border-b border-gray-200 px-3 py-2">
+    <header
+      data-onboarding-target="savebar"
+      className="flex items-center gap-2 border-b border-gray-200 px-3 py-2"
+    >
       {/* WCAG SC 2.4.6 / axe `page-has-heading-one` — screen readers
           expect an h1 per page. Lives inside the banner landmark so
           axe `region` (all content in landmarks) also passes. The

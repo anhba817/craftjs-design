@@ -9,6 +9,9 @@ import { ThemeProvider } from '../themes/ThemeProvider'
 import { CanvasKeyboardRegion } from './canvas/CanvasKeyboardRegion'
 import { ResizeOverlay } from './canvas/ResizeOverlay'
 import { SecondarySelectionOutlines } from './canvas/SecondarySelectionOutlines'
+import { CanvasSearch } from './discoverability/CanvasSearch'
+import { EmptyCanvasHint } from './discoverability/EmptyCanvasHint'
+import { OnboardingTour } from './discoverability/OnboardingTour'
 import { GuideOverlay } from './guides/GuideOverlay'
 import { NodeContextMenu } from './clipboard/NodeContextMenu'
 import { useClipboardKeyboard } from './clipboard/useClipboardKeyboard'
@@ -79,6 +82,12 @@ export function Editor() {
             HTML5 drag. Visual-only for v1; Craft still commits the
             move via insertion-index on dragend. */}
         <GuideOverlay />
+        {/* Phase 11 § 3.9 — Cmd/Ctrl+F canvas search overlay. */}
+        <CanvasSearch />
+        {/* Phase 11 § 3.8 — first-load onboarding tour. Reads/writes
+            the completion flag in localStorage; the document menu's
+            "Show tour again" entry replays it. */}
+        <OnboardingTour />
         {/* Phase 9 § 1.6 — toast for uncaught async errors (effects,
             event handlers, fetch promises) that the React render-path
             ErrorBoundaries don't see. Critical async failures
@@ -114,7 +123,10 @@ export function Editor() {
                 toolbox. */}
             <LeftAside />
             <ThemeProvider>
-              <main className="flex-1 overflow-auto bg-muted p-8">
+              <main
+                data-onboarding-target="canvas"
+                className="relative flex-1 overflow-auto bg-muted p-8"
+              >
                 <ErrorBoundary fallback={CanvasErrorFallback}>
                   {malformedDocument ? (
                     <MalformedDocumentBanner />
@@ -132,6 +144,11 @@ export function Editor() {
                       </CanvasKeyboardRegion>
                     </NodeContextMenu>
                   )}
+                  {/* Phase 11 § 3.7 — first-load hint when ROOT
+                      is empty. Absolute-positioned over the canvas;
+                      pointer-events-none on the outer wrapper so
+                      drops still hit the Frame underneath. */}
+                  {!malformedDocument && <EmptyCanvasHint />}
                 </ErrorBoundary>
               </main>
             </ThemeProvider>

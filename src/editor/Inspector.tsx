@@ -62,6 +62,7 @@ export function Inspector() {
   return (
     <aside
       aria-label="Inspector"
+      data-onboarding-target="inspector"
       className="flex w-72 flex-col border-l border-gray-200"
     >
       <div className="px-3 py-2 text-xs font-semibold tracking-wide uppercase text-gray-500">

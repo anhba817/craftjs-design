@@ -49,6 +49,7 @@ export function LeftAside() {
   return (
     <aside
       aria-label="Components and layers"
+      data-onboarding-target="toolbox"
       className="flex w-56 flex-col border-r border-gray-200"
     >
       <div
