@@ -35,10 +35,32 @@ export function NodeContextMenu({ children }: NodeContextMenuProps) {
   const { copy, cut, paste, duplicate } = useClipboardActions()
   const clipboard = useEditorStore((s) => s.clipboard)
 
+  // Phase 11 — right-click should ALWAYS select the clicked node before
+  // the menu opens, otherwise the user's first right-click on a fresh
+  // document (no prior selection) gets every item disabled because
+  // canCutCopy / canWrap key off selection. Craft.js's default
+  // connector handles left-click selection but doesn't fire on
+  // contextmenu, so we resolve the target here by walking up from
+  // event.target to the nearest [data-craft-node-id] (stamped on every
+  // canvas node by CanonicalNode.attachRef).
+  const handleContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
+    const startEl = event.target as HTMLElement | null
+    if (!startEl) return
+    const nodeEl = startEl.closest('[data-craft-node-id]') as HTMLElement | null
+    if (!nodeEl) return
+    const nodeId = nodeEl.getAttribute('data-craft-node-id')
+    if (!nodeId) return
+    // Only re-select when the right-click hits a DIFFERENT node from
+    // the current selection — avoids redundant Craft dispatches.
+    const currentSelection = query.getEvent('selected').first()
+    if (currentSelection !== nodeId) {
+      actions.selectNode(nodeId)
+    }
+  }
+
   // The target node is whatever's currently selected when the user
-  // right-clicks. Right-click on an unselected node also selects it
-  // (handled by Craft's connector machinery), so by the time the menu
-  // opens, events.selected.first() is reliable.
+  // right-clicks. The handleContextMenu above ensures selection is in
+  // sync before the menu opens.
   const getTarget = (): string | null => {
     return query.getEvent('selected').first() ?? null
   }
@@ -127,7 +149,9 @@ export function NodeContextMenu({ children }: NodeContextMenuProps) {
           wrapper layout-transparent so the canvas's flex sizing isn't
           disturbed. */}
       <ContextMenu.Trigger asChild>
-        <div className="contents">{children}</div>
+        <div className="contents" onContextMenu={handleContextMenu}>
+          {children}
+        </div>
       </ContextMenu.Trigger>
       <ContextMenu.Portal>
         <ContextMenu.Content

@@ -29,6 +29,7 @@ export function CanonicalNode({
   const Impl = adapter.components[canonicalId]
 
   const {
+    id: nodeId,
     connectors: { connect, drag },
   } = useNode()
 
@@ -42,6 +43,12 @@ export function CanonicalNode({
       if (!el.hasAttribute('tabindex')) {
         el.setAttribute('tabindex', '-1')
       }
+      // Phase 11 § 3.12 — stamp the Craft node id onto the DOM so the
+      // right-click context menu can resolve event.target back to a
+      // node id (Craft itself doesn't add a data attribute; it tracks
+      // node identity through the React tree). NodeContextMenu walks
+      // up from event.target looking for this attribute on contextmenu.
+      el.setAttribute('data-craft-node-id', nodeId)
     }
   }
 
