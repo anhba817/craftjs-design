@@ -9,6 +9,7 @@ import { ThemeProvider } from '../themes/ThemeProvider'
 import { CanvasKeyboardRegion } from './canvas/CanvasKeyboardRegion'
 import { ResizeOverlay } from './canvas/ResizeOverlay'
 import { SecondarySelectionOutlines } from './canvas/SecondarySelectionOutlines'
+import { GuideOverlay } from './guides/GuideOverlay'
 import { NodeContextMenu } from './clipboard/NodeContextMenu'
 import { useClipboardKeyboard } from './clipboard/useClipboardKeyboard'
 import { useMultiSelectClick } from './selection/useMultiSelectClick'
@@ -74,6 +75,10 @@ export function Editor() {
             ResizeOverlay only renders for the primary (it owns the
             8 handles too). */}
         <SecondarySelectionOutlines />
+        {/* Phase 11 § 3.6 — Figma-style alignment guides during
+            HTML5 drag. Visual-only for v1; Craft still commits the
+            move via insertion-index on dragend. */}
+        <GuideOverlay />
         {/* Phase 9 § 1.6 — toast for uncaught async errors (effects,
             event handlers, fetch promises) that the React render-path
             ErrorBoundaries don't see. Critical async failures
