@@ -2,6 +2,7 @@ import { useEditor } from '@craftjs/core'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { useEditorStore } from '@/state/editorStore'
 import { buildTreeShape, wouldCreateCycle } from './buildTreeShape'
 import type { NodeReader, TreeNodeShape } from './buildTreeShape'
@@ -115,41 +116,86 @@ export function LayerTree() {
 
   // Phase 11 § 3.4 — container-level mousedown handler.
   //
-  // Why mousedown and not click: when a row is `draggable=true`,
-  // the browser may delay or suppress the click event depending on
-  // tiny mouse movements between mousedown and mouseup (drag-prep
-  // hysteresis). That manifested as an off-by-one selection bug
-  // where the first click did nothing visible and subsequent
-  // clicks appeared to select the PREVIOUS row's id. Mousedown
-  // fires immediately on press, bypassing the drag-prep interaction
-  // entirely. This is also what Craft's own canvas connector uses
-  // for selection, so the layer-tree and canvas now behave
-  // consistently.
+  // Why mousedown not click: when a row is `draggable=true`, the
+  // browser's drag-prep hysteresis between mousedown and mouseup
+  // can delay or suppress the click event depending on tiny mouse
+  // movement. Mousedown fires immediately on press, bypassing the
+  // hysteresis entirely. Same pattern Craft's canvas connector
+  // uses for node selection.
   //
-  // Row resolution: walks up from event.target to the nearest
-  // `[data-layer-id]` so the id comes from the live DOM, not a
-  // captured closure that might lag a render behind.
+  // Row resolution via DOM walk (closest `[data-layer-id]`) so the
+  // id comes from the live DOM, not from a captured closure that
+  // might lag a render behind.
+  //
+  // SYNC PATH (critical — see deep-dive below): update editorStore
+  // SYNCHRONOUSLY before calling actions.selectNode. The full
+  // "click → actions.selectNode → useSelectionSync → editorStore"
+  // chain has a `useEffect` link that runs AFTER the browser paints,
+  // so the first paint after a click was showing OLD editorStore
+  // state — manifesting as "click N selects what click N-1
+  // pointed at" because what the user saw between clicks was
+  // perpetually one paint behind the actual Craft state. Writing
+  // editorStore in the same tick as actions.selectNode means every
+  // subscriber (LayerTree highlight, ResizeOverlay border,
+  // Inspector) sees the new selection immediately on the next
+  // React render — no waiting for a passive effect. useSelectionSync
+  // is still active as a one-way mirror for selection changes that
+  // ORIGINATE inside Craft (canvas left-click, keyboard nav); its
+  // early-return short-circuits when editorStore already matches.
+  // Phase 11 § 3.4 — container-level mousedown handler.
+  //
+  // Three pieces work together to make row-click select the right
+  // node reliably:
+  //
+  // 1) MOUSEDOWN, not click. The row is `draggable=true`, and the
+  //    browser's drag-prep hysteresis between mousedown and mouseup
+  //    can delay or suppress the subsequent click. Same pattern
+  //    Craft's canvas connector uses.
+  //
+  // 2) DOM DELEGATION via `closest('[data-layer-id]')`. The id
+  //    comes from the live DOM at click time, not from a captured
+  //    closure that might lag a render behind.
+  //
+  // 3) flushSync + SYNC editorStore write. The earlier iteration
+  //    relied on the useSelectionSync useEffect chain to mirror
+  //    Craft's events.selected into editorStore. That chain has a
+  //    passive useEffect link that fires AFTER paint, so the first
+  //    paint after a click showed OLD editorStore.selection — the
+  //    layer tree's row highlight subscribes to editorStore, so the
+  //    visible selection lagged by one paint per click, manifesting
+  //    as the perfect off-by-one the user reported. Writing
+  //    editorStore directly + flushSync forces React to commit
+  //    the highlight update synchronously in the same tick as the
+  //    Craft action, eliminating the lag. useSelectionSync still
+  //    handles selection changes that ORIGINATE inside Craft
+  //    (canvas left-click connector, keyboard arrow nav) — its
+  //    early-return short-circuits when editorStore already
+  //    matches.
   const handleContainerMouseDown = (e: React.MouseEvent) => {
-    // Only react to the primary button. Right-click is right-click,
-    // middle-click is ignored.
     if (e.button !== 0) return
     const target = e.target as HTMLElement | null
     if (!target) return
-    // Chevron button stopPropagation()s its mousedown so this guard
-    // is defensive belt-and-suspenders.
+    // Chevron stops propagation on its own mousedown; defensive
+    // guard if that ever regresses.
     if (target.closest('[data-chevron]')) return
     const rowEl = target.closest('[data-layer-id]') as HTMLElement | null
     if (!rowEl) return
     const id = rowEl.getAttribute('data-layer-id')
     if (!id) return
     const mod = e.metaKey || e.ctrlKey
+    const store = useEditorStore.getState()
     if (mod) {
       if (id === 'ROOT') return
-      useEditorStore.getState().toggleSelection(id)
+      flushSync(() => {
+        store.toggleSelection(id)
+      })
       const primary = useEditorStore.getState().selection[0]
       if (primary) actions.selectNode(primary)
       else actions.selectNode()
     } else {
+      flushSync(() => {
+        store.setSelection([id])
+      })
       actions.selectNode(id)
     }
   }

@@ -43,24 +43,14 @@ export function useSelectionSync(): void {
     const current = store.selection
 
     if (craftFirstId === null) {
-      // Craft cleared selection (e.g. clicked the empty canvas or
-      // explicit actions.selectNode()). Wipe multi-selection too —
-      // any modifier-built multi-selection is gone too.
       if (current.length > 0) {
         store.clearSelection()
       }
       return
     }
 
-    // Craft picked a single node. If our multi-selection already has
-    // it as the primary, leave the array alone (otherwise modifier
-    // multi-select would collapse back to single on every render).
     if (current[0] === craftFirstId) return
 
-    // Otherwise Craft's selection has diverged from ours — usually a
-    // single-click without modifiers, or a programmatic selectNode
-    // from the context menu / keyboard nav. Reset to a single-node
-    // selection so the Inspector + overlays follow.
     store.setSelection([craftFirstId])
   }, [craftFirstId])
 }
