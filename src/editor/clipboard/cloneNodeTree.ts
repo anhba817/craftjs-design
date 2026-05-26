@@ -18,15 +18,20 @@ interface NodeTreeShape {
 }
 
 interface NodeShape {
-  // Craft.js's actual node shape has `data`, `events`, `dom`, etc.
-  // We treat the object as opaque except for the data.parent /
-  // data.nodes / data.linkedNodes refs we need to rewrite.
+  // Craft.js's actual node shape has `id`, `data`, `events`, `dom`, etc.
+  // The `id` field on the node itself matches the map key — they must
+  // stay in sync; otherwise selection / drag connectors silently fail
+  // because Craft looks up nodes by the internal `id` field, not the
+  // map key.
+  id?: string
   data: {
     parent: string | null
     nodes: string[]
     linkedNodes: Record<string, string>
     [k: string]: unknown
   }
+  events?: { selected: boolean; hovered: boolean; dragged: boolean }
+  dom?: HTMLElement | null
   [k: string]: unknown
 }
 
@@ -74,8 +79,20 @@ export function cloneNodeTree(
     // intentional — Craft's node bodies (props / custom) are user
     // data and we want to share the same reference where possible
     // (the editor will re-immer them on first mutation anyway).
+    //
+    // Three things are CRITICAL here and were the source of the bug
+    // where pasted nodes rendered but weren't selectable:
+    //   1. The `id` field on the node itself must match the map key.
+    //      Craft.js's connector resolves clicks via the node's
+    //      internal `id`, not the map lookup. A mismatch silently
+    //      breaks selection.
+    //   2. `events` must be reset — the cloned tree shouldn't inherit
+    //      the source node's selected/hovered/dragged state.
+    //   3. `dom` must be reset to null — the new nodes don't have a
+    //      rendered DOM yet; Craft sets it when the React tree mounts.
     newNodes[newId] = {
       ...oldNode,
+      id: newId,
       data: {
         ...oldData,
         // Parent of the root stays whatever it was set to externally
@@ -88,6 +105,8 @@ export function cloneNodeTree(
         nodes: oldData.nodes.map((childId) => idMap.get(childId) ?? childId),
         linkedNodes: remapLinked(oldData.linkedNodes, idMap),
       },
+      events: { selected: false, hovered: false, dragged: false },
+      dom: null,
     }
   }
 

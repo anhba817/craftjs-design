@@ -102,13 +102,28 @@ describe('cloneNodeTree', () => {
     })
   })
 
-  it('preserves non-data fields (e.g. dom, events)', () => {
+  it("rewrites each node's internal `id` field to match the new map key", () => {
+    // Craft.js looks up nodes by the node's own `id`, not the map key.
+    // A mismatch silently breaks selection on pasted nodes.
+    const tree = {
+      rootNodeId: 'a',
+      nodes: {
+        a: { id: 'a', data: { parent: null, nodes: ['b'], linkedNodes: {} } },
+        b: { id: 'b', data: { parent: 'a', nodes: [], linkedNodes: {} } },
+      },
+    }
+    const out = cloneNodeTree(tree, counterGen())
+    expect(out.nodes['new-1'].id).toBe('new-1')
+    expect(out.nodes['new-2'].id).toBe('new-2')
+  })
+
+  it('resets events to defaults (no inherited selected/hovered/dragged)', () => {
     const tree = {
       rootNodeId: 'a',
       nodes: {
         a: {
           data: { parent: null, nodes: [], linkedNodes: {} },
-          events: { selected: false, hovered: false, dragged: false },
+          events: { selected: true, hovered: true, dragged: false },
         },
       },
     }
@@ -118,6 +133,20 @@ describe('cloneNodeTree', () => {
       hovered: false,
       dragged: false,
     })
+  })
+
+  it('resets dom to null (no inherited DOM reference)', () => {
+    const tree = {
+      rootNodeId: 'a',
+      nodes: {
+        a: {
+          data: { parent: null, nodes: [], linkedNodes: {} },
+          dom: { tagName: 'DIV' } as unknown as HTMLElement,
+        },
+      },
+    }
+    const out = cloneNodeTree(tree, counterGen())
+    expect(out.nodes['new-1'].dom).toBeNull()
   })
 
   it('produces unique ids when called twice', () => {

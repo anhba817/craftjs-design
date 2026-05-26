@@ -119,7 +119,16 @@ export function NodeContextMenu({ children }: NodeContextMenuProps) {
 
   return (
     <ContextMenu.Root>
-      <ContextMenu.Trigger asChild>{children}</ContextMenu.Trigger>
+      {/* asChild slotted into <CanvasKeyboardRegion> previously, but
+          that's a function component without forwarded refs — Radix's
+          Slot then can't attach the contextmenu listener and right-
+          click silently does nothing. Wrapping children in a real
+          <div> that the Trigger owns fixes it. `contents` keeps the
+          wrapper layout-transparent so the canvas's flex sizing isn't
+          disturbed. */}
+      <ContextMenu.Trigger asChild>
+        <div className="contents">{children}</div>
+      </ContextMenu.Trigger>
       <ContextMenu.Portal>
         <ContextMenu.Content
           // Tailwind classes mirror the existing shadcn Popover style
