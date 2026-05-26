@@ -1,35 +1,26 @@
+import { Stack } from '@chakra-ui/react'
 import type { AdapterRenderProps } from '@design/sdk'
-import { ChakraStack } from '../lib'
-
-const GAP_PX: Record<string, number> = {
-  '0': 0,
-  '1': 4,
-  '2': 8,
-  '4': 16,
-  '6': 24,
-  '8': 32,
-}
 
 export function ChakraStackImpl({
   props,
-  children,
   rootRef,
   className,
   inlineStyle,
+  children,
 }: AdapterRenderProps) {
   const { direction, gap } = props as {
     direction: 'vertical' | 'horizontal'
     gap: string
   }
   return (
-    <ChakraStack
+    <Stack
       ref={rootRef as never}
+      direction={direction === 'horizontal' ? 'row' : 'column'}
+      gap={gap}
       className={className}
       style={inlineStyle}
-      direction={direction === 'vertical' ? 'column' : 'row'}
-      gap={GAP_PX[gap] ?? 8}
     >
       {children}
-    </ChakraStack>
+    </Stack>
   )
 }

@@ -1,87 +1,96 @@
 # Chakra adapter — example
 
-A worked example of authoring a third-party adapter using only the public
-`@design/sdk` import. Demonstrates:
+A real Chakra UI v3 adapter built on top of `@design/sdk` /
+`@crafted-design/editor/sdk`. All 20 canonicals are wired with parity
+to the shadcn + MUI adapters. Demonstrates:
 
 - Adapter registration via `registerAdapter`.
-- Pattern A canonical impls (Box, Heading, Button, Stack).
-- Pattern B multi-canvas impl (Card with header/body/footer slots).
+- Pattern A canonical impls (Box, Heading, Button, Text, Badge, Image,
+  Link, Divider, Icon, Input, Textarea, Stack, Switch, Checkbox, Radio,
+  Select, Avatar, Alert).
+- Pattern B multi-canvas impls (Card with header/body/footer slots;
+  Tabs with one canvas per tab).
 - The `AdapterRenderProps` shape — how `className`, `inlineStyle`,
-  `composedClasses`, `composedInlineStyles`, and `slotChildren` are consumed.
+  `composedClasses`, `composedInlineStyles`, and `slotChildren` are
+  consumed.
+- The Wrapper pattern — `<ChakraProvider value={defaultSystem}>` is
+  installed via the adapter's `Wrapper` field.
 
 ## What's here
 
 ```
 examples/adapter-chakra/
-  index.ts               # registerAdapter call
-  lib.tsx                # Minimal mock primitives (replace with @chakra-ui/react)
+  index.ts                 # registerAdapter call wiring all 20 components
+  Wrapper.tsx              # <ChakraProvider value={defaultSystem}>
   components/
-    Box.tsx, Button.tsx, Heading.tsx, Stack.tsx, Card.tsx
+    Box.tsx, Button.tsx, Heading.tsx, Stack.tsx, Text.tsx, Badge.tsx,
+    Avatar.tsx, Image.tsx, Link.tsx, Divider.tsx, Icon.tsx, Alert.tsx,
+    Card.tsx, Tabs.tsx, Input.tsx, Textarea.tsx, Checkbox.tsx,
+    Switch.tsx, Radio.tsx, Select.tsx
 ```
 
-`lib.tsx` ships a tiny inline primitive library so the example compiles and
-runs without installing the real Chakra packages. The visual style (teal
-accent, rounded surfaces) is deliberately distinct from shadcn / MUI so the
-adapter swap is visually obvious in the editor.
+Each component file is ~10–30 lines: import a Chakra primitive, type the
+canonical's props off `AdapterRenderProps['props']`, render with
+`rootRef` + `className` + `style={inlineStyle}` forwarded.
+
+## Dependencies
+
+```bash
+npm install @chakra-ui/react@^3 @emotion/react @emotion/styled
+```
+
+`@emotion/react` + `@emotion/styled` are already in the editor's
+`dependencies` (MUI uses them too); only `@chakra-ui/react` is the
+Chakra-specific install.
 
 ## Enabling in the editor
 
-Add the side-effect import to `src/App.tsx`:
+Already enabled in `src/App.tsx` via the side-effect import:
 
 ```ts
 import '../examples/adapter-chakra'
 ```
 
-After reload, the AdapterSwitcher shows "Chakra (example)". Pick it — every
-node renders via the Chakra impls.
+The "Chakra (example)" entry appears in the AdapterSwitcher dropdown.
+Pick it — every node renders via the Chakra impls.
 
-## Swapping in real Chakra
+## Bundle impact
 
-```bash
-npm install @chakra-ui/react @emotion/react @emotion/styled framer-motion
-```
+Adding Chakra to the editor's dogfood app increases the dist by roughly
++200 KB raw / +50 KB gzipped (varies with tree-shaking and which
+canonicals are imported). **Production hosts using only shadcn or MUI
+should remove the `import '../examples/adapter-chakra'` line from
+their copy of `App.tsx`** so the unused Chakra code tree-shakes out
+entirely.
 
-Replace `lib.tsx`'s exports with the corresponding Chakra primitives:
+## Pattern notes
 
-| Mock                      | Real Chakra                       |
-|---------------------------|-----------------------------------|
-| `ChakraBox`               | `Box` from `@chakra-ui/react`     |
-| `ChakraButton`            | `Button`                          |
-| `ChakraHeading`           | `Heading`                         |
-| `ChakraStack`             | `VStack` / `HStack` / `Stack`     |
-| `ChakraCardRoot/Header/…` | `Card`, `CardHeader`, `CardBody`  |
+- **Compound components.** Chakra v3 uses dot-notation compound APIs
+  for many primitives — `Card.Root` / `Card.Header` / `Card.Body`,
+  `Checkbox.Root` / `Checkbox.Control` / `Checkbox.Indicator`,
+  `Switch.Root` / `Switch.Control` / `Switch.Thumb`, etc. The impls in
+  this folder show the minimum tree each one needs to render.
+- **NativeSelect for Select.** The compound `Select.Root` requires a
+  `collection` + portal positioner; for this example the
+  keyboard-accessible `NativeSelect` is enough and renders inline.
+- **Tabs slot keys.** Multi-canvas Tabs uses `tabSlotKeys` +
+  `uniqueTabValues` from the SDK to derive the slot lookup key and the
+  Chakra `Tabs.Trigger` `value` prop. The SDK exports these because
+  any third-party adapter writing a Tabs impl needs the same logic.
+- **Icon canonical.** The editor's icon library is Lucide React; the
+  Chakra adapter wraps the Lucide component in a Chakra `Box` so
+  className / inline style flow through.
 
-You'll also need a `<ChakraProvider>` wrapper. Add it via the adapter's
-`Wrapper` field:
+## Extracting to a standalone package
 
-```ts
-import { ChakraProvider } from '@chakra-ui/react'
-
-registerAdapter({
-  id: 'chakra',
-  // ...
-  Wrapper: ({ children }) => <ChakraProvider>{children}</ChakraProvider>,
-  // ...
-})
-```
-
-The adapter-Wrapper contract requires the Wrapper to be a *pure context
-provider* — no document listeners, no global CSS injection. Chakra's
-`<ChakraProvider>` fits.
-
-## Extending coverage
-
-Add more canonicals by:
-
-1. Writing an impl in `components/<Canonical>.tsx` that matches
-   `AdapterRenderProps`.
-2. Adding the impl to the `components` map in `index.ts`.
-
-The full list of canonical ids and their props is documented in
-`docs/SDK_GUIDE.md`. The 5 shipped here are a starter set — production usage
-typically covers all 20.
+Future plan: lift this folder into a separate `@crafted-design/adapter-
+chakra` workspace package so consumers who want Chakra without
+forking can `npm install` it directly. The current single-package
+layout keeps the example colocated with the editor for development +
+discoverability; the extraction is a Phase 11 candidate after the
+publish workflow in Phase 10 § 2.1 is settled.
 
 ## Tutorial
 
-See `docs/TUTORIAL_ADAPTER.md` for a step-by-step walkthrough of building
-this adapter from scratch.
+See `docs/TUTORIAL_ADAPTER.md` for a step-by-step walkthrough of
+building an adapter from scratch.

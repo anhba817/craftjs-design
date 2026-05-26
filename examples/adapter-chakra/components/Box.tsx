@@ -1,5 +1,5 @@
+import { Box as ChakraBox } from '@chakra-ui/react'
 import type { AdapterRenderProps } from '@design/sdk'
-import { ChakraBox } from '../lib'
 
 export function ChakraBoxImpl({
   children,

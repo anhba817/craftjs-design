@@ -44,3 +44,17 @@ export {
   registerComponent,
   unregisterCanonical,
 } from '../registry/registry'
+
+// Phase 10 § 2.14 — Tabs adapter helpers. Adapter authors building a
+// custom Tabs impl need these to derive (a) canvas slot keys that match
+// what CanonicalNode allocates via the Tabs canonical's canvasSlots
+// function, and (b) Radix/MUI/Chakra `value`-prop strings that are
+// unique even when the user-authored `tab.value` is empty or duplicated.
+// Used by shadcn / mui / chakra Tabs impls in this repo; exposed here
+// for third-party adapters that want parity.
+export {
+  TAB_SLOT_PREFIX,
+  tabSlotKeys,
+  uniqueTabValues,
+} from '../registry/components/tabs'
+export type { TabsProps } from '../registry/components/tabs'

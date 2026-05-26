@@ -1,13 +1,10 @@
+import { Card } from '@chakra-ui/react'
 import type { AdapterRenderProps } from '@design/sdk'
-import {
-  ChakraCardBody,
-  ChakraCardFooter,
-  ChakraCardHeader,
-  ChakraCardRoot,
-} from '../lib'
 
-// Pattern B impl — consumes the per-slot maps from CanonicalNode. Each named
-// canvas slot (header/body/footer) lands in its own Chakra subregion.
+// Pattern B multi-canvas Card. Chakra v3's Card is a compound component:
+// Card.Root / Card.Header / Card.Body / Card.Footer. We render the
+// CanonicalNode-supplied slotChildren wrappers into each region so each
+// region is its own drop zone.
 export function ChakraCardImpl({
   rootRef,
   composedClasses = {},
@@ -15,29 +12,29 @@ export function ChakraCardImpl({
   slotChildren = {},
 }: AdapterRenderProps) {
   return (
-    <ChakraCardRoot
+    <Card.Root
       ref={rootRef as never}
       className={composedClasses.root}
       style={composedInlineStyles.root}
     >
-      <ChakraCardHeader
+      <Card.Header
         className={composedClasses.header}
         style={composedInlineStyles.header}
       >
         {slotChildren.header}
-      </ChakraCardHeader>
-      <ChakraCardBody
+      </Card.Header>
+      <Card.Body
         className={composedClasses.body}
         style={composedInlineStyles.body}
       >
         {slotChildren.body}
-      </ChakraCardBody>
-      <ChakraCardFooter
+      </Card.Body>
+      <Card.Footer
         className={composedClasses.footer}
         style={composedInlineStyles.footer}
       >
         {slotChildren.footer}
-      </ChakraCardFooter>
-    </ChakraCardRoot>
+      </Card.Footer>
+    </Card.Root>
   )
 }

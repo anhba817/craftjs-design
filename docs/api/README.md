@@ -21,10 +21,12 @@
 - [CanonicalId](type-aliases/CanonicalId.md)
 - [ClassMapFn](type-aliases/ClassMapFn.md)
 - [PanelId](type-aliases/PanelId.md)
+- [TabsProps](type-aliases/TabsProps.md)
 
 ## Variables
 
 - [registerCanonical](variables/registerCanonical.md)
+- [TAB\_SLOT\_PREFIX](variables/TAB_SLOT_PREFIX.md)
 
 ## Functions
 
@@ -40,6 +42,8 @@
 - [registerComponent](functions/registerComponent.md)
 - [registerFontToken](functions/registerFontToken.md)
 - [registerPanel](functions/registerPanel.md)
+- [tabSlotKeys](functions/tabSlotKeys.md)
+- [uniqueTabValues](functions/uniqueTabValues.md)
 - [unregisterCanonical](functions/unregisterCanonical.md)
 - [unregisterFontToken](functions/unregisterFontToken.md)
 - [unregisterPanel](functions/unregisterPanel.md)
