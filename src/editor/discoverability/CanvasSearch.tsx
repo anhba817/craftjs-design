@@ -7,6 +7,15 @@ import { getComponentByDisplayName } from '@/registry/registry'
 import { searchNodes } from './searchNodes'
 import type { SearchableNode } from './searchNodes'
 
+// Stable empty-array constant. The useEditor collector returns this
+// when the search overlay is closed, instead of `[]` — fresh arrays
+// fail shallow-equality in Craft's useCollector and force a
+// re-render on every Craft state change (i.e. every arrow keypress).
+// Caused perceptibly slow keyboard navigation after Group F shipped;
+// see feedback-zustand-selectors memory for the analogous lesson on
+// stable refs in selectors.
+const EMPTY_SEARCHABLE: readonly SearchableNode[] = []
+
 // Phase 11 § 3.9 — Cmd/Ctrl+F canvas search.
 //
 // Top-centre fixed overlay. Filters nodes by displayName / tags /
@@ -62,15 +71,19 @@ export function CanvasSearch() {
     return () => document.removeEventListener('keydown', handler)
   }, [open])
 
-  // Build the SearchableNode list from the Craft query. Re-runs on
-  // every state.nodes mutation (cheap; we walk in DOM order via
-  // ROOT.descendants).
-  const { searchableNodes } = useEditor((state, query) => {
-    if (!open) return { searchableNodes: [] as SearchableNode[] }
-    const ids = Object.keys(state.nodes)
-    if (!ids.includes('ROOT')) return { searchableNodes: [] as SearchableNode[] }
-    // Walk ROOT's descendants in pre-order. query.node(id).descendants()
-    // returns the subtree.
+  // Subscribe to Craft's nodes map BY REFERENCE — the ref only
+  // changes when nodes are added/removed/setProp'd, NOT on every
+  // selectNode. That keeps this component out of the arrow-key
+  // re-render storm.
+  const { nodes, query } = useEditor((state) => ({ nodes: state.nodes }))
+
+  // Walk the tree only when the search overlay is actually open and
+  // the underlying tree changed. When closed, return the stable
+  // EMPTY_SEARCHABLE constant so the result memo stays stable and
+  // downstream useMemo (matches) doesn't recompute either.
+  const searchableNodes = useMemo<readonly SearchableNode[]>(() => {
+    if (!open) return EMPTY_SEARCHABLE
+    if (!nodes || !Object.keys(nodes).includes('ROOT')) return EMPTY_SEARCHABLE
     const ordered: string[] = []
     try {
       const root = query.node('ROOT')
@@ -79,8 +92,7 @@ export function CanvasSearch() {
     } catch {
       // Hydration not complete.
     }
-
-    const nodes: SearchableNode[] = []
+    const out: SearchableNode[] = []
     for (const id of ordered) {
       try {
         const data = query.node(id).get().data
@@ -89,25 +101,23 @@ export function CanvasSearch() {
         const nodeProps =
           (data.props as { nodeProps?: Record<string, unknown> })
             ?.nodeProps ?? {}
-        // Pull the three string props the plan calls out: label,
-        // content, alt. Any other string prop is ignored.
         const textProps: Record<string, string | undefined> = {}
         for (const key of ['label', 'content', 'alt']) {
           const v = nodeProps[key]
           if (typeof v === 'string') textProps[key] = v
         }
-        nodes.push({
+        out.push({
           id,
           displayName,
           tags: tags as readonly string[] | undefined,
           textProps,
         })
       } catch {
-        // Skip nodes that vanish mid-walk.
+        // Skip nodes that vanished mid-walk.
       }
     }
-    return { searchableNodes: nodes }
-  })
+    return out
+  }, [open, nodes, query])
 
   const matches = useMemo(
     () => searchNodes(searchableNodes, term),
@@ -120,7 +130,7 @@ export function CanvasSearch() {
     setCursor(0)
   }, [term])
 
-  const { actions, query } = useEditor()
+  const { actions } = useEditor()
 
   const jumpTo = useCallback(
     (idx: number) => {

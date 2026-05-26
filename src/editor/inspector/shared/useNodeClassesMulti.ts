@@ -1,4 +1,5 @@
 import { useEditor } from '@craftjs/core'
+import { useMemo } from 'react'
 import { useEditorStore } from '@/state/editorStore'
 import type { NodeStyle } from '@/registry/types'
 
@@ -33,21 +34,25 @@ export function useNodeClassesMulti(
 ) {
   const activeBreakpoint = useEditorStore((s) => s.activeBreakpoint)
 
-  // Collector reads every selected node's props. If any node was just
-  // removed (race with undo/redo), we skip it — returned arrays will
-  // be shorter than nodeIds. Callers compare lengths defensively.
-  const { actions, perNode } = useEditor((_, q) => {
+  // Subscribe by reference to Craft's nodes map. The ref is stable
+  // across selectNode (which only mutates events.selected, not
+  // nodes), so arrow-key navigation doesn't trigger this hook to
+  // re-render its consumers — only setProp / add / remove / move
+  // do. With 7 inspector panels each using this hook, the
+  // alternative (collector that returns a fresh `{perNode: [...]}`
+  // each call) was re-rendering every panel on every selectNode
+  // and dragging keyboard nav perceptibly.
+  const { actions, nodes } = useEditor((state) => ({ nodes: state.nodes }))
+  const perNode = useMemo(() => {
     const items: Array<{ id: string; props: NodeProps }> = []
     for (const id of nodeIds) {
-      try {
-        const node = q.node(id).get()
+      const node = nodes?.[id]
+      if (node) {
         items.push({ id, props: node.data.props as NodeProps })
-      } catch {
-        // Node no longer exists. Skip.
       }
     }
-    return { perNode: items }
-  })
+    return items
+  }, [nodes, nodeIds])
 
   const readClass = (props: NodeProps): string => {
     const style = props.style

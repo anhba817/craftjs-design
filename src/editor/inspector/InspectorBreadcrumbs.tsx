@@ -1,5 +1,6 @@
 import { useEditor } from '@craftjs/core'
 import { ChevronRight } from 'lucide-react'
+import { useMemo } from 'react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,27 +27,34 @@ const MAX_INLINE = 4
 
 export function InspectorBreadcrumbs() {
   const primaryId = useEditorStore((s) => s.selection[0] ?? null)
-  const { actions, chain } = useEditor((_state, query) => {
-    if (!primaryId) return { chain: [] as Array<{ id: string; label: string }> }
-    try {
-      // Craft's ancestors() returns parents-first. Prepend the primary
-      // itself so the breadcrumb's last entry is the current node.
-      const ancestorIds = query
-        .node(primaryId)
-        .ancestors() as readonly string[]
-      // ancestors() is parent → grandparent → … → ROOT (parent-first).
-      // For a left-to-right breadcrumb (ROOT first, primary last) we
-      // reverse, then append the primary id at the end.
-      const idsRootFirst = [...ancestorIds].reverse().concat(primaryId)
-      const chain = idsRootFirst.map((id) => {
-        const n = query.node(id).get()
-        return { id, label: (n.data.displayName as string) || id }
-      })
-      return { chain }
-    } catch {
-      return { chain: [] as Array<{ id: string; label: string }> }
+  // Subscribe by reference to Craft's nodes map (stable across
+  // selectNode — see useNodeClassesMulti for the same pattern).
+  // Then derive the chain via useMemo so we don't re-walk ancestors
+  // and don't churn an `[]`-returning collector on every selectNode.
+  const { actions, nodes } = useEditor((state) => ({ nodes: state.nodes }))
+  const chain = useMemo(() => {
+    if (!primaryId) return [] as Array<{ id: string; label: string }>
+    const node = nodes?.[primaryId]
+    if (!node) return []
+    // Walk parents up. Craft's nodes[id].data.parent points to the
+    // parent's id. We stop when parent is null (ROOT).
+    const ancestorIds: string[] = []
+    let cur: string | null = (node.data.parent as string | null) ?? null
+    let guard = 0
+    while (cur && guard++ < 1024) {
+      ancestorIds.push(cur)
+      const parentNode = nodes?.[cur]
+      cur = (parentNode?.data.parent as string | null) ?? null
     }
-  })
+    const idsRootFirst = [...ancestorIds].reverse().concat(primaryId)
+    return idsRootFirst.map((id) => {
+      const n = nodes?.[id]
+      return {
+        id,
+        label: ((n?.data.displayName as string) ?? '') || id,
+      }
+    })
+  }, [primaryId, nodes])
 
   if (!primaryId || chain.length === 0) return null
 

@@ -15,20 +15,43 @@ export function Inspector() {
   // multi-id source of truth) rather than from Craft directly. See
   // useSelectionSync for the mirror.
   const selection = useEditorStore((s) => s.selection)
-  const { primary, primaryIsRoot, actions } = useEditor((_state, query) => {
-    const id = selection[0]
-    if (!id) return { primary: null }
-    try {
-      const node = query.node(id).get()
-      return {
-        primary: { id, displayName: node.data.displayName },
-        primaryIsRoot: query.node(id).isRoot(),
+  // Collect PRIMITIVES (not a nested {primary} object). Craft's
+  // `shallowequal` would otherwise see a fresh nested object on
+  // every state change and re-render Inspector — including all
+  // panels — on every selectNode, even when nothing relevant to
+  // the displayed node changed. Returning primitives lets
+  // shallowEqual short-circuit when the selected id / name /
+  // isRoot are stable. Keyboard nav perf depends on this.
+  const { primaryId, primaryDisplayName, primaryIsRoot, actions } = useEditor(
+    (_state, query) => {
+      const id = selection[0]
+      if (!id) {
+        return {
+          primaryId: null as string | null,
+          primaryDisplayName: null as string | null,
+          primaryIsRoot: false,
+        }
       }
-    } catch {
-      // Race: node deleted between selection set and this render.
-      return { primary: null }
-    }
-  })
+      try {
+        const node = query.node(id).get()
+        return {
+          primaryId: id,
+          primaryDisplayName: (node.data.displayName as string) ?? null,
+          primaryIsRoot: query.node(id).isRoot(),
+        }
+      } catch {
+        // Race: node deleted between selection set and this render.
+        return {
+          primaryId: null as string | null,
+          primaryDisplayName: null as string | null,
+          primaryIsRoot: false,
+        }
+      }
+    },
+  )
+  const primary = primaryId
+    ? { id: primaryId, displayName: primaryDisplayName ?? primaryId }
+    : null
 
   const isMulti = selection.length > 1
 

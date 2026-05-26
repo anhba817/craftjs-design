@@ -1,5 +1,6 @@
 import { useEditor } from '@craftjs/core'
 import { useCallback, useEffect, useRef, type ReactNode } from 'react'
+import { flushSync } from 'react-dom'
 import { useEditorStore } from '@/state/editorStore'
 
 // Phase 9 Group D / PRODUCTION_READINESS § 1.4 — canvas keyboard navigation.
@@ -142,20 +143,49 @@ export function CanvasKeyboardRegion({ children }: { children: ReactNode }) {
   // Scroll the newly-selected node into view so the ResizeOverlay's outline
   // is visible after a long arrow run. ResizeOverlay positions on a fixed
   // overlay so the canvas's own overflow:auto handles scrolling.
+  //
+  // `behavior: 'instant'` is critical: when the scrollable container's
+  // computed `scroll-behavior` is `smooth` (some browser defaults, some
+  // user styles), an animated scroll fires a flood of scroll events for
+  // the duration of the animation, each triggering ResizeOverlay's
+  // recompute (getBoundingClientRect + setRect → re-render). The visible
+  // symptom was sticky arrow-key nav specifically when jumping to a node
+  // that's off-screen — child→ROOT (huge bbox, scrolls to fit) and
+  // newly-dropped components at the bottom (scrolls down). Instant
+  // scroll fires one event and lets the next keypress proceed.
   const ensureVisible = useCallback(
     (id: string) => {
       const dom = getNode(id)?.data.dom
-      dom?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+      dom?.scrollIntoView({
+        block: 'nearest',
+        inline: 'nearest',
+        behavior: 'instant' as ScrollBehavior,
+      })
     },
     [getNode],
   )
 
   const select = useCallback(
     (id: string | null) => {
+      // Phase 11 perf: flushSync the editorStore write so Inspector,
+      // LayerTree, and Breadcrumbs (which subscribe to editorStore)
+      // re-render in the SAME frame as the canvas overlay (which
+      // subscribes to Craft). Without this, the chain
+      //   selectNode → useSelectionSync.useEffect → editorStore
+      // takes a passive useEffect to land, putting the editorStore-
+      // backed surfaces one paint behind every arrow press. Same
+      // template as the layer-tree click handler — see the
+      // feedback-selection-sync memory.
       if (id) {
+        flushSync(() => {
+          useEditorStore.getState().setSelection([id])
+        })
         actions.selectNode(id)
         ensureVisible(id)
       } else {
+        flushSync(() => {
+          useEditorStore.getState().clearSelection()
+        })
         actions.selectNode()
       }
     },
