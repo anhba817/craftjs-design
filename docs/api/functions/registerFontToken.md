@@ -8,7 +8,7 @@
 
 > **registerFontToken**(`token`): `void`
 
-Defined in: registry/fonts.ts:105
+Defined in: registry/fonts.ts:136
 
 Register a font token so it appears in the Typography panel's Font
 dropdown. URL-backed tokens trigger an `@font-face` declaration; the

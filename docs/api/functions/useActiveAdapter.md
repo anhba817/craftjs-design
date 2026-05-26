@@ -8,7 +8,7 @@
 
 > **useActiveAdapter**(): [`Adapter`](../interfaces/Adapter.md)
 
-Defined in: adapters/AdapterContext.tsx:150
+Defined in: adapters/AdapterContext.tsx:192
 
 Hook returning the currently-active adapter. The active adapter changes
 when the user picks a different one in the AdapterSwitcher (or when a

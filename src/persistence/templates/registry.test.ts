@@ -1,9 +1,12 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   _clearTemplatesForTest,
   getTemplate,
+  getTemplateRegistryVersion,
   listTemplates,
   registerTemplate,
+  subscribeTemplateRegistry,
+  unregisterTemplate,
 } from './registry'
 
 function makeTemplate(id: string) {
@@ -42,5 +45,44 @@ describe('template registry', () => {
 
   it('getTemplate returns undefined for unknown ids', () => {
     expect(getTemplate('missing')).toBeUndefined()
+  })
+})
+
+describe('template registry — subscription (Phase 10 § 2.10)', () => {
+  it('bumps the version on register', () => {
+    const before = getTemplateRegistryVersion()
+    registerTemplate(makeTemplate('sv1'))
+    expect(getTemplateRegistryVersion()).toBe(before + 1)
+  })
+
+  it('bumps the version on unregister', () => {
+    registerTemplate(makeTemplate('sv2'))
+    const before = getTemplateRegistryVersion()
+    unregisterTemplate('sv2')
+    expect(getTemplateRegistryVersion()).toBe(before + 1)
+  })
+
+  it('does NOT bump on a no-op unregister', () => {
+    const before = getTemplateRegistryVersion()
+    expect(unregisterTemplate('nonexistent')).toBe(false)
+    expect(getTemplateRegistryVersion()).toBe(before)
+  })
+
+  it('fires subscribers on register + unregister', () => {
+    const listener = vi.fn()
+    const unsub = subscribeTemplateRegistry(listener)
+    registerTemplate(makeTemplate('sub1'))
+    expect(listener).toHaveBeenCalledTimes(1)
+    unregisterTemplate('sub1')
+    expect(listener).toHaveBeenCalledTimes(2)
+    unsub()
+  })
+
+  it('stops firing after unsubscribe', () => {
+    const listener = vi.fn()
+    const unsub = subscribeTemplateRegistry(listener)
+    unsub()
+    registerTemplate(makeTemplate('sub2'))
+    expect(listener).not.toHaveBeenCalled()
   })
 })

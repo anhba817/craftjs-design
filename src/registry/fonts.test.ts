@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   _resetFontTokensForTest,
+  getFontRegistryVersion,
   getFontToken,
   listFontTokens,
   registerFontToken,
+  subscribeFontRegistry,
   unregisterFontToken,
 } from './fonts'
 
@@ -86,5 +88,59 @@ describe('unregisterFontToken', () => {
 
   it('returns false when nothing was removed', () => {
     expect(unregisterFontToken('never-registered')).toBe(false)
+  })
+})
+
+describe('font registry — subscription (Phase 10 § 2.7)', () => {
+  it('bumps the version on register', () => {
+    const before = getFontRegistryVersion()
+    registerFontToken({ id: 'sub-a', name: 'A', family: 'X' })
+    expect(getFontRegistryVersion()).toBe(before + 1)
+  })
+
+  it('bumps the version on unregister', () => {
+    registerFontToken({ id: 'sub-b', name: 'B', family: 'X' })
+    const before = getFontRegistryVersion()
+    unregisterFontToken('sub-b')
+    expect(getFontRegistryVersion()).toBe(before + 1)
+  })
+
+  it('does NOT bump on a no-op unregister', () => {
+    const before = getFontRegistryVersion()
+    expect(unregisterFontToken('nonexistent')).toBe(false)
+    expect(getFontRegistryVersion()).toBe(before)
+  })
+
+  it('fires subscribers on register + unregister', () => {
+    const listener = vi.fn()
+    const unsub = subscribeFontRegistry(listener)
+    registerFontToken({ id: 'sub-c', name: 'C', family: 'X' })
+    expect(listener).toHaveBeenCalledTimes(1)
+    unregisterFontToken('sub-c')
+    expect(listener).toHaveBeenCalledTimes(2)
+    unsub()
+  })
+
+  it('stops firing after unsubscribe', () => {
+    const listener = vi.fn()
+    const unsub = subscribeFontRegistry(listener)
+    unsub()
+    registerFontToken({ id: 'sub-d', name: 'D', family: 'X' })
+    expect(listener).not.toHaveBeenCalled()
+  })
+})
+
+// Verify listFontTokens reflects each bump so useSyncExternalStore consumers
+// see the right list.
+describe('font registry — listFontTokens reactivity (Phase 10 § 2.7)', () => {
+  it('returns the new token after register', () => {
+    registerFontToken({ id: 'react-a', name: 'A', family: 'X' })
+    expect(listFontTokens().some((t) => t.id === 'react-a')).toBe(true)
+  })
+
+  it('omits a removed token after unregister', () => {
+    registerFontToken({ id: 'react-b', name: 'B', family: 'X' })
+    unregisterFontToken('react-b')
+    expect(listFontTokens().some((t) => t.id === 'react-b')).toBe(false)
   })
 })

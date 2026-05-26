@@ -1,19 +1,33 @@
 import { LayoutTemplate } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState, useSyncExternalStore } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
-import { listTemplates } from '@/persistence/templates/registry'
+import {
+  getTemplateRegistryVersion,
+  listTemplates,
+  subscribeTemplateRegistry,
+} from '@/persistence/templates/registry'
 
 // Popover-based template picker. Each row is "name — short description".
 // Clicking a template fires onPick and closes; the parent menu handles the
 // actual document creation.
+//
+// Phase 10 § 2.10 — subscribes to the template registry's version
+// counter so registerTemplate() / unregisterTemplate() calls after
+// mount refresh the list without requiring the user to close + reopen
+// the popover.
 export function TemplatePicker({
   onPick,
 }: {
   onPick: (templateId: string) => void
 }) {
   const [open, setOpen] = useState(false)
-  const templates = listTemplates()
+  const version = useSyncExternalStore(
+    subscribeTemplateRegistry,
+    getTemplateRegistryVersion,
+    getTemplateRegistryVersion,
+  )
+  const templates = useMemo(() => listTemplates(), [version])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

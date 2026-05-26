@@ -1,5 +1,9 @@
-import { useMemo } from 'react'
-import { listFontTokens } from '@/registry/fonts'
+import { useMemo, useSyncExternalStore } from 'react'
+import {
+  getFontRegistryVersion,
+  listFontTokens,
+  subscribeFontRegistry,
+} from '@/registry/fonts'
 import {
   FONT_SIZES,
   FONT_WEIGHTS,
@@ -32,14 +36,21 @@ export function TypographyPanel({ nodeId, slot = 'root' }: { nodeId: string; slo
   // Phase 8 — Font dropdown options come from the runtime font-token registry.
   // Built-ins (sans, heading, mono) are registered at module load by
   // src/registry/fonts.ts; SDK consumers can registerFontToken({...}) to add
-  // more. The list is captured at render time, so post-render registrations
-  // don't appear until the panel re-renders (selection change, prop edit).
-  // Hot-reload of fonts is a Phase 9 polish item.
+  // more.
+  //
+  // Phase 10 § 2.7 — useSyncExternalStore subscribes to the registry's
+  // version counter. Calling registerFontToken / unregisterFontToken
+  // post-mount bumps the counter; this hook re-runs and the dropdown
+  // reflects the new list immediately. Replaces the prior `[nodeId]`
+  // hack that only refreshed on selection change.
+  const fontRegistryVersion = useSyncExternalStore(
+    subscribeFontRegistry,
+    getFontRegistryVersion,
+    getFontRegistryVersion,
+  )
   const fontOptions = useMemo(
     () => listFontTokens().map((t) => t.id),
-    // Recompute when the active node changes — gives a natural refresh point
-    // for SDK consumers that register fonts after the editor mounts.
-    [nodeId],
+    [fontRegistryVersion],
   )
 
   // Text color is split between a token class (`text-{token}`) and an inline

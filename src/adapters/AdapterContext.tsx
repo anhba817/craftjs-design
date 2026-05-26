@@ -6,6 +6,47 @@ import type { Adapter } from "./types";
 
 const adapters = new Map<string, Adapter>();
 
+// Phase 10 § 2.8 — hot-reload subscription. Same pattern as the
+// font-token registry (src/registry/fonts.ts). Version increments on
+// every register / unregister; AdapterSwitcher subscribes via
+// useSyncExternalStore so post-mount registerAdapter() calls update
+// the dropdown without a remount.
+let adapterRegistryVersion = 0;
+const adapterRegistryListeners = new Set<() => void>();
+
+/**
+ * Monotonically-increasing counter incremented on every adapter
+ * registry mutation. Consumed via `useSyncExternalStore` by the
+ * AdapterSwitcher so post-mount registrations surface immediately.
+ */
+export function getAdapterRegistryVersion(): number {
+  return adapterRegistryVersion;
+}
+
+/** Subscribe to adapter-registry version bumps. Returns an unsubscribe function. */
+export function subscribeAdapterRegistry(cb: () => void): () => void {
+  adapterRegistryListeners.add(cb);
+  return () => {
+    adapterRegistryListeners.delete(cb);
+  };
+}
+
+function bumpAdapterRegistry(): void {
+  adapterRegistryVersion += 1;
+  for (const cb of adapterRegistryListeners) cb();
+}
+
+/**
+ * Remove an adapter by id. Returns `true` if an adapter was removed.
+ * Hosts that want to replace a built-in adapter call this then
+ * `registerAdapter(replacement)` with the same id.
+ */
+export function unregisterAdapter(id: string): boolean {
+  const had = adapters.delete(id);
+  if (had) bumpAdapterRegistry();
+  return had;
+}
+
 /**
  * Register an adapter — a UI library binding that provides renderers for
  * each canonical id. Validates the manifest structurally (Zod) before
@@ -52,6 +93,7 @@ export function registerAdapter(adapter: Adapter): void {
     throw new Error(`duplicate adapter id: ${adapter.id}`);
   }
   adapters.set(adapter.id, adapter);
+  bumpAdapterRegistry();
 }
 
 /** Look up an adapter by id. Returns `undefined` if not registered. */

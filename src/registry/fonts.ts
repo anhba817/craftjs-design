@@ -40,6 +40,37 @@ export interface FontToken {
 const tokens = new Map<string, FontToken>()
 let injectedStyleEl: HTMLStyleElement | null = null
 
+// Phase 10 § 2.7 — hot-reload subscription. Mirrors the canonical-registry
+// pattern (src/registry/registry.ts): the version increments on every
+// register / unregister; subscribers re-run via useSyncExternalStore so
+// the TypographyPanel's Font dropdown reflects post-mount registrations
+// without remounting the panel.
+let registryVersion = 0
+const registryListeners = new Set<() => void>()
+
+/**
+ * Monotonically-increasing counter incremented on every font-token
+ * registry mutation (register or unregister). Consumed via
+ * `useSyncExternalStore` so the Typography panel's Font dropdown picks
+ * up post-mount registrations automatically.
+ */
+export function getFontRegistryVersion(): number {
+  return registryVersion
+}
+
+/** Subscribe to font-registry version bumps. Returns an unsubscribe function. */
+export function subscribeFontRegistry(cb: () => void): () => void {
+  registryListeners.add(cb)
+  return () => {
+    registryListeners.delete(cb)
+  }
+}
+
+function bumpFontRegistry(): void {
+  registryVersion += 1
+  for (const cb of registryListeners) cb()
+}
+
 function ensureStyleElement(): HTMLStyleElement | null {
   if (typeof document === 'undefined') return null
   if (!injectedStyleEl) {
@@ -110,6 +141,7 @@ export function registerFontToken(token: FontToken): void {
   }
   tokens.set(token.id, token)
   rebuildStyleSheet()
+  bumpFontRegistry()
 }
 
 /**
@@ -118,7 +150,10 @@ export function registerFontToken(token: FontToken): void {
  */
 export function unregisterFontToken(id: string): boolean {
   const had = tokens.delete(id)
-  if (had) rebuildStyleSheet()
+  if (had) {
+    rebuildStyleSheet()
+    bumpFontRegistry()
+  }
   return had
 }
 
