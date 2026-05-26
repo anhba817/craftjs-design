@@ -387,10 +387,15 @@ export function Toolbox() {
     }
   }
 
+  // Phase 11 § 3.4 — Toolbox no longer renders its own <aside>; it
+  // returns content that LeftAside slots into a shared sidebar
+  // alongside the LayerTree tab. The wrapping div keeps the
+  // flex-column shape Toolbox relied on (header + scroll body).
   return (
-    <aside
+    <div
       aria-label="Component toolbox"
-      className="flex w-56 flex-col border-r border-gray-200"
+      role="region"
+      className="flex min-h-0 flex-1 flex-col"
     >
       <div className="border-b border-gray-200 p-2">
         <label className="relative block">
@@ -476,6 +481,6 @@ export function Toolbox() {
           })
         })()}
       </div>
-    </aside>
+    </div>
   )
 }

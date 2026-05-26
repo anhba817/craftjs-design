@@ -18,18 +18,17 @@ import { ErrorBoundary } from './errors/ErrorBoundary'
 import { MalformedDocumentBanner } from './errors/MalformedDocumentBanner'
 import {
   CanvasErrorFallback,
-  ToolboxErrorFallback,
   TopShellErrorFallback,
 } from './errors/fallbacks'
 import { Hydrator } from './Hydrator'
 import { Inspector } from './Inspector'
+import { LeftAside } from './LeftAside'
 import { ConcurrentEditBanner } from './persistence/ConcurrentEditBanner'
 import { useConcurrentEditWatcher } from './persistence/concurrentEditWatcher'
 import { StorageQuotaBanner } from './persistence/StorageQuotaBanner'
 import { StorageQuotaErrorModal } from './persistence/StorageQuotaErrorModal'
 import { ResolverUpdater } from './ResolverUpdater'
 import { SaveLoadBar } from './SaveLoadBar'
-import { Toolbox } from './Toolbox'
 
 export function Editor() {
   // Phase 6 — flip the registry's post-mount flag so any registerCanonical
@@ -104,9 +103,11 @@ export function Editor() {
               before Craft's default connector overwrites selection. */}
           <MultiSelectClickMount />
           <div className="flex min-h-0 flex-1">
-            <ErrorBoundary fallback={ToolboxErrorFallback}>
-              <Toolbox />
-            </ErrorBoundary>
+            {/* Phase 11 § 3.4 — left aside hosts both Components and
+                Layers tabs. Per-tab ErrorBoundaries live inside
+                LeftAside so a buggy LayerTree doesn't drop the
+                toolbox. */}
+            <LeftAside />
             <ThemeProvider>
               <main className="flex-1 overflow-auto bg-muted p-8">
                 <ErrorBoundary fallback={CanvasErrorFallback}>
