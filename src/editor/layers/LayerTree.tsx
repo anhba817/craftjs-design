@@ -113,13 +113,27 @@ export function LayerTree() {
     })
   }
 
-  const handleClick = (e: React.MouseEvent, id: string) => {
-    // Don't intercept clicks on the chevron — they're handled by the
-    // chevron button's own onClick.
-    if ((e.target as HTMLElement).closest('[data-chevron]')) return
+  // Phase 11 § 3.4 — container-level click handler. Resolves the
+  // clicked row by walking up from event.target to the nearest
+  // `[data-layer-id]` element. This avoids per-row onClick closures
+  // that could capture a stale `id` if React's render → DOM-listener
+  // sync somehow lagged (the first cut was passing per-row inline
+  // closures that selected the previously-clicked row on subsequent
+  // clicks — the cause was elusive, the DOM-delegate pattern is
+  // unconditionally robust).
+  const handleContainerClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement | null
+    if (!target) return
+    // Chevron clicks stopPropagation in the button itself; we should
+    // never see them here. Defensive guard if the chevron's
+    // stopPropagation ever regresses.
+    if (target.closest('[data-chevron]')) return
+    const rowEl = target.closest('[data-layer-id]') as HTMLElement | null
+    if (!rowEl) return
+    const id = rowEl.getAttribute('data-layer-id')
+    if (!id) return
     const mod = e.metaKey || e.ctrlKey
     if (mod) {
-      // Modifier-click toggles into the multi-selection.
       if (id === 'ROOT') return
       useEditorStore.getState().toggleSelection(id)
       const primary = useEditorStore.getState().selection[0]
@@ -239,7 +253,6 @@ export function LayerTree() {
         selected={isSelected}
         collapsed={isCollapsed}
         drop={drop}
-        onClick={(e) => handleClick(e, row.id)}
         onChevronClick={() => toggleCollapse(row.id)}
         onDragStart={(e) => {
           currentDraggedIdRef.current = row.id
@@ -269,6 +282,7 @@ export function LayerTree() {
         ref={scrollerRef}
         role="tree"
         aria-label="Layer tree"
+        onClick={handleContainerClick}
         className="min-h-0 flex-1 overflow-y-auto"
       >
         {rows.map(renderRow)}
@@ -281,6 +295,7 @@ export function LayerTree() {
       ref={scrollerRef}
       role="tree"
       aria-label="Layer tree"
+      onClick={handleContainerClick}
       className="min-h-0 flex-1 overflow-y-auto"
     >
       <div
@@ -324,7 +339,10 @@ interface LayerRowProps {
   selected: boolean
   collapsed: boolean
   drop: DropState | null
-  onClick: (e: React.MouseEvent) => void
+  // Click is handled at the container via DOM delegation
+  // (data-layer-id). The chevron button still gets its own click
+  // because we stopPropagation it to keep collapse-toggle from
+  // doubling as a select.
   onChevronClick: () => void
   onDragStart: (e: React.DragEvent) => void
   onDragOver: (e: React.DragEvent) => void
@@ -338,7 +356,6 @@ function LayerRow({
   selected,
   collapsed,
   drop,
-  onClick,
   onChevronClick,
   onDragStart,
   onDragOver,
@@ -354,7 +371,6 @@ function LayerRow({
   return (
     <div
       draggable={row.id !== 'ROOT'}
-      onClick={onClick}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
@@ -389,7 +405,12 @@ function LayerRow({
         <button
           type="button"
           data-chevron
-          onClick={onChevronClick}
+          onClick={(e) => {
+            // Stop propagation so the row's container delegate
+            // doesn't also fire selectNode on chevron click.
+            e.stopPropagation()
+            onChevronClick()
+          }}
           aria-label={collapsed ? 'Expand' : 'Collapse'}
           className="flex h-4 w-4 shrink-0 items-center justify-center text-gray-400 hover:text-gray-700"
         >
