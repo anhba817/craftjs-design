@@ -12,6 +12,8 @@ import type {
   Radius,
 } from '@/style/tw-classes'
 import type { TextColor } from '@/style/tw-classes'
+import { ImagePicker } from '../assets/ImagePicker'
+import { parseBgUrl, toBgUrl } from './shared/backgroundImage'
 import { ColorPicker, colorValueFromState } from './shared/ColorPicker'
 import type { ColorPickerValue } from './shared/ColorPicker'
 import { gradientToCss, parseGradient } from './shared/gradient'
@@ -25,6 +27,11 @@ import { useNodeClassesMulti } from './shared/useNodeClassesMulti'
 // dropdowns alongside the explicit values — selecting it emits the bare class.
 const BORDER_WIDTH_OPTIONS = ['default', ...BORDER_WIDTHS] as const
 const RADIUS_OPTIONS = ['default', ...RADII] as const
+
+// Phase 12 § 4.6 — background-image controls.
+const BG_REPEAT = ['repeat', 'no-repeat', 'repeat-x', 'repeat-y'] as const
+const BG_SIZE = ['cover', 'contain', 'auto'] as const
+const BG_POSITION = ['center', 'top', 'bottom', 'left', 'right'] as const
 
 export function AppearancePanel({
   nodeIds,
@@ -92,10 +99,32 @@ export function AppearancePanel({
       update({ bg: undefined })
       writeInlineAll('backgroundColor', undefined)
       writeInlineAll('background', gradientToCss(v.gradient))
+      // Gradient uses the `background` shorthand, which resets
+      // background-image — clear any image so they don't fight.
+      writeInlineAll('backgroundImage', undefined)
     } else {
       update({ bg: undefined })
       writeInlineAll('backgroundColor', undefined)
       writeInlineAll('background', undefined)
+    }
+  }
+
+  // Phase 12 § 4.6 — background image. Stored as inline backgroundImage
+  // (url("…")) + repeat/size/position longhands. Coexists with a solid
+  // fill color (image renders over backgroundColor); mutually exclusive
+  // with a gradient (which uses the `background` shorthand).
+  const bgImageMixed = mixedInline.has('backgroundImage')
+  const bgUrl = bgImageMixed ? '' : parseBgUrl(mergedInline.backgroundImage)
+  const hasBgImage = bgUrl.length > 0
+  const setBgUrl = (url: string) => {
+    if (url) {
+      writeInlineAll('backgroundImage', toBgUrl(url))
+      writeInlineAll('background', undefined) // drop any gradient shorthand
+    } else {
+      writeInlineAll('backgroundImage', undefined)
+      writeInlineAll('backgroundRepeat', undefined)
+      writeInlineAll('backgroundSize', undefined)
+      writeInlineAll('backgroundPosition', undefined)
     }
   }
 
@@ -117,6 +146,65 @@ export function AppearancePanel({
       <PanelRow label="Fill">
         <ColorPicker value={fillValue} onChange={setFill} allowGradient />
       </PanelRow>
+      <PanelRow label="Image">
+        <ImagePicker value={bgUrl} onChange={setBgUrl} />
+      </PanelRow>
+      {hasBgImage && (
+        <>
+          <PanelRow label="Repeat">
+            <ValueSelect<(typeof BG_REPEAT)[number]>
+              value={
+                (mixedInline.has('backgroundRepeat')
+                  ? ''
+                  : (mergedInline.backgroundRepeat ?? '')) as
+                  | (typeof BG_REPEAT)[number]
+                  | ''
+              }
+              options={BG_REPEAT}
+              onChange={(v) =>
+                writeInlineAll('backgroundRepeat', v || undefined)
+              }
+              placeholder={
+                mixedInline.has('backgroundRepeat') ? '— Mixed' : undefined
+              }
+            />
+          </PanelRow>
+          <PanelRow label="Size">
+            <ValueSelect<(typeof BG_SIZE)[number]>
+              value={
+                (mixedInline.has('backgroundSize')
+                  ? ''
+                  : (mergedInline.backgroundSize ?? '')) as
+                  | (typeof BG_SIZE)[number]
+                  | ''
+              }
+              options={BG_SIZE}
+              onChange={(v) => writeInlineAll('backgroundSize', v || undefined)}
+              placeholder={
+                mixedInline.has('backgroundSize') ? '— Mixed' : undefined
+              }
+            />
+          </PanelRow>
+          <PanelRow label="Position">
+            <ValueSelect<(typeof BG_POSITION)[number]>
+              value={
+                (mixedInline.has('backgroundPosition')
+                  ? ''
+                  : (mergedInline.backgroundPosition ?? '')) as
+                  | (typeof BG_POSITION)[number]
+                  | ''
+              }
+              options={BG_POSITION}
+              onChange={(v) =>
+                writeInlineAll('backgroundPosition', v || undefined)
+              }
+              placeholder={
+                mixedInline.has('backgroundPosition') ? '— Mixed' : undefined
+              }
+            />
+          </PanelRow>
+        </>
+      )}
       <PanelRow label="Border">
         <ValueSelect<BorderWidth | 'default'>
           value={valueOrEmpty<BorderWidth | 'default'>('borderWidth')}
