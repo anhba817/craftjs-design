@@ -110,7 +110,7 @@ export function Inspector() {
           {showSlotPicker && (
             <SlotPicker slots={slots} active={slot} onChange={setActiveSlot} />
           )}
-          <div className="overflow-y-auto px-3 py-3">
+          <div className="overflow-x-hidden overflow-y-auto px-3 py-3">
             <div className="space-y-3 text-sm">
               <div>
                 <div className="text-xs text-gray-500">Type</div>

@@ -1,5 +1,11 @@
 import { useEditor } from '@craftjs/core'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import { mergeSize } from '@/style/tw-classes'
 import type { SizeValue } from '@/style/tw-classes'
 import type { NodeStyle } from '@/registry/types'
@@ -78,16 +84,32 @@ export function ResizeOverlay() {
   // to the FIRST selected node. Multi-resize (gang-resize) is a
   // Phase 12+ stretch; v1 scopes to primary only.
   const primaryId = useEditorStore((s) => s.selection[0] ?? null)
-  const { actions, selectedId, selectedDom } = useEditor((_state, query) => {
-    if (!primaryId) return { selectedId: null, selectedDom: null }
-    let dom: HTMLElement | null = null
-    try {
-      dom = query.node(primaryId).get().dom
-    } catch {
-      // Node may have been removed mid-render — treat as no DOM.
-    }
-    return { selectedId: primaryId, selectedDom: dom }
-  })
+  const { actions, selectedId, selectedDom, styleKey } = useEditor(
+    (_state, query) => {
+      if (!primaryId) {
+        return { selectedId: null, selectedDom: null, styleKey: '' }
+      }
+      let dom: HTMLElement | null = null
+      let styleKey = ''
+      try {
+        const node = query.node(primaryId).get()
+        dom = node.dom
+        // Phase 12 — a style signature so the overlay recomputes when
+        // the selected node's style changes. CSS transforms (rotate /
+        // scale / translate) change the element's visual bounds but
+        // fire NO ResizeObserver / scroll / resize event, so without
+        // this the dashed outline would stay at the pre-transform rect.
+        // Stringifying the whole style object also covers any future
+        // property that shifts the box.
+        styleKey = JSON.stringify(
+          (node.data.props as { style?: unknown }).style ?? null,
+        )
+      } catch {
+        // Node may have been removed mid-render — treat as no DOM.
+      }
+      return { selectedId: primaryId, selectedDom: dom, styleKey }
+    },
+  )
 
   const [rect, setRect] = useState<DOMRect | null>(null)
   // Phase 9 Group C — keep the overlay's size in lock-step with the dragged
@@ -126,6 +148,18 @@ export function ResizeOverlay() {
       window.removeEventListener('resize', recompute)
     }
   }, [selectedDom, recompute])
+
+  // Phase 12 — recompute when the selected node's style changes (e.g. a
+  // transform that ResizeObserver can't see). useLayoutEffect so the
+  // overlay repositions in the same frame as the node's transform,
+  // before paint — no flicker. getBoundingClientRect forces a synchronous
+  // style/layout flush, so it reflects the just-committed transform class.
+  useLayoutEffect(() => {
+    recompute()
+    // styleKey is the dependency that matters; recompute is stable per
+    // selectedDom.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [styleKey])
 
   if (!rect || !selectedDom || !selectedId) return null
 

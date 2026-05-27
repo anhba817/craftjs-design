@@ -123,11 +123,49 @@ export function useNodeClassesMulti(
     }
   }
 
+  /**
+   * Phase 12 — per-node inline write. Unlike writeInlineAll (same
+   * value to every node), this reads EACH node's current value for
+   * `cssProperty` and computes its next value via `computeNext`. Used
+   * by the Transforms / Filters panels, where the property is a
+   * composed function list (`transform`, `filter`) and setting one
+   * function must preserve each node's other functions independently.
+   */
+  const writeInlineFn = (
+    cssProperty: string,
+    computeNext: (current: string) => string,
+  ) => {
+    const throttled = actions.history.throttle(500)
+    for (const node of perNode) {
+      const current =
+        (activeBreakpoint === 'base'
+          ? node.props.style.inline?.[slot]?.[cssProperty]
+          : node.props.style.responsiveInline?.[activeBreakpoint]?.[slot]?.[
+              cssProperty
+            ]) ?? ''
+      const next = computeNext(current)
+      throttled.setProp(node.id, (props: NodeProps) => {
+        if (activeBreakpoint === 'base') {
+          writeBaseInline(props, slot, cssProperty, next || undefined)
+        } else {
+          writeResponsiveInline(
+            props,
+            activeBreakpoint,
+            slot,
+            cssProperty,
+            next || undefined,
+          )
+        }
+      })
+    }
+  }
+
   return {
     classStrings,
     inlineStyles,
     writeClassesAll,
     writeInlineAll,
+    writeInlineFn,
     activeBreakpoint,
   }
 }

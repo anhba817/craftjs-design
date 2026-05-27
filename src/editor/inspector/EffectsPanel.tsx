@@ -1,25 +1,24 @@
 import {
-  BLURS,
   OPACITIES,
   SHADOWS,
   mergeEffects,
   parseEffects,
 } from '@/style/tw-classes'
-import type {
-  Blur,
-  EffectsSlice,
-  Opacity,
-  Shadow,
-} from '@/style/tw-classes'
+import type { EffectsSlice, Opacity, Shadow } from '@/style/tw-classes'
 import { mergeSlices } from './shared/mergeSlices'
 import { PanelRow } from './shared/PanelRow'
 import { ValueSelect } from './shared/ValueSelect'
 import { useNodeClassesMulti } from './shared/useNodeClassesMulti'
 
-// 'default' sentinel for bare `shadow` / `blur` joins the value enum so users
-// can pick "default shadow" without having to pick a specific size.
+// 'default' sentinel for bare `shadow` joins the value enum so users can pick
+// "default shadow" without having to pick a specific size.
+//
+// Phase 12 § 4.5 — `blur` moved to the Filters panel: blur is part of the CSS
+// `filter` property, which the Filters panel now owns as a composed inline
+// value. Keeping blur here as a Tailwind class would fight the inline filter.
+// (Legacy `blur-*` classes on existing nodes still round-trip via
+// EffectsSlice.blur in tw-classes — they're just not editable from here.)
 const SHADOW_OPTIONS = ['default', ...SHADOWS] as const
-const BLUR_OPTIONS = ['default', ...BLURS] as const
 
 export function EffectsPanel({
   nodeIds,
@@ -59,14 +58,6 @@ export function EffectsPanel({
           options={OPACITIES}
           onChange={(v) => update({ opacity: v })}
           placeholder={placeholderFor('opacity')}
-        />
-      </PanelRow>
-      <PanelRow label="Blur">
-        <ValueSelect<Blur | 'default'>
-          value={valueOrEmpty<Blur | 'default'>('blur')}
-          options={BLUR_OPTIONS}
-          onChange={(v) => update({ blur: v as Blur | undefined })}
-          placeholder={placeholderFor('blur')}
         />
       </PanelRow>
     </section>

@@ -10,9 +10,14 @@ export function PanelRow({
   children: ReactNode
 }) {
   return (
-    <div className="flex items-center gap-2">
+    // min-w-0 on the row AND the control column is load-bearing: a flex
+    // item defaults to min-width:auto, so without it a control whose
+    // intrinsic content is wide (NumericInput's input + −/+/▾ buttons,
+    // FlexibleSelect's input + ▾) refuses to shrink and pushes the whole
+    // column past the Inspector's 288px width, forcing horizontal scroll.
+    <div className="flex min-w-0 items-center gap-2">
       <span className="w-14 shrink-0 text-xs text-gray-500">{label}</span>
-      <div className="flex-1">{children}</div>
+      <div className="min-w-0 flex-1">{children}</div>
     </div>
   )
 }

@@ -104,8 +104,13 @@ const lines: string[] = [
   ...emitBare('shadow'),                       // default shadow
   ...emit('shadow-', SHADOWS),
   ...emit('opacity-', OPACITIES),
-  ...emitBare('blur'),                         // default blur
+  ...emitBare('blur'),                         // default blur (legacy Effects)
   ...emit('blur-', BLURS),
+  // Phase 12 — Transforms / Filters / Transitions are authored as
+  // INLINE CSS (composed `transform` / `filter` strings + transition
+  // longhands), NOT Tailwind classes, so they need no safelist entries.
+  // See src/style/cssFunctions.ts for why (custom values + single-
+  // property composition).
   '',
   '/* Phase 5 — one-off utilities for new canonical defaults */',
   // Image aspect ratios + Link's underline-offset-4 + object-fit for images.

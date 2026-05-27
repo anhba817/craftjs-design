@@ -1,11 +1,14 @@
 import { AssetLibraryPanel } from '../assets/AssetLibraryPanel'
 import { AppearancePanel } from './AppearancePanel'
 import { EffectsPanel } from './EffectsPanel'
+import { FiltersPanel } from './FiltersPanel'
 import { LayoutPanel } from './LayoutPanel'
 import { PropsPanel } from './PropsPanel'
 import { registerPanel } from './panel-registry'
 import { SizePanel } from './SizePanel'
 import { SpacingPanel } from './SpacingPanel'
+import { TransformsPanel } from './TransformsPanel'
+import { TransitionsPanel } from './TransitionsPanel'
 import { TypographyPanel } from './TypographyPanel'
 
 // Phase 6 — built-in panels register themselves via the same panel-registry
@@ -57,12 +60,41 @@ registerPanel({
   component: AppearancePanel,
 })
 
+// Phase 12 § 4.4 — Transforms. Order 45: after Appearance (50)? No —
+// slot it before Appearance so geometric transforms sit near layout.
+registerPanel({
+  id: 'transforms',
+  displayName: 'Transforms',
+  order: 45,
+  applicableTo: () => true,
+  component: TransformsPanel,
+})
+
 registerPanel({
   id: 'effects',
   displayName: 'Effects',
   order: 60,
   applicableTo: () => true,
   component: EffectsPanel,
+})
+
+// Phase 12 § 4.5 — Filters. Order 62: right after Effects (blur /
+// shadow live there; filters are the same conceptual neighborhood).
+registerPanel({
+  id: 'filters',
+  displayName: 'Filters',
+  order: 62,
+  applicableTo: () => true,
+  component: FiltersPanel,
+})
+
+// Phase 12 § 4.3 — Transitions. Order 65, after Filters.
+registerPanel({
+  id: 'transitions',
+  displayName: 'Transitions',
+  order: 65,
+  applicableTo: () => true,
+  component: TransitionsPanel,
 })
 
 // PropsPanel edits canonical props (not slot classes). It ignores the `slot`
