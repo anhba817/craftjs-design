@@ -97,6 +97,13 @@ body {
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Phase 12 § 4.9 demo — example host design-token variables surfaced in
+     the ColorPicker via <EditorColorVariablesProvider> (see src/App.tsx).
+     Not part of the shadcn token set; purely to dogfood the variable picker. */
+  --brand-blue: oklch(0.55 0.2 255);
+  --brand-ink: oklch(0.22 0.03 265);
+  --brand-sand: oklch(0.85 0.06 80);
 }
 
 .dark {

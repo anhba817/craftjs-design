@@ -91,9 +91,12 @@ export function AppearancePanel({
       update({ bg: v.token })
       writeInlineAll('backgroundColor', undefined)
       writeInlineAll('background', undefined)
-    } else if (v.kind === 'hex') {
+    } else if (v.kind === 'hex' || v.kind === 'var') {
       update({ bg: undefined })
-      writeInlineAll('backgroundColor', v.hex)
+      writeInlineAll(
+        'backgroundColor',
+        v.kind === 'hex' ? v.hex : `var(--${v.name})`,
+      )
       writeInlineAll('background', undefined)
     } else if (v.kind === 'gradient') {
       update({ bg: undefined })
@@ -132,9 +135,12 @@ export function AppearancePanel({
     if (v.kind === 'token') {
       update({ borderColor: v.token })
       writeInlineAll('borderColor', undefined)
-    } else if (v.kind === 'hex') {
+    } else if (v.kind === 'hex' || v.kind === 'var') {
       update({ borderColor: undefined })
-      writeInlineAll('borderColor', v.hex)
+      writeInlineAll(
+        'borderColor',
+        v.kind === 'hex' ? v.hex : `var(--${v.name})`,
+      )
     } else {
       update({ borderColor: undefined })
       writeInlineAll('borderColor', undefined)

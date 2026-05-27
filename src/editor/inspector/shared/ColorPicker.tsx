@@ -4,33 +4,55 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils'
 import { COLORS } from '@/style/tw-classes'
 import type { TokenColor } from '@/style/tw-classes'
+import { useColorVariables } from '../../colors/EditorColorVariablesProvider'
 import { EyedropperButton } from './EyedropperButton'
 import { GradientEditor } from './GradientEditor'
 import { defaultGradient, gradientToCss, type Gradient } from './gradient'
 import { HslSliders } from './HslSliders'
 import { RgbSliders } from './RgbSliders'
 
-// Tagged union — the picker speaks one of four states. Panels translate this
+// Tagged union — the picker speaks one of five states. Panels translate this
 // into slice patches (`bg: token`), inline writes (`backgroundColor: '#hex'`),
-// or — for Phase 8 — inline `background: linear-gradient(…)` writes.
+// inline `var(--brand)` writes (Phase 12 § 4.9 host CSS variables), or — for
+// Phase 8 — inline `background: linear-gradient(…)` writes.
 export type ColorPickerValue =
   | { kind: 'token'; token: TokenColor }
   | { kind: 'hex'; hex: string }
+  | { kind: 'var'; name: string }
   | { kind: 'gradient'; gradient: Gradient }
   | { kind: 'unset' }
 
+// Matches a bare `var(--name)` inline value so reads round-trip back to a
+// 'var' picker state instead of being mistaken for a hex string.
+const VAR_RE = /^var\(\s*--([\w-]+)\s*\)$/
+
 // Convenience builder for panels reading from useNodeClasses' classString +
-// inlineStyle. Precedence: gradient > hex > token > unset. Gradient is the
-// most specific; the others are mutually exclusive at the panel level.
+// inlineStyle. Precedence: gradient > inline (var/hex) > token > unset.
+// Gradient is the most specific; the others are mutually exclusive at the
+// panel level. An inline value of the form `var(--x)` resolves to a 'var'
+// state; anything else inline is treated as a hex/raw color.
 export function colorValueFromState(
   token: TokenColor | undefined,
   hex: string | undefined,
   gradient: Gradient | undefined = undefined,
 ): ColorPickerValue {
   if (gradient) return { kind: 'gradient', gradient }
-  if (hex) return { kind: 'hex', hex }
+  if (hex) {
+    const m = VAR_RE.exec(hex)
+    if (m) return { kind: 'var', name: m[1] }
+    return { kind: 'hex', hex }
+  }
   if (token) return { kind: 'token', token }
   return { kind: 'unset' }
+}
+
+// Resolve a picker value to a concrete CSS color string for an inline write
+// or for contrast math. Returns null for gradient/unset (no single color).
+export function cssFromColorValue(v: ColorPickerValue): string | null {
+  if (v.kind === 'token') return `var(--${v.token})`
+  if (v.kind === 'hex') return v.hex
+  if (v.kind === 'var') return `var(--${v.name})`
+  return null
 }
 
 const HEX_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
@@ -44,13 +66,20 @@ interface ColorPickerProps {
   // top and accepts gradient values. Default false to keep panels that
   // can't represent gradients (text color, border color) constrained.
   allowGradient?: boolean
+  // Phase 12 § 4.9 — when false, the host CSS-variable swatches are hidden
+  // (e.g. inside the gradient stop editor, whose stop strings shouldn't
+  // carry var() references). Default true.
+  allowVariables?: boolean
 }
 
 export function ColorPicker({
   value,
   onChange,
   allowGradient = false,
+  allowVariables = true,
 }: ColorPickerProps) {
+  const { variables } = useColorVariables()
+  const showVariables = allowVariables && variables.length > 0
   // Mode of the editing surface within the popover. Defaults from the
   // current value: gradient value → 'gradient' mode; otherwise 'solid'.
   const [surface, setSurface] = useState<'solid' | 'gradient'>(
@@ -83,6 +112,8 @@ export function ColorPicker({
       ? { backgroundColor: `var(--${value.token})` }
       : value.kind === 'hex'
       ? { backgroundColor: value.hex }
+      : value.kind === 'var'
+      ? { backgroundColor: `var(--${value.name})` }
       : value.kind === 'gradient'
       ? { background: gradientToCss(value.gradient) }
       : checkerboardStyle()
@@ -92,6 +123,8 @@ export function ColorPicker({
       ? value.token
       : value.kind === 'hex'
       ? value.hex
+      : value.kind === 'var'
+      ? (variables.find((v) => v.name === value.name)?.label ?? `--${value.name}`)
       : value.kind === 'gradient'
       ? `${value.gradient.type} gradient`
       : '—'
@@ -261,6 +294,33 @@ export function ColorPicker({
                 Clear color
               </button>
             </div>
+            {showVariables && (
+              <div className="border-t border-gray-200 pt-3">
+                <div className="mb-1.5 text-xs font-medium text-gray-600">
+                  Design variables
+                </div>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {variables.map((v) => {
+                    const isActive = value.kind === 'var' && value.name === v.name
+                    return (
+                      <button
+                        key={v.name}
+                        type="button"
+                        title={v.label ?? `--${v.name}`}
+                        onClick={() => onChange({ kind: 'var', name: v.name })}
+                        className={cn(
+                          'h-6 w-6 rounded border transition-colors',
+                          isActive
+                            ? 'border-primary ring-2 ring-primary/40'
+                            : 'border-gray-300 hover:border-gray-500',
+                        )}
+                        style={{ backgroundColor: `var(--${v.name})` }}
+                      />
+                    )
+                  })}
+                </div>
+              </div>
+            )}
             <div className="space-y-2 border-t border-gray-200 pt-3">
               <div className="flex items-center justify-between">
                 <div className="text-xs font-medium text-gray-600">Custom color</div>

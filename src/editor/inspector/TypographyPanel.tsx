@@ -18,14 +18,20 @@ import type {
   TextColor,
   TypographySlice,
 } from '@/style/tw-classes'
-import { ColorPicker, colorValueFromState } from './shared/ColorPicker'
+import {
+  ColorPicker,
+  colorValueFromState,
+  cssFromColorValue,
+} from './shared/ColorPicker'
 import type { ColorPickerValue } from './shared/ColorPicker'
+import { ContrastBadge } from './shared/ContrastBadge'
 import { mergeSlices } from './shared/mergeSlices'
 import { PanelRow } from './shared/PanelRow'
 import { ValueSelect } from './shared/ValueSelect'
 import { useNodeClassesMulti } from './shared/useNodeClassesMulti'
 
 export function TypographyPanel({
+  nodeId,
   nodeIds,
   slot = 'root',
 }: {
@@ -92,11 +98,18 @@ export function TypographyPanel({
     } else if (v.kind === 'hex') {
       update({ textColor: undefined })
       writeInlineAll('color', v.hex)
+    } else if (v.kind === 'var') {
+      update({ textColor: undefined })
+      writeInlineAll('color', `var(--${v.name})`)
     } else {
       update({ textColor: undefined })
       writeInlineAll('color', undefined)
     }
   }
+
+  // Phase 12 § 4.14 — resolve the chosen color to a concrete CSS string
+  // for the live contrast badge (token → var(--token), hex → hex, etc.).
+  const fgColor = colorMixed ? null : cssFromColorValue(colorValue)
 
   return (
     <section className="space-y-2">
@@ -135,6 +148,9 @@ export function TypographyPanel({
       <PanelRow label="Color">
         <ColorPicker value={colorValue} onChange={setColor} />
       </PanelRow>
+      <div className="pl-16">
+        <ContrastBadge fg={fgColor} nodeId={nodeId} />
+      </div>
     </section>
   )
 }

@@ -5,7 +5,17 @@ import '../examples/adapter-chakra'
 import './themes'
 import './editor/inspector/built-in-panels'
 import './persistence/templates'
+import { EditorColorVariablesProvider } from './editor/colors/EditorColorVariablesProvider'
 import { Editor, ErrorBoundary, TopShellErrorFallback } from './editor/Editor'
+
+// Phase 12 § 4.9 demo — example host CSS variables (defined in index.css).
+// Hosts pass their own design tokens here; the ColorPicker surfaces them as
+// a "Design variables" swatch row.
+const DEMO_COLOR_VARIABLES = [
+  { name: 'brand-blue', label: 'Brand Blue' },
+  { name: 'brand-ink', label: 'Brand Ink' },
+  { name: 'brand-sand', label: 'Brand Sand' },
+]
 
 export default function App() {
   // Phase 8 — top-shell error boundary. Catches anything that bubbles out of
@@ -15,7 +25,9 @@ export default function App() {
   // errors.
   return (
     <ErrorBoundary fallback={TopShellErrorFallback}>
-      <Editor />
+      <EditorColorVariablesProvider variables={DEMO_COLOR_VARIABLES}>
+        <Editor />
+      </EditorColorVariablesProvider>
     </ErrorBoundary>
   )
 }

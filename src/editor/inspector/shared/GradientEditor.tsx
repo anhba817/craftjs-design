@@ -358,6 +358,7 @@ function StopRow({
         <ColorPicker
           value={{ kind: 'hex', hex: color }}
           onChange={handleColorChange}
+          allowVariables={false}
         />
       </div>
       <input
