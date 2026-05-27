@@ -4,6 +4,12 @@ import { useActiveAdapter } from '../adapters/AdapterContext'
 import type { ClassMapResult } from '../adapters/types'
 import { getCanvasSlots, getComponent } from '../registry/registry'
 import type { NodeStyle } from '../registry/types'
+import { useEditorStore } from '../state/editorStore'
+import {
+  readBucketClasses,
+  readBucketInline,
+  type StyleState,
+} from '../style/dimensions'
 import { composeInlineStyle } from '../style/inline'
 import { composeResponsive } from '../style/responsive'
 import { composeResponsiveInline } from '../style/responsive-inline'
@@ -32,6 +38,24 @@ export function CanonicalNode({
     id: nodeId,
     connectors: { connect, drag },
   } = useNode()
+
+  // Phase 12 § 4.2 — state preview. One selector returning a STRING
+  // primitive (not an object) so non-selected nodes — which compute
+  // '' — never re-render when the active state/breakpoint changes;
+  // only the selected node, while a non-base state is active, gets a
+  // non-empty key and re-renders. (Returning an object would fail
+  // shallowEqual and storm re-renders — see feedback-zustand-selectors.)
+  const previewKey = useEditorStore((s) =>
+    s.selection[0] === nodeId && s.activeState !== 'base'
+      ? `${s.activeBreakpoint}|${s.activeState}`
+      : '',
+  )
+  const previewBucket = previewKey
+    ? (() => {
+        const [bp, state] = previewKey.split('|')
+        return { bp, state: state as StyleState }
+      })()
+    : null
 
   const attachRef = (el: HTMLElement | null) => {
     if (el) {
@@ -92,6 +116,33 @@ export function CanonicalNode({
     if (!ri.consumesBaseInline) {
       const inline = composeInlineStyle(style, slot)
       if (inline) composedInlineStyles[slot] = inline
+    }
+    // Phase 12 § 4.2 — preview the edited pseudo-class state on the
+    // selected node. The state's classes are stored prefixed
+    // (`hover:bg-primary`) so they only apply on real hover; here we
+    // also apply the edited bucket's classes + inline UNPREFIXED so
+    // the designer sees the hover/focus/active look while editing it
+    // (render-only — never written to the document).
+    if (previewBucket) {
+      const pc = readBucketClasses(
+        style,
+        slot,
+        previewBucket.bp,
+        previewBucket.state,
+      )
+      if (pc) composedClasses[slot] = `${composedClasses[slot]} ${pc}`.trim()
+      const pi = readBucketInline(
+        style,
+        slot,
+        previewBucket.bp,
+        previewBucket.state,
+      )
+      if (Object.keys(pi).length > 0) {
+        composedInlineStyles[slot] = {
+          ...composedInlineStyles[slot],
+          ...(pi as CSSProperties),
+        }
+      }
     }
   }
   const responsiveInlineCSS = responsiveInlineCSSParts.join('\n')

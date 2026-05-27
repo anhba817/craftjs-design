@@ -57,39 +57,91 @@ const EMPTY: ResponsiveInlineResult = {
 }
 
 // Computes the responsive-inline contribution for one slot of one node.
-// - If the slot has no responsive entries, returns EMPTY and the caller emits
-//   `style.inline[slot]` via the React style prop as before.
-// - If the slot has any responsive entries, promotes BOTH base and responsive
-//   into a single CSS class with @media rules. The caller drops the inline
-//   style prop for that slot (consumesBaseInline = true).
+// - If the slot has no non-base inline (no responsive, no state), returns EMPTY
+//   and the caller emits `style.inline[slot]` via the React style prop.
+// - Otherwise promotes EVERY inline quadrant — base, responsive (@media),
+//   state (`:hover`/`:focus`/`:active`), and bp×state (@media + pseudo) — into
+//   one generated class. Base is promoted too (consumesBaseInline = true): an
+//   inline-style attribute (specificity 1,0,0,0) would otherwise beat the
+//   `.cls:hover` rule even while hovering, so base must live in the class for
+//   the state rules to win.
+//
+// Phase 12 § 4.2 — extended from responsive-only to the full
+// breakpoint × state matrix.
+const STATE_ORDER = ['hover', 'focus', 'active'] as const
+
 export function composeResponsiveInline(
   style: NodeStyle,
   slot: string,
 ): ResponsiveInlineResult {
   const base = style.inline?.[slot]
+
+  // (bp, base state)
   const responsiveBySlot: Record<string, Record<string, string>> = {}
   for (const bp of BP_ORDER) {
     const entry = style.responsiveInline?.[bp]?.[slot]
-    if (entry && Object.keys(entry).length > 0) {
-      responsiveBySlot[bp] = entry
+    if (entry && Object.keys(entry).length > 0) responsiveBySlot[bp] = entry
+  }
+  // (base bp, state)
+  const stateBySlot: Record<string, Record<string, string>> = {}
+  for (const st of STATE_ORDER) {
+    const entry = style.stateInline?.[st]?.[slot]
+    if (entry && Object.keys(entry).length > 0) stateBySlot[st] = entry
+  }
+  // (bp, state)
+  const stateResponsiveBySlot: Record<string, Record<string, Record<string, string>>> = {}
+  for (const bp of BP_ORDER) {
+    for (const st of STATE_ORDER) {
+      const entry = style.stateResponsiveInline?.[bp]?.[st]?.[slot]
+      if (entry && Object.keys(entry).length > 0) {
+        ;(stateResponsiveBySlot[bp] ??= {})[st] = entry
+      }
     }
   }
 
-  const hasResponsive = Object.keys(responsiveBySlot).length > 0
-  if (!hasResponsive) return EMPTY
+  const hasNonBase =
+    Object.keys(responsiveBySlot).length > 0 ||
+    Object.keys(stateBySlot).length > 0 ||
+    Object.keys(stateResponsiveBySlot).length > 0
+  if (!hasNonBase) return EMPTY
 
-  const className = `ri-${hashContent({ base: base ?? {}, responsive: responsiveBySlot })}`
+  const className = `ri-${hashContent({
+    base: base ?? {},
+    responsive: responsiveBySlot,
+    states: stateBySlot,
+    stateResponsive: stateResponsiveBySlot,
+  })}`
 
   const rules: string[] = []
+  // base (always-applied)
   if (base && Object.keys(base).length > 0) {
     rules.push(`.${className} { ${declarations(base)} }`)
   }
+  // responsive @media
   for (const bp of BP_ORDER) {
     const r = responsiveBySlot[bp]
     if (!r) continue
     rules.push(
       `@media (min-width: ${BP_MIN_WIDTH[bp]}) { .${className} { ${declarations(r)} } }`,
     )
+  }
+  // pseudo-class state
+  for (const st of STATE_ORDER) {
+    const s = stateBySlot[st]
+    if (!s) continue
+    rules.push(`.${className}:${st} { ${declarations(s)} }`)
+  }
+  // bp × state (@media + pseudo)
+  for (const bp of BP_ORDER) {
+    const byState = stateResponsiveBySlot[bp]
+    if (!byState) continue
+    for (const st of STATE_ORDER) {
+      const s = byState[st]
+      if (!s) continue
+      rules.push(
+        `@media (min-width: ${BP_MIN_WIDTH[bp]}) { .${className}:${st} { ${declarations(s)} } }`,
+      )
+    }
   }
 
   return {

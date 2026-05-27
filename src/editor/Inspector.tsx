@@ -8,6 +8,7 @@ import { PanelErrorFallback } from './errors/fallbacks'
 import { InspectorBreadcrumbs } from './inspector/InspectorBreadcrumbs'
 import { getPanelsFor } from './inspector/panel-registry'
 import { ResponsiveBar } from './inspector/ResponsiveBar'
+import { StateBar } from './inspector/StateBar'
 import { SlotPicker } from './inspector/SlotPicker'
 import { CollapsibleSection } from './inspector/shared/CollapsibleSection'
 
@@ -107,6 +108,7 @@ export function Inspector() {
         <>
           <InspectorBreadcrumbs />
           <ResponsiveBar />
+          <StateBar />
           {showSlotPicker && (
             <SlotPicker slots={slots} active={slot} onChange={setActiveSlot} />
           )}

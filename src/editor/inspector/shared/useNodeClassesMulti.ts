@@ -2,6 +2,12 @@ import { useEditor } from '@craftjs/core'
 import { useMemo } from 'react'
 import { useEditorStore } from '@/state/editorStore'
 import type { NodeStyle } from '@/registry/types'
+import {
+  readBucketClasses,
+  readBucketInline,
+  writeBucketClasses,
+  writeBucketInline,
+} from '@/style/dimensions'
 
 type NodeProps = { style: NodeStyle }
 
@@ -33,6 +39,9 @@ export function useNodeClassesMulti(
   slot: string = 'root',
 ) {
   const activeBreakpoint = useEditorStore((s) => s.activeBreakpoint)
+  // Phase 12 § 4.2 — the active (bp × state) quadrant. All reads/writes
+  // below route to it via the dimensions dispatch helpers.
+  const activeState = useEditorStore((s) => s.activeState)
 
   // Subscribe by reference to Craft's nodes map. The ref is stable
   // across selectNode (which only mutates events.selected, not
@@ -54,19 +63,11 @@ export function useNodeClassesMulti(
     return items
   }, [nodes, nodeIds])
 
-  const readClass = (props: NodeProps): string => {
-    const style = props.style
-    return activeBreakpoint === 'base'
-      ? (style.classes?.[slot] ?? '')
-      : (style.responsive?.[activeBreakpoint]?.[slot] ?? '')
-  }
+  const readClass = (props: NodeProps): string =>
+    readBucketClasses(props.style, slot, activeBreakpoint, activeState)
 
-  const readInline = (props: NodeProps): Record<string, string> => {
-    const style = props.style
-    return activeBreakpoint === 'base'
-      ? (style.inline?.[slot] ?? {})
-      : (style.responsiveInline?.[activeBreakpoint]?.[slot] ?? {})
-  }
+  const readInline = (props: NodeProps): Record<string, string> =>
+    readBucketInline(props.style, slot, activeBreakpoint, activeState)
 
   const classStrings = perNode.map((n) => readClass(n.props))
   const inlineStyles = perNode.map((n) => readInline(n.props))
@@ -84,15 +85,7 @@ export function useNodeClassesMulti(
       const current = readClass(node.props)
       const next = transform(current)
       throttled.setProp(node.id, (props: NodeProps) => {
-        if (activeBreakpoint === 'base') {
-          props.style.classes[slot] = next
-        } else {
-          if (!props.style.responsive) props.style.responsive = {}
-          if (!props.style.responsive[activeBreakpoint]) {
-            props.style.responsive[activeBreakpoint] = {}
-          }
-          props.style.responsive[activeBreakpoint][slot] = next
-        }
+        writeBucketClasses(props.style, slot, activeBreakpoint, activeState, next)
       })
     }
   }
@@ -108,17 +101,14 @@ export function useNodeClassesMulti(
     const throttled = actions.history.throttle(500)
     for (const node of perNode) {
       throttled.setProp(node.id, (props: NodeProps) => {
-        if (activeBreakpoint === 'base') {
-          writeBaseInline(props, slot, cssProperty, value)
-        } else {
-          writeResponsiveInline(
-            props,
-            activeBreakpoint,
-            slot,
-            cssProperty,
-            value,
-          )
-        }
+        writeBucketInline(
+          props.style,
+          slot,
+          activeBreakpoint,
+          activeState,
+          cssProperty,
+          value,
+        )
       })
     }
   }
@@ -138,24 +128,19 @@ export function useNodeClassesMulti(
     const throttled = actions.history.throttle(500)
     for (const node of perNode) {
       const current =
-        (activeBreakpoint === 'base'
-          ? node.props.style.inline?.[slot]?.[cssProperty]
-          : node.props.style.responsiveInline?.[activeBreakpoint]?.[slot]?.[
-              cssProperty
-            ]) ?? ''
+        readBucketInline(node.props.style, slot, activeBreakpoint, activeState)[
+          cssProperty
+        ] ?? ''
       const next = computeNext(current)
       throttled.setProp(node.id, (props: NodeProps) => {
-        if (activeBreakpoint === 'base') {
-          writeBaseInline(props, slot, cssProperty, next || undefined)
-        } else {
-          writeResponsiveInline(
-            props,
-            activeBreakpoint,
-            slot,
-            cssProperty,
-            next || undefined,
-          )
-        }
+        writeBucketInline(
+          props.style,
+          slot,
+          activeBreakpoint,
+          activeState,
+          cssProperty,
+          next || undefined,
+        )
       })
     }
   }
@@ -168,57 +153,4 @@ export function useNodeClassesMulti(
     writeInlineFn,
     activeBreakpoint,
   }
-}
-
-function writeBaseInline(
-  props: NodeProps,
-  slot: string,
-  cssProperty: string,
-  value: string | undefined,
-): void {
-  if (value === undefined) {
-    const slotMap = props.style.inline?.[slot]
-    if (!slotMap) return
-    delete slotMap[cssProperty]
-    if (Object.keys(slotMap).length === 0) {
-      delete props.style.inline![slot]
-      if (Object.keys(props.style.inline!).length === 0) {
-        delete props.style.inline
-      }
-    }
-    return
-  }
-  if (!props.style.inline) props.style.inline = {}
-  if (!props.style.inline[slot]) props.style.inline[slot] = {}
-  props.style.inline[slot][cssProperty] = value
-}
-
-function writeResponsiveInline(
-  props: NodeProps,
-  bp: string,
-  slot: string,
-  cssProperty: string,
-  value: string | undefined,
-): void {
-  if (value === undefined) {
-    const slotMap = props.style.responsiveInline?.[bp]?.[slot]
-    if (!slotMap) return
-    delete slotMap[cssProperty]
-    if (Object.keys(slotMap).length === 0) {
-      delete props.style.responsiveInline![bp][slot]
-      if (Object.keys(props.style.responsiveInline![bp]).length === 0) {
-        delete props.style.responsiveInline![bp]
-        if (Object.keys(props.style.responsiveInline!).length === 0) {
-          delete props.style.responsiveInline
-        }
-      }
-    }
-    return
-  }
-  if (!props.style.responsiveInline) props.style.responsiveInline = {}
-  if (!props.style.responsiveInline[bp]) props.style.responsiveInline[bp] = {}
-  if (!props.style.responsiveInline[bp][slot]) {
-    props.style.responsiveInline[bp][slot] = {}
-  }
-  props.style.responsiveInline[bp][slot][cssProperty] = value
 }

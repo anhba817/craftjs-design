@@ -30,15 +30,45 @@ export function composeResponsive(style: NodeStyle, slot: string = 'root'): stri
   const base = style.classes?.[slot]
   if (base) parts.push(base)
 
+  // (bp, base state) → `<bp>:cls`
   if (style.responsive) {
     for (const bp of BREAKPOINT_ORDER) {
-      const sliced = style.responsive[bp]?.[slot]
-      if (!sliced) continue
-      for (const cls of sliced.split(/\s+/).filter(Boolean)) {
-        parts.push(`${bp}:${cls}`)
+      pushPrefixed(parts, style.responsive[bp]?.[slot], `${bp}:`)
+    }
+  }
+
+  // Phase 12 § 4.2 — pseudo-class state quadrants.
+  // (base bp, state) → `<state>:cls`
+  if (style.states) {
+    for (const st of STATE_ORDER) {
+      pushPrefixed(parts, style.states[st]?.[slot], `${st}:`)
+    }
+  }
+  // (bp, state) → `<bp>:<state>:cls` (breakpoint outermost).
+  if (style.stateResponsive) {
+    for (const bp of BREAKPOINT_ORDER) {
+      for (const st of STATE_ORDER) {
+        pushPrefixed(
+          parts,
+          style.stateResponsive[bp]?.[st]?.[slot],
+          `${bp}:${st}:`,
+        )
       }
     }
   }
 
   return parts.join(' ')
+}
+
+const STATE_ORDER = ['hover', 'focus', 'active'] as const
+
+function pushPrefixed(
+  parts: string[],
+  classString: string | undefined,
+  prefix: string,
+): void {
+  if (!classString) return
+  for (const cls of classString.split(/\s+/).filter(Boolean)) {
+    parts.push(`${prefix}${cls}`)
+  }
 }

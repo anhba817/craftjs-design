@@ -39,26 +39,43 @@ import {
 
 const OUTPUT_PATH = resolve(import.meta.dirname, '../src/style/safelist.generated.css')
 
-// 'base' has no prefix; the rest of Tailwind's defaults map to <bp>:
-const BREAKPOINTS = ['', 'sm:', 'md:', 'lg:', 'xl:', '2xl:'] as const
+// Variant prefixes we safelist every family under:
+//   - '' + the 5 Tailwind breakpoints  → responsive (base state)
+//   - Phase 12 § 4.2: hover/focus/active → pseudo-class states (base bp)
+// We deliberately do NOT emit the breakpoint × state cross-product
+// (`md:hover:…`) to bound CSS growth: that rarer combo is shown in the
+// editor via the canvas state-preview (unprefixed) and resolved in
+// production by the host's build-time safelist plugin (Phase 12 § 4.1).
+const VARIANTS = [
+  '',
+  'sm:',
+  'md:',
+  'lg:',
+  'xl:',
+  '2xl:',
+  'hover:',
+  'focus:',
+  'active:',
+] as const
 
-// Emits one `@source inline()` per breakpoint for a single utility family.
+// Emits one `@source inline()` per variant for a single utility family.
 //   emit('text-', FONT_SIZES) →
 //     @source inline("text-{xs,sm,…}");
 //     @source inline("sm:text-{xs,sm,…}");
-//     @source inline("md:text-{xs,sm,…}");
+//     …
+//     @source inline("hover:text-{xs,sm,…}");
 //     …
 function emit(prefix: string, values: readonly string[]): string[] {
   if (values.length === 0) return []
   const list = values.join(',')
-  return BREAKPOINTS.map((bp) => `@source inline("${bp}${prefix}{${list}}");`)
+  return VARIANTS.map((v) => `@source inline("${v}${prefix}{${list}}");`)
 }
 
 // For bare utilities (no value suffix) — `flex`, `block`, `border`, etc.
 function emitBare(...classes: string[]): string[] {
   if (classes.length === 0) return []
   const list = classes.join(',')
-  return BREAKPOINTS.map((bp) => `@source inline("${bp}{${list}}");`)
+  return VARIANTS.map((v) => `@source inline("${v}{${list}}");`)
 }
 
 const lines: string[] = [

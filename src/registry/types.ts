@@ -28,6 +28,29 @@ export interface NodeStyle {
   // and above the named breakpoint via @media (min-width: …) rules generated
   // at render time by composeResponsiveInline + CanonicalNode's <style> block.
   responsiveInline?: Record<string, Record<string, Record<string, string>>>;
+
+  // Phase 12 § 4.2 — pseudo-class states, fully composing with
+  // breakpoints (the breakpoint × state matrix). Four storage quadrants
+  // total for classes (and a mirror for inline):
+  //   classes                          → (base bp, base state)  [above]
+  //   responsive[bp][slot]             → (bp,      base state)  [above]
+  //   states[state][slot]              → (base bp, state)       [here]
+  //   stateResponsive[bp][state][slot] → (bp,      state)       [here]
+  // state ∈ 'hover' | 'focus' | 'active'. Emitted as Tailwind variant
+  // prefixes `<bp>:<state>:<util>` (breakpoint outermost). All optional;
+  // absent = pre-Phase-12 behavior, so no envelope migration needed.
+  states?: Record<string, Record<string, string>>;
+  stateResponsive?: Record<string, Record<string, Record<string, string>>>;
+  // Inline mirror of the two state quadrants. Promoted to generated
+  // `<style>` rules with `:hover` / `:focus` / `:active` selectors
+  // (and `@media` wrappers for the bp×state quadrant) by
+  // composeInlineCSS — the inline-style attribute can't express a
+  // pseudo-class.
+  stateInline?: Record<string, Record<string, Record<string, string>>>;
+  stateResponsiveInline?: Record<
+    string,
+    Record<string, Record<string, Record<string, string>>>
+  >;
 }
 
 // Inspector panel ids. Each canonical declares (or defaults) which panels apply.

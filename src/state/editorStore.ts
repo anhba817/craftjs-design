@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { EditorDocument } from '@/persistence/schema'
+import type { StyleState } from '@/style/dimensions'
 
 // Phase 9 § 1.8 — cross-tab edit conflict.
 //
@@ -46,6 +47,14 @@ interface EditorStore {
   // breakpoint's slice. NOT persisted; resets to 'base' on reload.
   activeBreakpoint: Breakpoint
   setActiveBreakpoint: (bp: Breakpoint) => void
+
+  // Phase 12 § 4.2 — active pseudo-class state. Combined with
+  // activeBreakpoint, picks which (bp × state) quadrant the inspector
+  // panels read/write. UI-only; resets to 'base'. When non-base, the
+  // selected node also previews the state on the canvas (see
+  // CanonicalNode).
+  activeState: StyleState
+  setActiveState: (s: StyleState) => void
 
   malformedDocument: MalformedDocumentInfo | null
   setMalformedDocument: (info: MalformedDocumentInfo | null) => void
@@ -146,6 +155,9 @@ export const useEditorStore = create<EditorStore>()((set) => ({
 
   activeBreakpoint: 'base',
   setActiveBreakpoint: (bp) => set({ activeBreakpoint: bp }),
+
+  activeState: 'base',
+  setActiveState: (s) => set({ activeState: s }),
 
   malformedDocument: null,
   setMalformedDocument: (info) => set({ malformedDocument: info }),
