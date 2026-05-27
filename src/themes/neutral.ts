@@ -11,4 +11,9 @@ registerTheme({
     mutedForeground: 'oklch(0.556 0 0)',
     ring: 'oklch(0.708 0 0)',
   },
+  darkTokens: {
+    primary: 'oklch(0.922 0 0)',
+    primaryForeground: 'oklch(0.205 0 0)',
+    ring: 'oklch(0.556 0 0)',
+  },
 })

@@ -13,4 +13,9 @@ registerTheme({
     border: 'oklch(0.92 0.004 286.32)',
     ring: 'oklch(0.705 0.015 286.067)',
   },
+  darkTokens: {
+    primary: 'oklch(0.92 0.004 286.32)',
+    primaryForeground: 'oklch(0.21 0.006 285.885)',
+    ring: 'oklch(0.552 0.016 285.938)',
+  },
 })

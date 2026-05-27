@@ -14,4 +14,11 @@ registerTheme({
     border: 'oklch(0.929 0.013 255.508)',
     ring: 'oklch(0.704 0.04 256.788)',
   },
+  // Dark variant — a light slate primary on the dark neutrals (mirrors the
+  // shadcn dark base color where primary inverts to near-white).
+  darkTokens: {
+    primary: 'oklch(0.929 0.013 255.508)',
+    primaryForeground: 'oklch(0.208 0.042 265.755)',
+    ring: 'oklch(0.551 0.027 264.364)',
+  },
 })

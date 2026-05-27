@@ -13,6 +13,10 @@ export interface Theme {
   // Themes defined purely via host CSS (e.g. the built-in 'rose') leave
   // this undefined.
   tokens?: ThemeTokens
+  // Phase 12 § 4.13 — optional dark variant. When present, a
+  // `.dark[data-theme="…"]` block is also injected, applied when the
+  // editor's color mode resolves to dark.
+  darkTokens?: ThemeTokens
 }
 
 // Input accepted by registerTheme. `dataThemeValue` defaults to the id
@@ -24,4 +28,5 @@ export interface ThemeInput {
   displayName: string
   dataThemeValue?: string
   tokens?: ThemeTokens
+  darkTokens?: ThemeTokens
 }

@@ -6,9 +6,11 @@ import { downloadDocument } from '@/persistence/exportDocument'
 import { ImportError, importDocumentFromFile } from '@/persistence/importDocument'
 import type { EditorDocument } from '@/persistence/schema'
 import { AdapterSwitcher } from './AdapterSwitcher'
+import { ColorModeToggle } from './ColorModeToggle'
 import { DocumentMenu } from './documents/DocumentMenu'
 import { ShareButton } from './ShareButton'
 import { ThemeSwitcher } from './ThemeSwitcher'
+import { ThemeEditorButton } from './theme/ThemeEditorButton'
 import { UndoRedo } from './UndoRedo'
 
 export function SaveLoadBar() {
@@ -16,11 +18,13 @@ export function SaveLoadBar() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const currentEnvelope = (): EditorDocument => {
-    const { activeThemeId, activeAdapterId } = useEditorStore.getState()
+    const { activeThemeId, activeAdapterId, colorMode } =
+      useEditorStore.getState()
     return {
       version: 1,
       adapterId: activeAdapterId,
       themeId: activeThemeId,
+      colorMode,
       craftJson: query.serialize(),
     }
   }
@@ -29,6 +33,7 @@ export function SaveLoadBar() {
     actions.deserialize(doc.craftJson)
     const store = useEditorStore.getState()
     if (doc.themeId) store.setActiveTheme(doc.themeId)
+    if (doc.colorMode) store.setColorMode(doc.colorMode)
     store.setActiveAdapter(doc.adapterId)
   }
 
@@ -100,6 +105,8 @@ export function SaveLoadBar() {
       <div className="flex-1" />
       <AdapterSwitcher />
       <ThemeSwitcher />
+      <ThemeEditorButton />
+      <ColorModeToggle />
       <input
         ref={fileInputRef}
         type="file"

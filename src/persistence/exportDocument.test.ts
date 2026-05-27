@@ -29,4 +29,15 @@ describe('exportDocument', () => {
     const bad = { version: 99 } as unknown as EditorDocument
     expect(() => exportDocument(bad)).toThrow()
   })
+
+  it('round-trips the Phase 12 colorMode field', async () => {
+    const withMode: EditorDocument = { ...SAMPLE, colorMode: 'dark' }
+    const parsed = JSON.parse(await exportDocument(withMode).text())
+    expect(parsed.colorMode).toBe('dark')
+  })
+
+  it('rejects an invalid colorMode value', () => {
+    const bad = { ...SAMPLE, colorMode: 'sepia' } as unknown as EditorDocument
+    expect(() => exportDocument(bad)).toThrow()
+  })
 })

@@ -11,4 +11,9 @@ registerTheme({
     primary: 'oklch(0.723 0.219 149.579)',
     primaryForeground: 'oklch(0.982 0.018 155.826)',
   },
+  // Dark variant — brighter primary on the dark neutral defaults.
+  darkTokens: {
+    primary: 'oklch(0.696 0.17 162.48)',
+    primaryForeground: 'oklch(0.393 0.095 152.535)',
+  },
 })

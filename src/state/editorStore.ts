@@ -2,6 +2,10 @@ import { create } from 'zustand'
 import type { EditorDocument } from '@/persistence/schema'
 import type { StyleState } from '@/style/dimensions'
 
+// Phase 12 § 4.13 — editor color mode. 'system' resolves to light/dark via
+// the OS preference at render time.
+export type ColorMode = 'light' | 'dark' | 'system'
+
 // Phase 9 § 1.8 — cross-tab edit conflict.
 //
 // When another tab writes the active document's localStorage blob (or its
@@ -39,6 +43,12 @@ export interface MalformedDocumentInfo {
 interface EditorStore {
   activeThemeId: string
   setActiveTheme: (id: string) => void
+
+  // Phase 12 § 4.13 — light/dark/system color mode. 'system' follows the
+  // OS via prefers-color-scheme (resolved by useEffectiveColorScheme).
+  // Persisted in the saved document.
+  colorMode: ColorMode
+  setColorMode: (mode: ColorMode) => void
 
   activeAdapterId: string
   setActiveAdapter: (id: string) => void
@@ -149,6 +159,9 @@ function writeDismissedToSession(value: boolean): void {
 export const useEditorStore = create<EditorStore>()((set) => ({
   activeThemeId: 'default',
   setActiveTheme: (id) => set({ activeThemeId: id }),
+
+  colorMode: 'system',
+  setColorMode: (mode) => set({ colorMode: mode }),
 
   activeAdapterId: 'shadcn',
   setActiveAdapter: (id) => set({ activeAdapterId: id }),

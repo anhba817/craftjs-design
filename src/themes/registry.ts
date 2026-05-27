@@ -26,7 +26,9 @@ function rebuildTokenStyleSheet(): void {
   const blocks: string[] = []
   for (const theme of themes.values()) {
     if (theme.tokens && theme.dataThemeValue) {
-      blocks.push(themeTokensToCss(theme.dataThemeValue, theme.tokens))
+      blocks.push(
+        themeTokensToCss(theme.dataThemeValue, theme.tokens, theme.darkTokens),
+      )
     }
   }
   el.textContent = blocks.join('\n\n')
@@ -85,10 +87,22 @@ export function registerTheme(input: ThemeInput): void {
     displayName: input.displayName,
     dataThemeValue,
     tokens: input.tokens,
+    darkTokens: input.darkTokens,
   }
   themes.set(theme.id, theme)
   if (theme.tokens) rebuildTokenStyleSheet()
   bumpThemeRegistry()
+}
+
+/**
+ * Register a theme, replacing any existing one with the same id. Used by
+ * the visual theme editor for its live preview (re-upserted on every edit)
+ * and for saving over an existing theme. Unlike registerTheme it never
+ * throws on a duplicate id.
+ */
+export function upsertTheme(input: ThemeInput): void {
+  if (themes.has(input.id)) unregisterTheme(input.id)
+  registerTheme(input)
 }
 
 /**

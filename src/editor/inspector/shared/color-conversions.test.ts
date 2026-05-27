@@ -1,13 +1,40 @@
 import { describe, expect, it } from 'vitest'
 import {
+  formatOklch,
   hexToHsl,
   hexToRgb,
   hslToHex,
   hslToRgb,
   normalizeHex,
+  parseOklch,
   rgbToHex,
   rgbToHsl,
 } from './color-conversions'
+
+describe('parseOklch / formatOklch', () => {
+  it('parses oklch(L C H)', () => {
+    expect(parseOklch('oklch(0.55 0.2 255)')).toEqual({
+      l: 0.55,
+      c: 0.2,
+      h: 255,
+    })
+  })
+  it('parses percentage lightness', () => {
+    expect(parseOklch('oklch(70% 0.1 200)')?.l).toBeCloseTo(0.7)
+  })
+  it('returns null for non-oklch / empty', () => {
+    expect(parseOklch('#abcdef')).toBeNull()
+    expect(parseOklch('')).toBeNull()
+    expect(parseOklch('var(--primary)')).toBeNull()
+  })
+  it('formats with bounded precision', () => {
+    expect(formatOklch({ l: 0.5, c: 0.1, h: 250 })).toBe('oklch(0.5 0.1 250)')
+  })
+  it('round-trips through format → parse', () => {
+    const o = { l: 0.612, c: 0.214, h: 29.23 }
+    expect(parseOklch(formatOklch(o))).toEqual(o)
+  })
+})
 
 describe('normalizeHex', () => {
   it('accepts 6-char hex with leading #', () => {

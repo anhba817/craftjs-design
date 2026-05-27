@@ -58,6 +58,34 @@ export function rgbToHex(rgb: Rgb): string {
   return `#${pad2(r.toString(16))}${pad2(g.toString(16))}${pad2(b.toString(16))}`
 }
 
+// Phase 12 § 4.10 — OKLCH support for the theme editor's color picker.
+// Theme tokens are authored as `oklch(L C H)`; the picker edits L/C/H
+// directly (the browser renders oklch, so no manual oklch→sRGB needed for
+// display — see ContrastBadge for the math when sRGB is required).
+export interface Oklch {
+  l: number // lightness 0..1
+  c: number // chroma 0..~0.4
+  h: number // hue 0..360
+}
+
+export function parseOklch(input: string): Oklch | null {
+  const m = /^oklch\(\s*([\d.]+%?)\s+([\d.]+)\s+([\d.]+)/i.exec(input.trim())
+  if (!m) return null
+  const l = m[1].endsWith('%') ? parseFloat(m[1]) / 100 : parseFloat(m[1])
+  const c = parseFloat(m[2])
+  const h = parseFloat(m[3])
+  if (![l, c, h].every(Number.isFinite)) return null
+  return { l, c, h }
+}
+
+export function formatOklch({ l, c, h }: Oklch): string {
+  const round = (n: number, places: number) => {
+    const f = 10 ** places
+    return Math.round(n * f) / f
+  }
+  return `oklch(${round(l, 4)} ${round(c, 4)} ${round(h, 2)})`
+}
+
 // RGB → HSL via the standard min/max formula. Hue is undefined for grayscale
 // (delta = 0); we return 0 in that case, which keeps the hue slider stable.
 export function rgbToHsl(rgb: Rgb): Hsl {

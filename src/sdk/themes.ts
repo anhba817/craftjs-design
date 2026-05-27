@@ -36,8 +36,8 @@
 // cascading custom properties inherit through descendants.
 
 export type { Theme, ThemeInput } from '../themes/types'
-export type { ThemeTokens } from '../themes/tokens'
-export { deriveTokens } from '../themes/tokens'
+export type { ThemeTokens, ColorScheme } from '../themes/tokens'
+export { deriveTokens, themeTokensToCss } from '../themes/tokens'
 
 export {
   registerTheme,

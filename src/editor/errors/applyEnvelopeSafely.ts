@@ -110,6 +110,8 @@ function runApply(
   }
   if (envelope.themeId)
     useEditorStore.getState().setActiveTheme(envelope.themeId)
+  if (envelope.colorMode)
+    useEditorStore.getState().setColorMode(envelope.colorMode)
   useEditorStore.getState().setActiveAdapter(envelope.adapterId)
   // Phase 11 § 3.3 — selection ids reference nodes in the OLD craftJson
   // tree. After deserialize swaps the tree they're invalid; clear so

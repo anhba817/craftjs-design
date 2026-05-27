@@ -16,7 +16,11 @@ export function ThemeSwitcher() {
     getThemeRegistryVersion,
     getThemeRegistryVersion,
   )
-  const themes = useMemo(() => listThemes(), [version])
+  // Hide transient `__`-prefixed themes (the theme editor's live preview).
+  const themes = useMemo(
+    () => listThemes().filter((t) => !t.id.startsWith('__')),
+    [version],
+  )
 
   return (
     <label className="flex items-center gap-1.5 text-xs text-gray-600">

@@ -49,8 +49,12 @@ export function contrastForeground(bg: string): string {
   return l > 0.6 ? 'oklch(0.145 0 0)' : 'oklch(0.985 0 0)'
 }
 
-// Light-mode neutral defaults — match the project's :root in index.css.
-const DEFAULTS = {
+export type ColorScheme = 'light' | 'dark'
+
+// Neutral defaults per scheme — match the project's :root / .dark blocks in
+// index.css. Themes pass a brand color (+ a few tints); the rest fills from
+// the scheme's neutrals so light and dark variants stay coherent.
+const LIGHT_DEFAULTS = {
   background: 'oklch(1 0 0)',
   foreground: 'oklch(0.145 0 0)',
   secondary: 'oklch(0.97 0 0)',
@@ -60,22 +64,39 @@ const DEFAULTS = {
   destructive: 'oklch(0.577 0.245 27.325)',
 } as const
 
+const DARK_DEFAULTS = {
+  background: 'oklch(0.145 0 0)',
+  foreground: 'oklch(0.985 0 0)',
+  secondary: 'oklch(0.269 0 0)',
+  muted: 'oklch(0.269 0 0)',
+  mutedForeground: 'oklch(0.708 0 0)',
+  border: 'oklch(1 0 0 / 10%)',
+  destructive: 'oklch(0.704 0.191 22.216)',
+} as const
+
 /**
  * Derive the full core token set from a small base set. Pure: same input
  * → same output, no globals. Returns an ordered map keyed by CSS var name
- * (no leading `--`). Tokens the host didn't pass are filled from neutral
- * defaults or derived from related tokens (card = background, ring =
- * primary, `*-foreground` via the contrast heuristic). The sidebar brand
- * accents are kept in step with the theme — mirrors the built-in rose
- * block's convention.
+ * (no leading `--`). Tokens the host didn't pass are filled from the
+ * scheme's neutral defaults or derived from related tokens (card =
+ * background, ring = primary, `*-foreground` via the contrast heuristic).
+ * The sidebar brand accents are kept in step with the theme — mirrors the
+ * built-in rose block's convention.
+ *
+ * Phase 12 § 4.13 — `scheme` selects the light/dark neutral defaults so a
+ * theme's dark variant only needs to restate the colors that differ.
  */
-export function deriveTokens(t: ThemeTokens): Record<string, string> {
-  const background = t.background ?? DEFAULTS.background
-  const foreground = t.foreground ?? DEFAULTS.foreground
-  const secondary = t.secondary ?? DEFAULTS.secondary
-  const muted = t.muted ?? DEFAULTS.muted
+export function deriveTokens(
+  t: ThemeTokens,
+  scheme: ColorScheme = 'light',
+): Record<string, string> {
+  const D = scheme === 'dark' ? DARK_DEFAULTS : LIGHT_DEFAULTS
+  const background = t.background ?? D.background
+  const foreground = t.foreground ?? D.foreground
+  const secondary = t.secondary ?? D.secondary
+  const muted = t.muted ?? D.muted
   const accent = t.accent ?? secondary
-  const border = t.border ?? DEFAULTS.border
+  const border = t.border ?? D.border
   const ring = t.ring ?? t.primary
   const primaryForeground = t.primaryForeground ?? contrastForeground(t.primary)
 
@@ -91,10 +112,10 @@ export function deriveTokens(t: ThemeTokens): Record<string, string> {
     secondary,
     'secondary-foreground': t.secondaryForeground ?? contrastForeground(secondary),
     muted,
-    'muted-foreground': t.mutedForeground ?? DEFAULTS.mutedForeground,
+    'muted-foreground': t.mutedForeground ?? D.mutedForeground,
     accent,
     'accent-foreground': t.accentForeground ?? contrastForeground(accent),
-    destructive: t.destructive ?? DEFAULTS.destructive,
+    destructive: t.destructive ?? D.destructive,
     border,
     input: t.input ?? border,
     ring,
@@ -106,18 +127,35 @@ export function deriveTokens(t: ThemeTokens): Record<string, string> {
   return out
 }
 
+function declBlock(selector: string, derived: Record<string, string>): string {
+  const decls = Object.entries(derived)
+    .map(([name, value]) => `  --${name}: ${value};`)
+    .join('\n')
+  return `${selector} {\n${decls}\n}`
+}
+
 /**
- * Render a derived token map as a `[data-theme="…"]` CSS block. The
- * selector must be a non-empty data-theme value — what the ThemeProvider
- * sets on the canvas wrapper.
+ * Render a theme's token set(s) as CSS. The light variant is scoped to
+ * `[data-theme="…"]`; the optional dark variant to `.dark[data-theme="…"]`
+ * (the ThemeProvider sets `.dark` alongside `data-theme` on the canvas
+ * wrapper, so the compound selector wins by specificity when dark is on).
+ * `dataThemeValue` must be a non-empty data-theme value.
  */
 export function themeTokensToCss(
   dataThemeValue: string,
   tokens: ThemeTokens,
+  darkTokens?: ThemeTokens,
 ): string {
-  const derived = deriveTokens(tokens)
-  const decls = Object.entries(derived)
-    .map(([name, value]) => `  --${name}: ${value};`)
-    .join('\n')
-  return `[data-theme="${dataThemeValue}"] {\n${decls}\n}`
+  const blocks = [
+    declBlock(`[data-theme="${dataThemeValue}"]`, deriveTokens(tokens, 'light')),
+  ]
+  if (darkTokens) {
+    blocks.push(
+      declBlock(
+        `.dark[data-theme="${dataThemeValue}"]`,
+        deriveTokens(darkTokens, 'dark'),
+      ),
+    )
+  }
+  return blocks.join('\n\n')
 }
