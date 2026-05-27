@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  getTheme,
   getThemeRegistryVersion,
   listThemes,
   registerTheme,
@@ -70,5 +71,69 @@ describe('themes registry — subscription (Phase 10 § 2.9)', () => {
 
   it('version is monotonic across the suite', () => {
     expect(getThemeRegistryVersion()).toBeGreaterThanOrEqual(baselineVersion)
+  })
+})
+
+// Phase 12 § 4.11 — token-driven theme CSS injection. Stub `document` so
+// the registry's <style> writer captures CSS without a real DOM (vitest
+// runs in node, same approach as fonts.test.ts).
+describe('themes registry — token CSS injection (Phase 12 § 4.11)', () => {
+  const styleEl = { textContent: '', setAttribute: vi.fn() } as unknown as {
+    textContent: string
+    setAttribute: () => void
+  }
+
+  beforeEach(() => {
+    styleEl.textContent = ''
+    vi.stubGlobal('document', {
+      createElement: vi.fn(() => styleEl),
+      head: { appendChild: vi.fn() },
+    })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('injects a [data-theme] block for a token theme', () => {
+    registerTheme({
+      id: 'test-tok',
+      displayName: 'Tok',
+      tokens: { primary: 'oklch(0.6 0.2 250)' },
+    })
+    expect(styleEl.textContent).toContain('[data-theme="test-tok"]')
+    expect(styleEl.textContent).toContain('--primary: oklch(0.6 0.2 250);')
+    unregisterTheme('test-tok')
+  })
+
+  it('defaults dataThemeValue to the id for token themes', () => {
+    registerTheme({
+      id: 'test-tok-id',
+      displayName: 'TokId',
+      tokens: { primary: 'oklch(0.6 0.2 250)' },
+    })
+    expect(getTheme('test-tok-id')?.dataThemeValue).toBe('test-tok-id')
+    unregisterTheme('test-tok-id')
+  })
+
+  it('rebuilds the sheet on unregister (block removed)', () => {
+    registerTheme({
+      id: 'test-tok-rm',
+      displayName: 'Rm',
+      tokens: { primary: 'oklch(0.6 0.2 250)' },
+    })
+    expect(styleEl.textContent).toContain('[data-theme="test-tok-rm"]')
+    unregisterTheme('test-tok-rm')
+    expect(styleEl.textContent).not.toContain('[data-theme="test-tok-rm"]')
+  })
+
+  it('CSS-only themes (no tokens) contribute nothing', () => {
+    registerTheme({
+      id: 'test-css-only',
+      displayName: 'CSSOnly',
+      dataThemeValue: 'css-only',
+    })
+    expect(styleEl.textContent).not.toContain('[data-theme="css-only"]')
+    unregisterTheme('test-css-only')
   })
 })
