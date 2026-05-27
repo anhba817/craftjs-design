@@ -214,3 +214,26 @@ body {
 [data-craft-node-id]:focus-visible {
   outline: none;
 }
+
+/* Phase 11 § 3.14 — reduced-motion. A single global rule beats
+   sprinkling `motion-safe:` across every transition-/animate- class in
+   the chrome: it covers all current AND future motion (including the
+   Radix data-state animations in shadcn primitives and the editor's
+   own transitions), can't be forgotten when a new component lands, and
+   is the industry-standard implementation (cf. Andy Bell's reset).
+   The 0.01ms (rather than 0) keeps transitionend / animationend events
+   firing so Radix's animation-driven unmounts still complete. The
+   editor's drag overlays, alignment guides, and ResizeOverlay use
+   direct DOM positioning (no CSS transitions), so they're unaffected
+   and stay responsive. scroll-behavior is forced auto so
+   scrollIntoView never smooth-scrolls under reduced motion either. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

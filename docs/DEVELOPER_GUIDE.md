@@ -382,6 +382,94 @@ This writes to `src/components/ui/<component-name>.tsx`. The adapter impl wraps 
 
 ---
 
+### Authoring a canonical that supports inline text editing
+
+Any canonical whose adapter impl renders user-editable text can opt into
+double-click-to-edit (Phase 11 § 3.11) with two SDK exports —
+`EditableText` and `useStartTextEdit`. No canonical-schema change is
+needed; it's purely an adapter-impl concern.
+
+```tsx
+import {
+  EditableText,
+  useStartTextEdit,
+  type AdapterRenderProps,
+} from '@design/sdk'   // '@crafted-design/editor/sdk' for published consumers
+
+export function MyText({ props, rootRef, className }: AdapterRenderProps) {
+  const { content } = props as { content: string }
+  const startEdit = useStartTextEdit()
+  return (
+    <p
+      ref={rootRef}
+      className={className}
+      onDoubleClick={(e) => {
+        e.stopPropagation()       // don't let the canvas handle the dblclick
+        startEdit()               // sets editorStore.editingTextNode = this id
+      }}
+    >
+      {/* propPath is the key under data.props.nodeProps to write on commit.
+          multiline → Enter inserts a newline; otherwise Enter commits. */}
+      <EditableText text={content} propPath="content" multiline />
+    </p>
+  )
+}
+```
+
+Notes:
+
+- `EditableText` renders a Fragment in display mode (no DOM wrapper —
+  the parent's typography applies directly) and a
+  `contenteditable="plaintext-only"` span in edit mode. It writes to
+  `data.props.nodeProps[propPath]` — **not** `data.props[propPath]`
+  (the canonical props live one level down, under `nodeProps`).
+- Commit fires on Enter (single-line), blur, or click-outside; Escape
+  reverts. The whole edit is one undo step.
+- `useStartTextEdit()` must be called from inside the adapter impl (it
+  uses `useNode()` to resolve the node id). It's the only supported way
+  to enter edit mode — adapter authors never touch `editorStore`
+  directly.
+
+### Writing an `EditorImageProvider`
+
+To route image uploads to your own backend instead of the default
+base64-inline provider (Phase 11 § 3.10), wrap the editor:
+
+```tsx
+import { EditorImageProvider } from '@crafted-design/editor/sdk'
+import { Editor } from '@crafted-design/editor'
+
+const backend = {
+  async upload(file: File) {
+    const { url } = await myApi.upload(file)
+    return { url }                 // optionally { url, thumbnail }
+  },
+  async list() {
+    return (await myApi.listImages()).map((url) => ({ url }))
+  },
+  async delete(url: string) {      // optional — enables a delete button
+    await myApi.deleteImage(url)
+  },
+  // canList defaults to true when you pass a provider; set false to
+  // hide the Library grid + Assets inspector panel.
+}
+
+function App() {
+  return (
+    <EditorImageProvider value={backend}>
+      <Editor />
+    </EditorImageProvider>
+  )
+}
+```
+
+The `src` field of the Image canonical automatically uses the active
+provider for its Upload button + Library modal. Read the provider from
+a custom panel/component with `useEditorImageProvider()`. Full contract
+table in `docs/INTEGRATION_GUIDE.md` § Asset backends.
+
+---
+
 ## Conventions
 
 ### Class-string editing

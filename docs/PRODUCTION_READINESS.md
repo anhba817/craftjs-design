@@ -317,14 +317,23 @@ Phase 11+ candidate to extract this folder into a standalone
 
 ## 3. Designer UX — making daily editing smooth
 
-### 3.1 Undo/redo grouping *(High / UX)*
+> **Status — shipped in `0.2.0` (Phase 11):** every non-Stretch item in
+> this section is done: 3.1 undo/redo grouping, 3.2 clipboard, 3.3
+> multi-select, 3.4 layer tree, 3.5 breadcrumbs, 3.6 alignment guides
+> (visual-only v1 — coordinate snap deferred), 3.7 empty state, 3.8
+> onboarding tour, 3.9 canvas search, 3.10 asset library, 3.11 inline
+> text editing, 3.12 context menu, 3.14 reduced motion. Still open
+> (Stretch, deferred to Phase 12+): 3.13 comments, 3.15 RTL, 3.16 i18n.
+> See `docs/plans/PHASE11_PLAN.md` for the per-item path-taken table.
+
+### 3.1 Undo/redo grouping *(High / UX)* — ✅ shipped 0.2.0
 
 Today every `setProp` is one undo step. Designer drags the HSL hue
 slider → 30 undo steps for one color change. Craft has `history.throttle`;
 needs to be wired into the inspector's panel writes (e.g., throttle by
 500ms after the last edit in a popover session).
 
-### 3.2 Copy / paste / duplicate node *(High / UX)*
+### 3.2 Copy / paste / duplicate node *(High / UX)* — ✅ shipped 0.2.0
 
 No node-level clipboard. Designers must rebuild manually. Add:
 
@@ -332,53 +341,53 @@ No node-level clipboard. Designers must rebuild manually. Add:
 - `Ctrl+V` to paste (as a sibling of the current selection).
 - `Ctrl+D` to duplicate (inserts a clone next to the original).
 
-### 3.3 Multi-select *(High / UX)*
+### 3.3 Multi-select *(High / UX)* — ✅ shipped 0.2.0
 
 Selection is single-node today. Designers reasonably expect Cmd-click
 to add nodes to selection, then style/delete the group at once. Touches
 Inspector (multi-selection state model), Craft selection events, and
 the resize overlay (would need to scope to a single node).
 
-### 3.4 Layer tree / outline view *(High / UX)*
+### 3.4 Layer tree / outline view *(High / UX)* — ✅ shipped 0.2.0
 
 The canvas shows nodes spatially; designers also want a list view of
 the document structure. Click a layer to select. Drag layers to reorder
 in the tree. Indents show parent/child relationships. Standard design
 tool surface.
 
-### 3.5 Inspector breadcrumbs *(UX)*
+### 3.5 Inspector breadcrumbs *(UX)* — ✅ shipped 0.2.0
 
 The selected node's parents aren't reachable from the inspector — only
 the click-target is selected. A breadcrumb (Box > Stack > Heading)
 lets designers navigate up.
 
-### 3.6 Alignment guides / smart guides on drag *(UX)*
+### 3.6 Alignment guides / smart guides on drag *(UX)* — ✅ shipped 0.2.0 (visual-only)
 
 Dragging a node into a Stack today is free positioning — no visual
 alignment with siblings. Smart guides (red lines that snap to sibling
 edges, centers, etc.) are standard. Big engineering item; depends on
 Craft's drop coordinate model.
 
-### 3.7 Empty-state guidance *(UX)*
+### 3.7 Empty-state guidance *(UX)* — ✅ shipped 0.2.0
 
 The fresh editor shows a blank Box. Add:
 
 - "Drag a component from the toolbox to start" hint.
 - "Start from a template" CTA linking to the template picker.
 
-### 3.8 Onboarding tour *(UX)*
+### 3.8 Onboarding tour *(UX)* — ✅ shipped 0.2.0
 
 First-time users get no guidance. A 3–5 step tour (toolbox → canvas →
 inspector → save) on first load would help. localStorage flag to skip
 on subsequent visits.
 
-### 3.9 Search inside the canvas *(UX)*
+### 3.9 Search inside the canvas *(UX)* — ✅ shipped 0.2.0
 
 In a large document, finding "the third Card from the top" requires
 clicking through. A "Cmd+F" canvas search (by displayName / props) +
 keyboard navigation between results.
 
-### 3.10 Asset library / image upload *(High / UX)*
+### 3.10 Asset library / image upload *(High / UX)* — ✅ shipped 0.2.0
 
 The Image canonical takes a URL. Designers can't upload from their
 machine. Add:
@@ -388,13 +397,13 @@ machine. Add:
 - Host integration: an `<EditorImageProvider>` for the host to plug their
   own asset backend.
 
-### 3.11 Inline text editing *(High / UX)*
+### 3.11 Inline text editing *(High / UX)* — ✅ shipped 0.2.0
 
 Designers double-click a Text canonical and edit inline today? No —
 they use the PropsPanel. Double-click-to-edit on Text / Heading /
 Button labels would be standard.
 
-### 3.12 Right-click context menu *(UX)*
+### 3.12 Right-click context menu *(UX)* — ✅ shipped 0.2.0
 
 Standard design tool gesture. Per-node menu with Cut / Copy / Paste /
 Duplicate / Delete / Wrap in Stack / etc.
@@ -404,7 +413,7 @@ Duplicate / Delete / Wrap in Stack / etc.
 Designer leaves "Make this red for Friday" on a node. Stretch — real
 collaboration tools have this.
 
-### 3.14 Reduced-motion preference *(UX / Accessibility)*
+### 3.14 Reduced-motion preference *(UX / Accessibility)* — ✅ shipped 0.2.0
 
 `prefers-reduced-motion` is ignored. Transitions on hover, color
 animations, panel opens — could honor user setting.

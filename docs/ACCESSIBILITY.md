@@ -120,7 +120,36 @@ Implementation notes:
   `CanonicalNode.attachRef` so click-focus works for all browsers
   (Safari requires explicit tabindex to focus a `<div>` on click).
 - After delete or arrow navigation, the new selection auto-scrolls
-  into view via `scrollIntoView({ block: 'nearest' })`.
+  into view via `scrollIntoView({ block: 'nearest', behavior: 'instant' })`
+  (`instant` so reduced-motion / smooth-scroll settings don't fire a
+  flood of scroll events on each keypress).
+- Arrow-nav selection writes go through `editorStore.setSelection`
+  wrapped in `flushSync`, in lock-step with `actions.selectNode`, so
+  the Inspector / Layer tree / breadcrumbs (which subscribe to
+  `editorStore`) update on the same frame as the canvas outline
+  rather than a frame behind.
+
+### Shipped — Multi-select + breadcrumbs (Phase 11 § 3.3, 3.5)
+
+Multi-selection is mouse-driven (Cmd/Ctrl-click toggles, Shift-click
+range-extends within a parent); the keyboard arrow-nav remains
+single-selection by design — arrows always move to exactly one node so
+the "where am I" model stays unambiguous. `Delete` / `Backspace`
+operates on the whole multi-selection (every selected node, one undo
+step) regardless of how the selection was built.
+
+Inspector **breadcrumbs** (`<InspectorBreadcrumbs>`) give a
+non-canvas path to ancestor nodes: each chip is a real `<button>` with
+an accessible name (the node's displayName), so the ancestor chain is
+reachable by `Tab` + `Enter` for keyboard and screen-reader users —
+the click-target node is no longer the only reachable one. Overflowed
+middle segments collapse into a `…` button that opens a Radix
+dropdown (arrow-key navigable, roving focus from the primitive).
+
+The Layer tree (`Layers` tab) is an additional keyboard/AT-friendly
+surface for the document structure: rows carry `role="tree"` /
+selection state, and selecting a row drives the same
+`editorStore.setSelection` path as the canvas.
 
 ### Future — color contrast of token swatches
 

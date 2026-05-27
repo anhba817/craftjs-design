@@ -877,6 +877,30 @@ Mousedown on a handle stops propagation (defense against any document-level Craf
 
 Craft drag-connector conflict: the handles aren't inside any Craft node's DOM (the overlay is its own subtree, rendered as a sibling of `<Frame>`), so Craft's per-node mousedown listeners never see the handle's pointer events. `e.stopPropagation()` is belt-and-suspenders for future Craft versions.
 
+### <a id="selection-model"></a>Selection model — editorStore is the UI source of truth (Phase 11)
+
+Multi-select (Phase 11 § 3.3) split selection into two stores with a one-way bridge:
+
+- **`editorStore.selection: string[]`** is the source of truth for the UI — Inspector, Layer tree, breadcrumbs, secondary-selection outlines all subscribe here.
+- **Craft's `events.selected`** stays the source of truth for the document/connector layer (resize overlay, default left-click connector, drag).
+- **`useSelectionSync`** mirrors Craft → editorStore one-way: when Craft's single-node selection changes (left-click connector, etc.), it resets `editorStore.selection = [id]`.
+
+Every user-initiated selection entry point (layer-tree click, keyboard arrow-nav, canvas search jump, modifier-click) writes `editorStore.setSelection(...)` **synchronously via `flushSync`** and *then* calls `actions.selectNode`. This is load-bearing: `useSelectionSync`'s mirror runs in a passive `useEffect` (after paint), so relying on it alone left the editorStore-backed surfaces one frame behind the canvas — visible as off-by-one layer-tree clicks and laggy arrow-nav. `flushSync` commits the editorStore subscribers in the same frame as the Craft-backed canvas outline. Modifier-click semantics (toggle / range) are pure functions in `editor/selection/modifierSelection.ts`.
+
+### <a id="layer-tree"></a>Layer tree placement — tab-toggle, not a third sidebar (Phase 11 § 3.4)
+
+The layout had two `<aside>` + one `<main>`. A third always-on sidebar for the layer tree would have eaten canvas width. **Decision: toggle-replace** — a tab strip at the top of the existing left aside switches between `Components` (Toolbox) and `Layers` (`<LayerTree>`); the choice persists in localStorage (`craftjs-design.left-aside-tab:v1`). Designers rarely need component-search and the layer tree open simultaneously, so toggling preserves real estate. `buildTreeShape` flattens the Craft tree into a DFS pre-order list (pure, testable) consumed by both plain rendering and `@tanstack/react-virtual` (engaged past 50 visible rows). Drag-reorder uses HTML5 DnD with a `wouldCreateCycle` guard.
+
+### <a id="alignment-guides"></a>Alignment guides — visual-only over Craft's drag (Phase 11 § 3.6)
+
+Smart guides depend on a drag *coordinate* model, but Craft uses native HTML5 drag-and-drop: the source element doesn't move during a drag (the browser renders a "drag image" ghost), and there's no `pointermove` stream — only `dragover` on drop targets, committed via insertion-index `actions.move`. The two escalation paths to true coordinate-snap — (1) a custom pointermove drag layer that bypasses Craft for in-document moves, or (2) forking `@craftjs/core` for a `beforeMove` hook — are each a weeks-scale rewrite and would force absolute positioning onto canvas nodes that currently live in flex flow.
+
+**Decision: visual-only for v1.** `useDragGuides` listens to `dragover`, builds a "dragged rect" centered on the pointer, and runs the pure `alignmentMatches` math against same-parent sibling rects. Matching edges draw red guide lines (`<GuideOverlay>`, ≤2 lines, 4px threshold); Alt bypasses; guides are suppressed inside Pattern B multi-canvas slots. The drop still commits through Craft's normal insertion-index move — no coordinate snap. Designers get the alignment *hint* (the high-value half of the Figma behavior) without the drag-layer rewrite. Coordinate snap is a documented Phase 12+ stretch.
+
+### <a id="image-provider"></a>Asset backend — host-pluggable image provider (Phase 11 § 3.10)
+
+`<EditorImageProvider>` is a React context with `{ upload, list, delete?, canList }`. Hosts wrap the editor to route uploads to their backend; absent a wrapper, a default provider inlines base64 data URLs and remembers session uploads in module scope (so the library lists all uploads, not just whatever `src` currently sits on a node). `canList` gates the host-only `AssetLibraryPanel` (the Inspector calls `useEditorImageProvider()` unconditionally and filters the panel out when false — `applicableTo` can't read context). The `ImagePicker` (Image `src` field) shows the union of provider `list()` + a document scan of existing Image `src` values.
+
 ### <a id="hot-canonical-reload"></a>Hot canonical reload — version counter + setOptions
 
 `registry.ts` exposes a monotonic `registryVersion` counter that increments on every `registerCanonical` / `unregisterCanonical` *after the Editor has mounted* (`editorMounted` flag flipped by `Editor.tsx`'s `useEffect`). Pre-mount registrations don't bump — they're part of the initial resolver build and there are no subscribers yet.

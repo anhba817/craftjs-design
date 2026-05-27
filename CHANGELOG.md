@@ -122,7 +122,78 @@ App build (`npm run build`):
 
 ## [Unreleased]
 
-(none yet — next entries land here as Phase 11 work begins)
+(none yet)
+
+## [0.2.0] — 2026-05-27
+
+Phase 11 — Designer UX. Multi-select, a layer tree, inline text editing,
+alignment guides, discoverability surfaces, and a pluggable image
+backend. All additive; no breaking changes to the `0.1.x` SDK surface.
+
+### Added
+
+- **Undo/redo grouping + clipboard + context menu** (§ 3.1, 3.2, 3.12).
+  `useThrottledHistory` coalesces a gesture into one undo step. Internal
+  clipboard with Cmd/Ctrl+C/X/V/D and a right-click `NodeContextMenu`
+  (Cut/Copy/Paste/Duplicate/Wrap/Delete). `editorStore.clipboard`.
+- **Multi-select + Inspector breadcrumbs** (§ 3.3, 3.5).
+  `editorStore.selection: string[]`; Cmd/Ctrl-click toggles, Shift-click
+  range-extends within a parent. Style panels merge values across the
+  selection with a "— Mixed" indicator (`useNodeClassesMulti`, exposed
+  via the SDK). `InspectorBreadcrumbs` walks the ancestor chain.
+  Multi-delete is one undo step. Secondary selections get dashed
+  outlines.
+- **Layer tree** (§ 3.4). A `Layers` tab in the left aside (toggles with
+  `Components`; choice persisted). Click / Cmd-click to select,
+  chevron-collapse, HTML5 drag-reorder with above/below/inside drop
+  zones and cycle prevention. Virtualizes past 50 visible rows
+  (`@tanstack/react-virtual`).
+- **Inline text editing** (§ 3.11). Double-click Text / Heading / Button
+  to edit in place (`contenteditable="plaintext-only"`); Enter commits
+  single-line, multiline preserves newlines, Escape reverts. Public
+  `EditableText` + `useStartTextEdit` for adapter authors;
+  `editorStore.editingTextNode`.
+- **Alignment guides on drag** (§ 3.6, visual-only v1). Figma-style red
+  guide lines when a dragged node's edges align with a sibling's
+  (4px threshold, ≤2 lines). Alt bypasses; suppressed inside
+  multi-canvas slots. Drop still commits via Craft's insertion-index
+  move — coordinate snap deferred to a future phase.
+- **Discoverability** (§ 3.7, 3.8, 3.9). Empty-canvas hint with a
+  template CTA; 4-step onboarding tour (localStorage-dismissed,
+  replayable from the document menu); Cmd/Ctrl+F canvas search that
+  filters by displayName / tags / text props and cycles matches.
+- **Asset library / image upload** (§ 3.10). `EditorImageProvider`
+  context + `useEditorImageProvider()` hook (SDK) let hosts route
+  uploads to their own backend; default provider inlines base64 and
+  remembers session uploads. The Image `src` field gets an
+  `ImagePicker` (URL / Upload / Library modal); host-gated
+  `AssetLibraryPanel` browses + inserts.
+- **Reduced motion** (§ 3.14). Global `prefers-reduced-motion` rule
+  zeroes transitions / animations / smooth-scroll across the chrome.
+
+### Changed
+
+- Stack's default style now includes `min-h-16 p-4 border-dashed …` so a
+  freshly-dropped empty Stack is a visible, droppable zone (was 0px).
+- Selection writes go through `editorStore` synchronously (flushSync)
+  alongside `actions.selectNode`, eliminating a one-frame lag on
+  layer-tree clicks, keyboard arrow-nav, and search jumps.
+- `PanelDefinition.component` now also receives `nodeIds` (the full
+  selection) so panels can opt into multi-mode. Existing single-node
+  panels are unaffected.
+
+### Bundle
+
+Measured at `0.2.0` (`npm run build`, no minification, with sourcemap):
+
+| Asset | Raw | Gzipped |
+|---|---|---|
+| `dist/assets/index-*.js` | 578 KB | 173 KB |
+| `dist/assets/index-*.css` | 221 KB | 28 KB |
+
+Delta vs `0.1.x`: roughly +60 KB raw JS / +16 KB gzipped — the bulk is
+`@tanstack/react-virtual` (layer-tree virtualization) plus the Phase 11
+feature surface itself. CSS grew ~3 KB for the new safelist entries.
 
 ## Deprecation policy
 

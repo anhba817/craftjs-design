@@ -1,6 +1,6 @@
 # Phase 11 — Designer UX
 
-**Status:** planned
+**Status:** ✅ complete — shipped as `0.2.0` (2026-05-27). Close-out at the bottom of this file.
 **Timeline:** no deadline; ship when every in-scope Section 3 item is correctly done
 **Audience:** end users — designers building documents day-to-day
 **Scope discipline:** every non-Stretch item in `PRODUCTION_READINESS.md` § 3 ships. The three Stretch-tagged items (Comments 3.13, RTL 3.15, i18n 3.16) are explicitly out of scope and queued for a later phase. Sections 4+ remain out of scope.
@@ -469,3 +469,57 @@ Every non-Stretch Section 3 item is in one of these states:
 No item is left unaddressed. Stretch items (3.13, 3.15, 3.16) keep their PRODUCTION_READINESS prose and are explicitly queued for later phases.
 
 When all 13 in-scope items satisfy this bar, Phase 11 is complete and Phase 12 (Section 4 — style depth) is unblocked. The `0.2.0` release candidate cuts at the close-out commit.
+
+---
+
+## Close-out (2026-05-27 — shipped as `0.2.0`)
+
+All 13 in-scope Section 3 items shipped, tested, and documented. Phase 12 (Section 4 — style depth) is unblocked.
+
+### Per-item path-taken
+
+| § | Item | Group | Path taken |
+|---|---|---|---|
+| 3.1 | Undo/redo grouping | A | `useThrottledHistory` wrapping `actions.history.throttle(rate)`; 500ms default. As planned. |
+| 3.2 | Clipboard | A | Internal clipboard in `editorStore` (not system clipboard — browser permission model). `cloneNodeTree` rewrites ids + resets events/dom. As planned. |
+| 3.12 | Context menu | A | Radix ContextMenu; right-click pre-selects the node via a `data-craft-node-id` walk so menu items aren't disabled on first open. |
+| 3.3 | Multi-select | B | `editorStore.selection: string[]` as UI source of truth; `useSelectionSync` mirrors Craft → store. Style panels merge via `useNodeClassesMulti` with "— Mixed". Full plan (merged-value panels included). |
+| 3.5 | Breadcrumbs | B | `InspectorBreadcrumbs` walks ancestors; overflow `…` dropdown. As planned. |
+| 3.4 | Layer tree | C | **Tab-toggle** in the left aside (not a third sidebar). TanStack Virtual past 50 rows. HTML5 drag-reorder with cycle guard. As recommended in the plan. |
+| 3.11 | Inline text editing | D | `contenteditable="plaintext-only"` + `EditableText`/`useStartTextEdit` SDK exports. Commit-once-on-done (no live per-keystroke writes — simpler, same one-undo-step property). |
+| 3.6 | Alignment guides | E | **Visual-only v1** (path neither 1 nor 2). Craft's HTML5 drag exposes no pointer stream + the source doesn't move; full coordinate-snap (own drag layer / Craft fork) deferred to Phase 12+. Guides draw on `dragover`; drop still commits via insertion-index `actions.move`. |
+| 3.7 | Empty state | F | `EmptyCanvasHint` over the canvas + TemplatePicker CTA. As planned. |
+| 3.8 | Onboarding tour | F | 4-step box-shadow spotlight; localStorage dismissal; "Show tour again" in the doc menu. As planned. |
+| 3.9 | Canvas search | F | Cmd/Ctrl+F overlay; pure `searchNodes`; Enter/Shift+Enter cycle. As planned. |
+| 3.10 | Asset library / image upload | G | `EditorImageProvider` context (SDK); default base64 provider remembers session uploads; `ImagePicker` (URL/Upload/Library **modal**); host-gated `AssetLibraryPanel`. As planned + modal (designer feedback). |
+| 3.14 | Reduced motion | H | **Global `prefers-reduced-motion` media query** in `index.css` (not per-class `motion-safe:` — covers all current + future motion, can't be forgotten). Outcome identical. |
+
+### Key decisions log
+
+- **Selection model:** editorStore is the UI source of truth, Craft is the document source of truth, bridged one-way by `useSelectionSync`. Every user selection entry point writes editorStore **synchronously via `flushSync`** then calls `actions.selectNode`. The `useSelectionSync` passive `useEffect` alone lagged a frame — surfaced as off-by-one layer-tree clicks + sticky arrow-nav. (See `feedback-selection-sync` lessons.)
+- **`draggable=true` + selection:** use `onMouseDown`, not `onClick` — drag-prep hysteresis suppresses click.
+- **useEditor / zustand collectors must return stable refs** — fresh `[]` / nested objects fail `shallowequal` and storm re-renders (CanvasSearch, Inspector primary, useNodeClassesMulti were all fixed).
+- **Layer tree layout:** tab-toggle replace, not third sidebar (canvas real estate).
+- **Smart guides:** visual-only over Craft's existing drag — 80% of the value at ~20% of the cost; coordinate snap is a Phase 12 stretch.
+- **Reduced motion:** one global media-query rule, not scattered `motion-safe:` prefixes.
+
+### Asset provider API stability
+
+`EditorImageProvider` / `useEditorImageProvider` / `EditorImageProviderValue` / `EditorImageAsset` are part of the `0.2.0` public SDK surface (asserted in `sdk/boundary.test.ts`). The contract (`upload` / `list` / `delete?` / `canList`) is considered stable for the `0.x` line; additive fields only until `1.0.0` freezes the surface.
+
+### Bundle delta vs Phase 10 close (`0.1.0`)
+
+| Asset | `0.1.0` raw / gz | `0.2.0` raw / gz | Δ gz |
+|---|---|---|---|
+| `dist/assets/index-*.js` | 517 KB / 157 KB | 578 KB / 173 KB | +16 KB |
+| `dist/assets/index-*.css` | 218 KB / 28 KB | 221 KB / 28 KB | ~0 |
+
+Largest single contributor: `@tanstack/react-virtual` (layer-tree virtualization). The rest is the Phase 11 feature surface.
+
+### Tests added
+
+391 → **413** at close (`vitest run`, 39 files). New pure-logic suites: `cloneNodeTree`, `modifierSelection`, `mergeSlices`, `buildTreeShape` (+ `wouldCreateCycle`), `editingTextNode`, `alignmentMath`, `searchNodes`, `onboardingFlag`, `defaultImageProvider`, plus the `editorStore.selection` helpers and the expanded `sdk/boundary` surface. Render-timing bugs (selection lag, contentEditable commit, draggable click) were caught by manual runtime verification rather than unit tests — recorded in the lessons memory.
+
+### Deferred to Phase 12+
+
+Coordinate-snap smart guides (own drag layer / Craft fork), multi-resize across a multi-selection, system-clipboard integration, markdown/rich-text in inline edits. Stretch items 3.13 (comments), 3.15 (RTL), 3.16 (i18n) remain queued per the original scope.
