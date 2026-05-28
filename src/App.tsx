@@ -7,6 +7,16 @@ import './editor/inspector/built-in-panels'
 import './persistence/templates'
 import { EditorColorVariablesProvider } from './editor/colors/EditorColorVariablesProvider'
 import { Editor, ErrorBoundary, TopShellErrorFallback } from './editor/Editor'
+import {
+  registerGoogleFonts,
+  registerSystemFonts,
+} from './registry/curated-fonts'
+
+// Phase 12 § 4.15 — offer popular fonts out of the box (selectable in the
+// Typography → Font dropdown without uploading). System stacks cost nothing;
+// the Google set loads one combined stylesheet from Google's CDN.
+registerSystemFonts()
+registerGoogleFonts()
 
 // Phase 12 § 4.9 demo — example host CSS variables (defined in index.css).
 // Hosts pass their own design tokens here; the ColorPicker surfaces them as

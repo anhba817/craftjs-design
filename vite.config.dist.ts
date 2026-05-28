@@ -62,6 +62,9 @@ export default defineConfig({
       entry: {
         index: path.resolve(__dirname, 'src/main-app.tsx'),
         sdk: path.resolve(__dirname, 'src/sdk/index.ts'),
+        // Phase 12 § 4.1 — optional, node-only build-time safelist plugin.
+        // Separate entry (not in the browser SDK) since it imports node:fs.
+        'vite-plugin': path.resolve(__dirname, 'src/vite/safelistPlugin.ts'),
       },
       formats: ['es'],
       // Vite already emits CSS at `index.css` for the full editor entry;
@@ -79,6 +82,10 @@ export default defineConfig({
         'react-dom',
         'react-dom/client',
         '@craftjs/core',
+        // The optional Vite plugin entry is node-only — keep `vite` and node
+        // builtins external rather than bundling them into the package.
+        'vite',
+        /^node:/,
       ],
     },
     // Don't minify by default — easier to debug post-install. Hosts that want

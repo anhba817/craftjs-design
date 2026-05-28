@@ -2,6 +2,7 @@ import { AssetLibraryPanel } from '../assets/AssetLibraryPanel'
 import { AppearancePanel } from './AppearancePanel'
 import { EffectsPanel } from './EffectsPanel'
 import { FiltersPanel } from './FiltersPanel'
+import { FontUploadPanel } from './FontUploadPanel'
 import { LayoutPanel } from './LayoutPanel'
 import { PropsPanel } from './PropsPanel'
 import { registerPanel } from './panel-registry'
@@ -121,4 +122,14 @@ registerPanel({
   order: 80,
   applicableTo: () => true,
   component: AssetLibraryPanel,
+})
+
+// Phase 12 § 4.15 — font upload. Global tool surfaced in the inspector
+// (like Assets); upload routes through the active image/asset provider.
+registerPanel({
+  id: 'fonts',
+  displayName: 'Fonts',
+  order: 85,
+  applicableTo: () => true,
+  component: FontUploadPanel,
 })

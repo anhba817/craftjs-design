@@ -28,3 +28,17 @@ export {
   unregisterFontToken,
   listFontTokens,
 } from '../registry/fonts'
+
+// Phase 12 § 4.15 — curated built-in fonts selectable without uploading.
+// `registerSystemFonts()` adds OS font stacks (no network); `registerGoogleFonts()`
+// adds popular Google web fonts via a single combined CDN <link> (opt-in).
+// Call whichever you want at startup; the tokens then appear in the Font
+// dropdown like the built-ins.
+export type { GoogleFont } from '../registry/curated-fonts'
+export {
+  SYSTEM_FONTS,
+  GOOGLE_FONTS,
+  googleFontsHref,
+  registerSystemFonts,
+  registerGoogleFonts,
+} from '../registry/curated-fonts'

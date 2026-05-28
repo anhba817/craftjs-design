@@ -23,6 +23,10 @@
       "types": "./dist-lib/sdk/index.d.ts",
       "import": "./dist-lib/sdk.js"
     },
+    "./vite-plugin": {
+      "types": "./dist-lib/vite/safelistPlugin.d.ts",
+      "import": "./dist-lib/vite-plugin.js"
+    },
     "./index.css": "./dist-lib/index.css",
     "./package.json": "./package.json"
   },
