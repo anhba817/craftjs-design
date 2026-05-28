@@ -124,6 +124,87 @@ App build (`npm run build`):
 
 (none yet)
 
+## [0.3.0] — 2026-05-28
+
+Phase 12 — Style depth. The breakpoint × state matrix, transforms /
+filters / transitions panels, background images, token-driven themes with
+a visual editor + per-theme dark mode, a CSS-variable color source with
+WCAG contrast checking, font upload + curated fonts, and an optional
+build-time safelist plugin. All additive; no breaking changes to the
+`0.2.x` SDK surface (new optional fields on `NodeStyle` and `EditorDocument`
+default cleanly for older documents).
+
+### Added
+
+- **Pseudo-class states — full breakpoint × state matrix** (§ 4.2). A
+  `StateBar` (Default / Hover / Focus / Active) pairs with the
+  `ResponsiveBar`; every style panel reads/writes the active
+  (breakpoint × state) quadrant. Four new optional `NodeStyle` buckets
+  (`states`, `stateResponsive`, `stateInline`, `stateResponsiveInline`)
+  routed through a central `dimensions.ts` dispatch; responsive +
+  responsive-inline composition emit `<state>:` / `<bp>:<state>:`
+  prefixed classes and promoted `.cls:hover` rules. The selected node
+  previews the non-base state on the canvas. `editorStore.activeState`.
+- **Transforms / Filters / Transitions panels** (§ 4.3, 4.4, 4.5).
+  Composed inline `transform` / `filter` function lists (`cssFunctions.ts`,
+  balanced-paren parser) and four `transition-*` longhands, edited via a
+  new `FlexibleSelect` (dropdown preset **or** custom value). Filters owns
+  `blur` (moved from Effects — `filter` is one property).
+- **Background images** (§ 4.6). Inline `background-image: url(…)` +
+  repeat / size / position longhands in the Appearance panel. Coexists
+  with a solid color; mutually exclusive with a gradient.
+- **Token-driven themes + 5 built-ins** (§ 4.11, 4.12). `registerTheme`
+  accepts a small `tokens` map; `deriveTokens` fills the full shadcn core
+  set and a `[data-theme]` block is generated + injected. New built-ins:
+  green, blue, slate, zinc, neutral (7 total). SDK: `ThemeTokens`,
+  `ThemeInput`, `ColorScheme`, `deriveTokens`, `themeTokensToCss`.
+- **Visual theme editor** (§ 4.10). Modal launched from the top bar:
+  per-scheme base-color fields with an OKLCH L/C/H slider picker, live
+  preview (in-modal + on the canvas via a transient theme), save via the
+  token API, Copy / Download CSS.
+- **Per-theme dark mode** (§ 4.13). Themes declare `darkTokens`; a
+  `.dark[data-theme]` block is emitted. `colorMode` (light / dark /
+  system) in `editorStore`, **persisted in the document**;
+  `useEffectiveColorScheme` resolves `system` via `prefers-color-scheme`;
+  a `ColorModeToggle` in the top bar.
+- **CSS-variable color source** (§ 4.9). `EditorColorVariablesProvider` /
+  `useColorVariables` (SDK) let hosts surface their own CSS custom
+  properties in the ColorPicker; picking writes `var(--name)`.
+- **Color-contrast checking** (§ 4.14). A live AA / AAA / Fail badge under
+  the Typography color row; pure `contrastRatio` / `contrastGrade` +
+  OKLCH→sRGB conversion so token / variable colors resolve.
+- **Font upload + curated fonts** (§ 4.15). A "Fonts" inspector panel
+  (drag-drop / pick → name → register) routing storage through the image
+  provider. `registerSystemFonts` (OS stacks) and `registerGoogleFonts`
+  (popular web fonts via one combined CDN `<link>`) exposed from the SDK.
+- **Optional safelist Vite plugin** (§ 4.1). `@crafted-design/editor/vite-plugin`
+  → `craftedDocumentSafelist({ documents, outFile })` scans saved
+  documents and emits `@source inline(…)` for their arbitrary values.
+  Opt-in; runtime `<style>` injection stays the zero-config default.
+
+### Changed
+
+- `NodeStyle` gains four optional state buckets; `EditorDocument` gains an
+  optional `colorMode`. Both default cleanly for `0.2.x` documents.
+- The Filters panel owns `blur` (relocated from Effects).
+- Inspector rows (`PanelRow`) gained `min-w-0` to stop horizontal overflow
+  from the new flexible-value controls.
+
+### Bundle
+
+Measured at `0.3.0` (`npm run build`, no minification, with sourcemap):
+
+| Asset | Raw | Gzipped |
+|---|---|---|
+| `dist/assets/index-*.js` | 603 KB | 182 KB |
+| `dist/assets/index-*.css` | 308 KB | 39 KB |
+
+Delta vs `0.2.0`: ~+25 KB raw JS / +9 KB gzipped (the Phase 12 panels,
+theme editor, contrast + oklch math). CSS grew ~+87 KB raw / +11 KB
+gzipped — the safelist now carries `hover:` / `focus:` / `active:` state
+prefixes across the utility families. Hosts that want to trim this adopt
+the optional safelist Vite plugin (§ 4.1) to ship per-document usage only.
+
 ## [0.2.0] — 2026-05-27
 
 Phase 11 — Designer UX. Multi-select, a layer tree, inline text editing,

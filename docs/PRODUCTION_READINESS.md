@@ -433,35 +433,47 @@ non-English-speaking designers, this is a barrier.
 
 ## 4. Style depth — raising the design ceiling
 
-### 4.1 Real Vite plugin for Tailwind safelist *(High / Performance)*
+> **Status — shipped in `0.3.0` (Phase 12):** every non-Stretch item in
+> this section is shipped + tested + documented. 4.1 (safelist plugin),
+> 4.2 (pseudo-class states — full breakpoint × state matrix), 4.3
+> (transitions), 4.4 (transforms), 4.5 (filters), 4.6 (background images),
+> 4.9 (CSS-variable picker), 4.10 (visual theme editor), 4.11 (theme token
+> API), 4.12 (5 more built-in themes), 4.13 (per-theme dark mode), 4.14
+> (contrast checking), 4.15 (font upload + curated system/Google fonts).
+> 4.16 (gradient-stop HSL/RGB sliders) was already satisfied in Phase 10
+> via the nested ColorPicker. Deferred (Stretch): 4.7 conic/mesh/animated
+> gradients, 4.8 OKLCH/wide-gamut picker — though the theme editor ships a
+> dedicated OKLCH L/C/H slider for token authoring.
+
+### 4.1 Real Vite plugin for Tailwind safelist *(High / Performance)* — ✅ shipped 0.3.0
 
 Phase 8 shipped the extractor; the plugin that consumes it is deferred.
 A real plugin reads documents at build time, emits `@source inline()`
 directives to a generated file, and HMR-triggers Tailwind rebuilds when
 documents change. Replaces runtime `<style>` injection.
 
-### 4.2 Pseudo-class styling (`:hover`, `:focus`, `:active`) *(High / UX)*
+### 4.2 Pseudo-class styling (`:hover`, `:focus`, `:active`) *(High / UX)* — ✅ shipped 0.3.0 (full breakpoint × state matrix)
 
 Designers can type `hover:bg-primary` manually via class strings but
 there's no structured editing. A "States" tab in the inspector with
 hover / focus / active variants of each panel section.
 
-### 4.3 Transitions / animations panel *(UX)*
+### 4.3 Transitions / animations panel *(UX)* — ✅ shipped 0.3.0
 
 Tailwind has `transition-*` utilities. No panel today. Could expose
 duration, easing, properties as a structured editor.
 
-### 4.4 Transforms (rotate / scale / translate / skew) *(UX)*
+### 4.4 Transforms (rotate / scale / translate / skew) *(UX)* — ✅ shipped 0.3.0
 
 No panel today. Tailwind utilities exist (`rotate-45`, `scale-110`).
 Could expose as a Transforms panel.
 
-### 4.5 Filters (`blur`, `drop-shadow`, `grayscale`, etc.) *(UX)*
+### 4.5 Filters (`blur`, `drop-shadow`, `grayscale`, etc.) *(UX)* — ✅ shipped 0.3.0
 
 Effects panel has `blur` and `shadow`. Missing: brightness, contrast,
 grayscale, invert, saturate, sepia, drop-shadow.
 
-### 4.6 Background images, repeat patterns *(UX)*
+### 4.6 Background images, repeat patterns *(UX)* — ✅ shipped 0.3.0
 
 Today: `background` accepts solid colors and gradients via the
 ColorPicker's gradient mode. Could extend with:
@@ -480,7 +492,7 @@ visuals. Mesh and animated are aspirational.
 Today: hex / RGB / HSL. shadcn's tokens use OKLCH. A perceptual color
 space picker would match.
 
-### 4.9 CSS variable picker *(High / Theming)*
+### 4.9 CSS variable picker *(High / Theming)* — ✅ shipped 0.3.0
 
 Designers picking a color today get Tailwind tokens (`primary`,
 `secondary`, etc.). Hosts that have their own design tokens
@@ -488,7 +500,7 @@ Designers picking a color today get Tailwind tokens (`primary`,
 variable picker that lets the host enumerate their available CSS
 custom properties.
 
-### 4.10 Visual theme editor *(High / UX)*
+### 4.10 Visual theme editor *(High / UX)* — ✅ shipped 0.3.0
 
 Today themes are CSS blocks designers can't edit. A theme editor:
 
@@ -496,7 +508,7 @@ Today themes are CSS blocks designers can't edit. A theme editor:
 - Live preview as designer adjusts.
 - Save as a new theme; export the CSS block.
 
-### 4.11 Theme creation API for SDK *(DevEx)*
+### 4.11 Theme creation API for SDK *(DevEx)* — ✅ shipped 0.3.0
 
 `registerTheme({ id, displayName, dataThemeValue })` requires the host
 to also ship the CSS block. A higher-level API:
@@ -514,29 +526,29 @@ registerTheme({
 
 Generate the CSS automatically.
 
-### 4.12 More built-in themes *(UX)*
+### 4.12 More built-in themes *(UX)* — ✅ shipped 0.3.0
 
 Today: default + rose. Add green, blue, slate, zinc, neutral.
 
-### 4.13 Dark mode per-theme *(High / UX)*
+### 4.13 Dark mode per-theme *(High / UX)* — ✅ shipped 0.3.0
 
 Today `dark` is a separate class baked into index.css. Themes could
 declare their own `light` + `dark` variants; a system-prefs-aware
 toggle in the editor.
 
-### 4.14 Color contrast checking *(High / Accessibility)*
+### 4.14 Color contrast checking *(High / Accessibility)* — ✅ shipped 0.3.0
 
 When the designer picks a text color over a background, surface the
 contrast ratio (live) + a WCAG AA/AAA badge. Prevents shipping
 inaccessible designs.
 
-### 4.15 Font upload UI *(UX)*
+### 4.15 Font upload UI *(UX)* — ✅ shipped 0.3.0 (+ curated system / Google fonts)
 
 Today `registerFontToken` is SDK-only. A font-upload panel in the
 editor (drag-drop .woff2 → enter name → register) would let designers
 add fonts without writing code.
 
-### 4.16 HSL/RGB sliders for gradient stops *(UX)*
+### 4.16 HSL/RGB sliders for gradient stops *(UX)* — ✅ shipped (Phase 10, via nested ColorPicker)
 
 Same picker capabilities for stops as for solid colors. Nested
 ColorPicker (see 2.12) gets this for free.

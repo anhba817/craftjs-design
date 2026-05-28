@@ -306,6 +306,75 @@ of poking Craft state directly.
 
 ---
 
+## Theme tokens, color variables, fonts, safelist (Phase 12, 0.3.0)
+
+### Theme token API
+
+`registerTheme` accepts a small `tokens` map (and optional `darkTokens`);
+`deriveTokens` fills the full shadcn core set and the `[data-theme]`
+(+ `.dark[data-theme]`) CSS block is generated and injected for you — no
+hand-written CSS.
+
+```ts
+import { registerTheme } from '@crafted-design/editor/sdk'
+
+registerTheme({
+  id: 'forest',
+  displayName: 'Forest',
+  tokens: { primary: 'oklch(0.55 0.18 145)', primaryForeground: 'oklch(0.98 0.02 145)' },
+  darkTokens: { primary: 'oklch(0.7 0.16 145)' },
+})
+```
+
+Exports: `registerTheme`, `unregisterTheme`, `getTheme`, `listThemes`,
+`deriveTokens`, `themeTokensToCss`; types `Theme`, `ThemeInput`,
+`ThemeTokens`, `ColorScheme`. `dataThemeValue` defaults to the id.
+
+### Color-variable source
+
+Surface host CSS custom properties in the ColorPicker:
+
+```tsx
+import { EditorColorVariablesProvider } from '@crafted-design/editor/sdk'
+
+<EditorColorVariablesProvider variables={[{ name: 'brand-blue', label: 'Brand Blue' }]}>
+  <Editor />
+</EditorColorVariablesProvider>
+```
+
+Picking one writes `var(--brand-blue)`. Exports: `EditorColorVariablesProvider`,
+`useColorVariables`; types `ColorVariable`, `EditorColorVariablesValue`.
+
+### Curated fonts (without uploading)
+
+`registerSystemFonts()` adds OS font stacks (no network);
+`registerGoogleFonts()` adds popular Google fonts via one combined CDN
+`<link>` (opt-in). Both register tokens that appear in the Font dropdown.
+Exports: `registerSystemFonts`, `registerGoogleFonts`, `SYSTEM_FONTS`,
+`GOOGLE_FONTS`, `googleFontsHref`; type `GoogleFont`. (In-editor upload is
+built in via the "Fonts" panel — no host code needed.)
+
+### Safelist Vite plugin (optional)
+
+A separate, node-only subpath — `@crafted-design/editor/vite-plugin`:
+
+```ts
+import { craftedDocumentSafelist } from '@crafted-design/editor/vite-plugin'
+
+export default defineConfig({
+  plugins: [craftedDocumentSafelist({
+    documents: ['./saved/home.json', './saved/about.json'],
+    outFile: './src/safelist.docs.css', // @import this from your CSS
+  })],
+})
+```
+
+Scans saved documents for the arbitrary classes their inline values map to
+and emits `@source inline(…)`. Opt-in — the runtime `<style>` injection
+path stays the zero-config default.
+
+---
+
 ## What's NOT exported
 
 The following are internal and may change without notice:

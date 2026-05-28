@@ -302,6 +302,61 @@ app's CSS — specifically the shadcn theme tokens (`--primary`,
 The editor's `[data-theme="<id>"]` blocks only affect the canvas — chrome
 stays on `:root`. See `docs/ARCHITECTURE.md` § Themes for details.
 
+## Token themes, dark mode, color variables, safelist (0.3.0)
+
+**Token themes (no hand-written CSS).** Pass a `tokens` map to
+`registerTheme`; the editor derives the full token set and injects the
+`[data-theme]` block. Add `darkTokens` for a `.dark[data-theme]` variant.
+
+```ts
+import { registerTheme } from '@crafted-design/editor/sdk'
+registerTheme({ id: 'forest', displayName: 'Forest',
+  tokens: { primary: 'oklch(0.55 0.18 145)' },
+  darkTokens: { primary: 'oklch(0.7 0.16 145)' } })
+```
+
+**Dark mode.** A Light / Dark / Auto toggle ships in the top bar; `Auto`
+follows `prefers-color-scheme`. The chosen mode persists in the saved
+document (`EditorDocument.colorMode`). The `ThemeProvider` applies `.dark`
+to the canvas wrapper only — your chrome theming is unaffected.
+
+**Your design tokens in the color picker.** Wrap the editor so designers
+can pick your CSS variables alongside the theme tokens:
+
+```tsx
+import { EditorColorVariablesProvider } from '@crafted-design/editor/sdk'
+<EditorColorVariablesProvider variables={[{ name: 'brand-blue' }]}>
+  <Editor />
+</EditorColorVariablesProvider>
+```
+
+Define the variables in your CSS (`:root { --brand-blue: … }`) so the
+swatches and applied colors resolve.
+
+**Fonts.** Designers upload fonts in the built-in "Fonts" panel (storage
+routes through your `EditorImageProvider`). To also offer popular fonts
+without uploading, call `registerSystemFonts()` and/or
+`registerGoogleFonts()` at startup.
+
+**Optional production-CSS trim (safelist plugin).** By default the editor
+injects arbitrary inline-value CSS at runtime — zero config. For
+production pages you can trim Tailwind's output to exactly what your saved
+documents use:
+
+```ts
+// vite.config.ts
+import { craftedDocumentSafelist } from '@crafted-design/editor/vite-plugin'
+export default defineConfig({
+  plugins: [craftedDocumentSafelist({
+    documents: ['./content/*.json'],
+    outFile: './src/safelist.docs.css',
+  })],
+})
+```
+
+Then `@import "./safelist.docs.css";` from your stylesheet. Purely an
+upgrade — skipping it changes nothing.
+
 ## Caveats
 
 ### React version

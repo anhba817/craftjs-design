@@ -1051,6 +1051,47 @@ Side-effecting work goes in `mount` / `unmount` — the imperative lifecycle hoo
 
 ---
 
+### The style "dimension" — breakpoint × state (Phase 12)
+
+A node's styling is addressed along two orthogonal axes: **breakpoint**
+(`base`, `sm`…`2xl`) and **pseudo-class state** (`base`, `hover`, `focus`,
+`active`). Their cross-product yields four storage quadrants for classes
+and four for inline values on `NodeStyle`:
+
+| | base state | pseudo-state |
+|---|---|---|
+| base bp | `classes` / `inline` | `states` / `stateInline` |
+| named bp | `responsive` / `responsiveInline` | `stateResponsive` / `stateResponsiveInline` |
+
+The complexity is funneled through one dispatch table (`src/style/dimensions.ts`):
+`read/writeBucketClasses` and `read/writeBucketInline` take
+`(slot, breakpoint, state)` and land in the right quadrant. Panels never
+see the quadrants — they call `useNodeClassesMulti`, which reads
+`editorStore.activeBreakpoint` + `activeState` and routes accordingly.
+Composition (`responsive.ts`, `responsive-inline.ts`) emits classes in
+breakpoint-outermost order (`md:hover:…`) and promotes state inline values
+into generated `.cls:hover` rules (an inline `style` attribute would
+otherwise beat a pseudo-class rule by specificity). The selected node
+previews a non-base state on the canvas by applying that quadrant's styles
+unprefixed (`CanonicalNode`).
+
+### Theme token derivation (Phase 12)
+
+Themes are authored from a small `tokens` map (often just `primary`).
+`deriveTokens(tokens, scheme)` (`src/themes/tokens.ts`) is a pure function
+that fills the full shadcn core set: neutrals from scheme defaults
+(light/dark), `card`/`popover` from `background`, `ring` from `primary`,
+each `*-foreground` via a lightness-contrast heuristic, sidebar accents in
+step. `themeTokensToCss` renders a `[data-theme]` block (+ optional
+`.dark[data-theme]`), injected into one `<style data-craftjs-theme-tokens>`
+element — the same runtime-injection mechanism as font tokens. The visual
+theme editor reuses this exact derivation for its live preview, so what a
+designer previews is what `registerTheme` produces. Color mode
+(`light`/`dark`/`system`) lives in `editorStore`, persists in the document,
+and `ThemeProvider` applies `.dark` to the canvas wrapper only.
+
+---
+
 ## Persistence Format
 
 Stored at `localStorage['craftjs-design:doc:v1']`:

@@ -210,3 +210,67 @@ No valves. Every risk has a mitigation that delivers the item.
 Every non-Stretch Section 4 item is **shipped + tested + documented** — the default bar, applied to all 14 in-scope items. No item left unaddressed. Stretch items (4.7, 4.8) keep their PRODUCTION_READINESS prose and are queued for later phases.
 
 When all 14 in-scope items satisfy this bar, Phase 12 is complete and Phase 13 (Section 5 — component breadth) is unblocked. `0.3.0` cuts at the close-out commit.
+
+---
+
+## Close-out (Phase 12 shipped — `0.3.0`, 2026-05-28)
+
+All 14 in-scope Section 4 items are shipped + tested + documented. Final:
+**516 tests passing across 48 files**; `tsc -b`, `npm run build`, and
+`npm run build:dist` all clean (the lib build emits `.d.ts` for every new
+SDK addition: theme token API, color-variables provider, curated fonts,
+and the `./vite-plugin` subpath).
+
+### Per-item path taken
+
+| Item | Path taken |
+|---|---|
+| 4.1 Safelist plugin | Optional `./vite-plugin` export consuming the Phase 8 extractor; opt-in, runtime injection stays default. |
+| 4.2 Pseudo-class states | Full breakpoint × state matrix — 4 storage quadrants, central `dimensions.ts` dispatch, `StateBar`, canvas preview. |
+| 4.3 Transitions | Four inline `transition-*` longhands via `FlexibleSelect`. |
+| 4.4 Transforms | Composed inline `transform` function list (`cssFunctions.ts`). |
+| 4.5 Filters | Composed inline `filter` list; owns `blur` (moved from Effects). |
+| 4.6 Background images | Inline `background-image: url()` + repeat/size/position; coexists with color, exclusive with gradient. |
+| 4.9 CSS-variable picker | `EditorColorVariablesProvider` (mirrors image provider); `var` ColorPicker kind. |
+| 4.10 Visual theme editor | Modal from the top bar (not a route/tab) with an OKLCH slider picker + live canvas preview via a transient theme. |
+| 4.11 Theme token API | `tokens` on `registerTheme` + pure `deriveTokens`; backward-compatible with CSS-only themes. |
+| 4.12 More themes | green, blue, slate, zinc, neutral (token-authored, dogfooding 4.11). |
+| 4.13 Dark mode | Per-theme `darkTokens` → `.dark[data-theme]`; `colorMode` persisted; system-aware toggle. |
+| 4.14 Contrast checking | `ContrastBadge` + pure WCAG math + OKLCH→sRGB (browsers return computed token colors as oklch). |
+| 4.15 Font upload | "Fonts" panel routing storage through the asset provider + curated system/Google fonts. |
+| 4.16 Gradient-stop sliders | Already satisfied in Phase 10 (nested ColorPicker). |
+
+### Decisions
+
+- **State composition:** full breakpoint × state matrix (not state-only),
+  funneled through one dispatch table so panels stay oblivious. Classes
+  emit breakpoint-outermost (`md:hover:…`); state inline values promote to
+  generated `.cls:hover` rules to beat the inline-`style` specificity.
+- **Theme editor placement:** modal dialog from the top bar (Radix Dialog,
+  like the Phase 11 image library), with the canvas previewing live behind
+  it via a transient `__theme_preview` theme. No sidebar tab / route.
+- **Safelist plugin:** OPT-IN export. Runtime `<style>` injection remains
+  the zero-config default; the plugin is purely a production-CSS trim.
+- **Reduced motion:** the global `prefers-reduced-motion` rule applies to
+  the canvas too — authored transitions are intentionally NOT exempted
+  (a user accessibility preference outranks previewing motion). Chrome and
+  canvas both honor it; editor drag/guide/resize overlays use direct DOM
+  positioning and are unaffected either way.
+
+### Bundle delta vs `0.2.0`
+
+`npm run build` (no minify, sourcemap): JS 578 → 603 KB raw (173 → 182 KB
+gz); CSS 221 → 308 KB raw (28 → 39 KB gz). The CSS growth is the safelist
+gaining `hover:`/`focus:`/`active:` state prefixes across utility families;
+hosts trim it with the optional safelist plugin.
+
+### Tests
+
+516 passing (48 files), up from 452 at the start of the matrix work.
+New coverage spans the dimension dispatch + prefix-ordered composition,
+token derivation (light/dark) + CSS emission, WCAG contrast + OKLCH
+conversion, the `var` color round-trip, document `colorMode` persistence,
+oklch parse/format, curated-font list integrity + Google href, and the
+safelist plugin's extraction/aggregation.
+
+Phase 13 (Section 5 — component breadth) is unblocked.

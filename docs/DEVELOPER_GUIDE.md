@@ -470,6 +470,63 @@ table in `docs/INTEGRATION_GUIDE.md` § Asset backends.
 
 ---
 
+### Authoring a token theme (Phase 12)
+
+Define a theme from a handful of base colors — `deriveTokens` fills the
+rest and the CSS is generated + injected. Add `darkTokens` for a dark
+variant. Built-ins live in `src/themes/<id>.ts`; SDK consumers call the
+same `registerTheme`.
+
+```ts
+// src/themes/forest.ts
+import { registerTheme } from './registry'
+
+registerTheme({
+  id: 'forest',
+  displayName: 'Forest',
+  tokens: {
+    primary: 'oklch(0.55 0.18 145)',
+    // primaryForeground/secondary/accent/background/… optional — derived
+  },
+  darkTokens: { primary: 'oklch(0.7 0.16 145)' },
+})
+```
+
+Then side-effect-import it (`src/themes/index.ts`). Only restate tokens
+that differ from the scheme neutral defaults; everything else derives.
+The visual theme editor (top bar → "Edit theme") authors the same shape
+visually with an OKLCH slider + live preview, and can export the CSS.
+
+### Adding a style panel for a new utility family
+
+A panel reads/writes the active (breakpoint × state) quadrant through
+`useNodeClassesMulti` — never poke Craft state or the `NodeStyle`
+quadrants directly.
+
+```tsx
+function MyPanel({ nodeIds, slot = 'root' }: {
+  nodeId: string; nodeIds: readonly string[]; slot?: string
+}) {
+  const { classStrings, writeClassesAll, writeInlineAll } =
+    useNodeClassesMulti(nodeIds, slot)
+  // Tailwind utility family → writeClassesAll((cur) => mergeMine(cur, patch))
+  // Arbitrary CSS value → writeInlineAll('cssProperty', value)  (auto-safelisted/injected)
+  // ...render controls; show "— Mixed" when classStrings differ across nodes
+}
+
+registerPanel({ id: 'myFamily', displayName: 'My Family', order: 55,
+  applicableTo: () => true, component: MyPanel })
+```
+
+Writes coalesce into one undo step via the hook's history throttle. Reads
+already reflect `activeBreakpoint` + `activeState`, so hover/focus/active
+and per-breakpoint editing work for free. If your control emits a literal
+Tailwind class from a fixed set, add that family to
+`scripts/gen-safelist.ts`; arbitrary values route to inline CSS and need
+no safelist entry.
+
+---
+
 ## Conventions
 
 ### Class-string editing
