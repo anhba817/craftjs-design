@@ -22,3 +22,8 @@ import './textarea'
 // Phase 5 — Pattern B composites
 import './card'
 import './tabs'
+// Phase 13 § 5.5 — layout primitives.
+import './grid'
+import './container'
+import './spacer'
+import './section'
