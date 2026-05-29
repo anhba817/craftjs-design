@@ -4,6 +4,7 @@ import { MaterialAlert } from './components/Alert'
 import { MaterialAvatar } from './components/Avatar'
 import { MaterialBadge } from './components/Badge'
 import { MaterialBox } from './components/Box'
+import { MaterialBreadcrumb } from './components/Breadcrumb'
 import { MaterialButton } from './components/Button'
 import { MaterialCard } from './components/Card'
 import { MaterialCheckbox } from './components/Checkbox'
@@ -18,12 +19,16 @@ import { MaterialIcon } from './components/Icon'
 import { MaterialImage } from './components/Image'
 import { MaterialInput } from './components/Input'
 import { MaterialLink } from './components/Link'
+import { MaterialNavItem } from './components/NavItem'
+import { MaterialNavMenu } from './components/NavMenu'
+import { MaterialPagination } from './components/Pagination'
 import { MaterialRadio } from './components/Radio'
 import { MaterialSection } from './components/Section'
 import { MaterialSelect } from './components/Select'
 import { MaterialSkeleton } from './components/Skeleton'
 import { MaterialSpacer } from './components/Spacer'
 import { MaterialStack } from './components/Stack'
+import { MaterialStepper } from './components/Stepper'
 import { MaterialSwitch } from './components/Switch'
 import { MaterialTable } from './components/Table'
 import { MaterialTableCell } from './components/TableCell'
@@ -71,5 +76,11 @@ registerAdapter({
     'data-list-item': MaterialDataListItem,
     code: MaterialCode,
     skeleton: MaterialSkeleton,
+    // Phase 13 § 5.2 — navigation.
+    breadcrumb: MaterialBreadcrumb,
+    pagination: MaterialPagination,
+    'nav-menu': MaterialNavMenu,
+    'nav-item': MaterialNavItem,
+    stepper: MaterialStepper,
   },
 })

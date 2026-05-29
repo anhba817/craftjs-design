@@ -119,4 +119,12 @@ export interface CanonicalComponent<Props = Record<string, unknown>> {
   // cells, for example, are sized by the parent Table's colWidths /
   // rowHeights, not by a per-node width/height. Default true.
   canResize?: boolean;
+
+  // Phase 13 § 5.2 — prop-field names that the default PropsPanel should
+  // SKIP. The field still lives in propsSchema (so the canonical can
+  // read / write it via setProp), but the auto-generated form omits it.
+  // Use when a custom inspector panel owns the field's UX — e.g. Stepper
+  // hides `currentStep` because the StepperNavigator panel handles it
+  // with proper bounds.
+  hiddenPropFields?: readonly string[];
 }

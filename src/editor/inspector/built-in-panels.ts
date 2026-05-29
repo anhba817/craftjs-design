@@ -3,6 +3,7 @@ import { AppearancePanel } from './AppearancePanel'
 import { EffectsPanel } from './EffectsPanel'
 import { FiltersPanel } from './FiltersPanel'
 import { FontUploadPanel } from './FontUploadPanel'
+import { StepperNavigatorPanel } from './StepperNavigatorPanel'
 import { TableMergePanel } from './TableMergePanel'
 import { LayoutPanel } from './LayoutPanel'
 import { PropsPanel } from './PropsPanel'
@@ -133,6 +134,18 @@ registerPanel({
   order: 85,
   applicableTo: () => true,
   component: FontUploadPanel,
+})
+
+// Phase 13 § 5.2 — Stepper active-step navigator. Renders prev/next +
+// a select bounded by `steps.length`, so the user can't pick an invalid
+// step (the default PropsPanel input still shows currentStep as a free
+// number for power use).
+registerPanel({
+  id: 'stepperNav',
+  displayName: 'Active step',
+  order: 25,
+  applicableTo: (def) => def.id === 'stepper',
+  component: StepperNavigatorPanel,
 })
 
 // Phase 13 § 5.1 — Table cell merge. Applies when a TableCell is selected.

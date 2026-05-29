@@ -50,6 +50,11 @@ export function PropsPanel({ nodeId }: { nodeId: string }) {
   }
 
   const shape = schema.shape as Record<string, z.ZodType>
+  // Phase 13 § 5.2 — canonicals can opt fields out of the auto-generated
+  // form when a dedicated inspector panel owns the field's UX (Stepper →
+  // currentStep). The field stays in propsSchema and is still readable
+  // / writable via setProp.
+  const hiddenFields = new Set(def.hiddenPropFields ?? [])
 
   const set = (key: string, value: unknown) => {
     actions.setProp(nodeId, (props: NodeProps) => {
@@ -63,7 +68,9 @@ export function PropsPanel({ nodeId }: { nodeId: string }) {
 
   return (
     <section className="space-y-2">
-      {Object.entries(shape).map(([key, fieldSchema]) => (
+      {Object.entries(shape)
+        .filter(([key]) => !hiddenFields.has(key))
+        .map(([key, fieldSchema]) => (
         <PanelRow key={key} label={key}>
           {isImageField(def.id, key) ? (
             <ImagePicker

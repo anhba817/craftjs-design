@@ -3,6 +3,7 @@ import { ShadcnAlert } from './components/Alert'
 import { ShadcnAvatar } from './components/Avatar'
 import { ShadcnBadge } from './components/Badge'
 import { ShadcnBox } from './components/Box'
+import { ShadcnBreadcrumb } from './components/Breadcrumb'
 import { ShadcnButton } from './components/Button'
 import { ShadcnCard } from './components/Card'
 import { ShadcnCheckbox } from './components/Checkbox'
@@ -17,12 +18,16 @@ import { ShadcnIcon } from './components/Icon'
 import { ShadcnImage } from './components/Image'
 import { ShadcnInput } from './components/Input'
 import { ShadcnLink } from './components/Link'
+import { ShadcnNavItem } from './components/NavItem'
+import { ShadcnNavMenu } from './components/NavMenu'
+import { ShadcnPagination } from './components/Pagination'
 import { ShadcnRadio } from './components/Radio'
 import { ShadcnSection } from './components/Section'
 import { ShadcnSelect } from './components/Select'
 import { ShadcnSkeleton } from './components/Skeleton'
 import { ShadcnSpacer } from './components/Spacer'
 import { ShadcnStack } from './components/Stack'
+import { ShadcnStepper } from './components/Stepper'
 import { ShadcnSwitch } from './components/Switch'
 import { ShadcnTable } from './components/Table'
 import { ShadcnTableCell } from './components/TableCell'
@@ -69,5 +74,11 @@ registerAdapter({
     'data-list-item': ShadcnDataListItem,
     code: ShadcnCode,
     skeleton: ShadcnSkeleton,
+    // Phase 13 § 5.2 — navigation.
+    breadcrumb: ShadcnBreadcrumb,
+    pagination: ShadcnPagination,
+    'nav-menu': ShadcnNavMenu,
+    'nav-item': ShadcnNavItem,
+    stepper: ShadcnStepper,
   },
 })
