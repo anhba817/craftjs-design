@@ -38,8 +38,11 @@ import { MaterialTableCell } from './components/TableCell'
 import { MaterialTabs } from './components/Tabs'
 import { MaterialText } from './components/Text'
 import { MaterialTextarea } from './components/Textarea'
+import { MaterialDatePicker } from './components/DatePicker'
+import { MaterialDateRangePicker } from './components/DateRangePicker'
 import { MaterialProgress } from './components/Progress'
 import { MaterialSpinner } from './components/Spinner'
+import { MaterialTimePicker } from './components/TimePicker'
 import { MaterialToast } from './components/Toast'
 import { MaterialTooltip } from './components/Tooltip'
 
@@ -98,5 +101,9 @@ registerAdapter({
     // Phase 13 § 5.4 — feedback.
     progress: MaterialProgress,
     spinner: MaterialSpinner,
+    // Phase 13 § 5.6 — time.
+    'date-picker': MaterialDatePicker,
+    'time-picker': MaterialTimePicker,
+    'date-range-picker': MaterialDateRangePicker,
   },
 })

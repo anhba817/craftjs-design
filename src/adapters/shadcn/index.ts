@@ -37,8 +37,11 @@ import { ShadcnTableCell } from './components/TableCell'
 import { ShadcnTabs } from './components/Tabs'
 import { ShadcnText } from './components/Text'
 import { ShadcnTextarea } from './components/Textarea'
+import { ShadcnDatePicker } from './components/DatePicker'
+import { ShadcnDateRangePicker } from './components/DateRangePicker'
 import { ShadcnProgress } from './components/Progress'
 import { ShadcnSpinner } from './components/Spinner'
+import { ShadcnTimePicker } from './components/TimePicker'
 import { ShadcnToast } from './components/Toast'
 import { ShadcnTooltip } from './components/Tooltip'
 
@@ -96,5 +99,9 @@ registerAdapter({
     // Phase 13 § 5.4 — feedback.
     progress: ShadcnProgress,
     spinner: ShadcnSpinner,
+    // Phase 13 § 5.6 — time.
+    'date-picker': ShadcnDatePicker,
+    'time-picker': ShadcnTimePicker,
+    'date-range-picker': ShadcnDateRangePicker,
   },
 })
