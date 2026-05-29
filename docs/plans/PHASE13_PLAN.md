@@ -349,3 +349,80 @@ locations.
 When all 7 in-scope groups satisfy this bar, Phase 13 is complete and
 Phase 14 (Section 6 — persistence beyond localStorage) is unblocked.
 `0.4.0` cuts at the close-out commit.
+
+---
+
+## Close-out (`0.4.0`, 2026-05-30)
+
+**Shipped.** All seven in-scope groups (§ 5.1–5.7) complete; § 5.8 (Charts)
+and § 5.9 (Editor primitives) remain Stretch. Canonical count: **20 → 48**
+(+28). Every new canonical renders in both shadcn and MUI; the Chakra
+example adapter keeps its subset and degrades gracefully via the
+missing-renderer placeholder.
+
+### Per-group canonicals + pattern
+
+Pattern legend: **A** = single-slot canvas (children); **B-static** =
+fixed named canvas slots; **B-dynamic** = `canvasSlots(props)` function;
+**leaf** = no canvas.
+
+| Group | Canonicals | Pattern | Registry files |
+|---|---|---|---|
+| A — Layout (§ 5.5) | Grid, Container, Section | A | `src/registry/components/{grid,container,section}.ts` |
+| | Spacer | leaf | `…/spacer.ts` |
+| B — Data display (§ 5.1) | Table | B-dynamic (+ `slotComponent`) | `…/table.ts` |
+| | TableCell | A (slot) | `…/table-cell.ts` |
+| | DataList | B-dynamic | `…/data-list.ts` |
+| | DataListItem | A (slot) | `…/data-list-item.ts` |
+| | Code, Skeleton | leaf | `…/{code,skeleton}.ts` |
+| C — Navigation (§ 5.2) | Breadcrumb, Pagination | leaf (array prop) | `…/{breadcrumb,pagination}.ts` |
+| | NavMenu, NavItem | A | `…/{nav-menu,nav-item}.ts` |
+| | Stepper | B-dynamic | `…/stepper.ts` |
+| D — Overlays (§ 5.3) | Modal, Drawer, Popover | A | `…/{modal,drawer,popover}.ts` |
+| | Toast, Tooltip | leaf | `…/{toast,tooltip}.ts` |
+| E — Feedback (§ 5.4) | Progress, Spinner | leaf | `…/{progress,spinner}.ts` |
+| F — Time (§ 5.6) | DatePicker, TimePicker, DateRangePicker | leaf | `…/{date-picker,time-picker,date-range-picker}.ts` |
+| G — Media (§ 5.7) | Video, Audio | leaf | `…/{video,audio}.ts` |
+| | Carousel | B-dynamic | `…/carousel.ts` |
+
+Adapter impls live under `src/adapters/{shadcn,mui}/components/<Name>.tsx`
+(Video / Audio / Icon MUI impls re-export the shadcn versions where the
+primitive is native).
+
+### Key decisions made during the phase
+
+- **Overlay editing model (§ 5.3).** Started inline-in-canvas, revised to
+  **hidden-from-toolbox + attach-to-trigger + Overlay Stage preview**. At
+  runtime overlays use the library primitive; `useIsEditing()` is the
+  adapter contract, and the top-bar Preview toggle exercises both branches.
+  Tooltip / Popover use native hover / click-wrap rather than a manual
+  toggle.
+- **Trigger surface.** Eight canonicals (Button + Icon / Avatar / Badge /
+  Image / Link / NavItem / Card) carry a `triggers: string[]` and share the
+  `useShadcnTriggers` / `useMuiTriggers` hooks; the OverlayTriggers
+  inspector panel renders the checklist.
+- **Time pickers ship native** (`<input type="date|time">`) — `readOnly` in
+  editor, dropped at runtime so the picker opens. Rich calendar is Stretch.
+- **Dynamic-canvas helper exposed.** `slideSlotKeys` joins `tabSlotKeys` in
+  the SDK; the inspector now hides `id`-named ZodDefault slot-key fields and
+  unwraps ZodDefault / ZodOptional in `PropField` (fixed a latent Tabs bug).
+
+### Bundle delta
+
+`npm run build` (no minification, with sourcemap):
+
+| Asset | `0.3.0` raw / gz | `0.4.0` raw / gz |
+|---|---|---|
+| `index-*.js` | 603 / 182 KB | 608 / 184 KB |
+| `index-*.css` | 308 / 39 KB | 311 / 40 KB |
+
+~+5 KB raw JS for 28 canonicals × 2 adapters — the per-component files
+tree-shake well and lean on primitives already in the graph.
+
+### Tests
+
+580 passing (was ~573 pre-phase close); new suites cover overlay / feedback
+/ time / media registration + Carousel slide-key derivation.
+
+**Phase 13 complete.** Phase 14 (Section 6 — persistence beyond
+localStorage) is unblocked.

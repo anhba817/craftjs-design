@@ -124,6 +124,98 @@ App build (`npm run build`):
 
 (none yet)
 
+## [0.4.0] — 2026-05-30
+
+Phase 13 — Component breadth (Section 5). 28 new canonicals across seven
+groups (layout primitives, data display, navigation, overlays, feedback,
+time, media), each rendered in both the shadcn and MUI adapters. All
+additive; no breaking changes to the `0.3.x` SDK surface (new canonicals,
+two new SDK helpers, one new hook).
+
+### Added
+
+**Layout primitives** (§ 5.5) — `Grid`, `Container`, `Spacer`, `Section`.
+Grid is a Pattern A canvas with a column-count + gap; Container caps and
+centers content; Spacer is a fixed-size strut; Section is a semantic
+`<section>` wrapper.
+
+**Data display** (§ 5.1) — `Table` (+ `TableRow` / `TableCell` as
+slot-component canonicals), `DataList` (+ `DataListItem`), `Code`,
+`Skeleton`. Table is a Pattern B dynamic-canvas with per-cell drop zones,
+column/row resize, and a Cell-merge inspector panel. Code is a static
+preview (syntax highlighting is queued — see Stretch). Skeleton ships
+text / rectangle / circle variants.
+
+**Navigation** (§ 5.2) — `Breadcrumb`, `Pagination`, `NavMenu`,
+`NavItem`, `Stepper`. Each adapter renders its native primitive (MUI uses
+`Breadcrumbs` / `Pagination` / `List` / `Stepper`). Stepper is a Pattern
+B dynamic-canvas — one content canvas per step — with an Active-step
+navigator panel bounded by `steps.length`.
+
+**Overlays** (§ 5.3) — `Modal`, `Drawer`, `Toast`, `Tooltip`, `Popover`.
+Overlays don't appear in the toolbox; they're attached to a triggering
+component (Button + Icon / Avatar / Badge / Image / Link / NavItem /
+Card) via right-click **Attach overlay**. In editing mode each overlay
+portals a preview into a right-side **Overlay Stage**; at runtime it
+falls back to the library's real primitive (Radix / MUI Dialog, Drawer,
+Snackbar, Tooltip, Popover). Modal / Drawer / Toast / Alert use a
+click-toggle model backed by an overlay runtime store; Tooltip / Popover
+use the library's native hover / click-wrap behavior anchored to the
+trigger. A `PreviewToggle` in the top bar flips Craft's
+`state.options.enabled` so designers can sanity-check runtime behavior in
+place.
+
+**Feedback** (§ 5.4) — `Progress` (linear / circular, determinate),
+`Spinner` (indeterminate). shadcn uses Radix Progress + an SVG arc /
+lucide `Loader2`; MUI uses `LinearProgress` / `CircularProgress`.
+
+**Time** (§ 5.6) — `DatePicker`, `TimePicker`, `DateRangePicker`. Native
+`<input type="date|time">` across both adapters (no date-library
+dependency). `readOnly` in editor mode, dropped at runtime so the native
+picker opens. Rich calendar popovers are queued (see Stretch).
+
+**Media** (§ 5.7) — `Video`, `Audio`, `Carousel`. Video / Audio wrap the
+native players (MUI re-exports the shadcn impls). Carousel is a Pattern B
+dynamic-canvas: one canvas per slide, hover-reveal chevrons with
+dedicated `prevButton` / `nextButton` style slots, transparent floating
+dot navigation, `showChevrons` / `showDots` toggles, and a flex-fill drop
+zone that grows with the carousel's resized height.
+
+**SDK surface** (`@crafted-design/editor/sdk`)
+- `useIsEditing()` — true when Craft's `state.options.enabled` is set.
+  Overlay-style canonicals branch their render on this (inline + open in
+  the editor, real overlay at runtime). Documented adapter contract.
+- `slideSlotKeys` / `SLIDE_SLOT_PREFIX` and the `CarouselProps` type —
+  the Carousel dynamic-canvas helper, parallel to the existing
+  `tabSlotKeys`, for third-party adapters building a custom Carousel.
+
+### Changed
+
+- **Inspector field rendering.** `PropField` now unwraps `ZodDefault` /
+  `ZodOptional` before dispatching, fixing an "unsupported Zod kind" badge
+  on schemas with defaulted fields (Tabs had the same latent bug).
+  `ObjectField` hides `id` fields declared as `ZodDefault` (the stable
+  slot-key convention used by Tabs / Carousel) so they aren't editable.
+  `PropsPanel` humanizes field labels (`currentSlide` → "Current slide");
+  `PanelRow`'s label column widened and wraps so long labels don't
+  overflow.
+- Several display / media / navigation canonicals gained a `triggers`
+  array (overlay trigger linking) and opt the OverlayTriggers panel in.
+
+### Bundle
+
+Measured at `0.4.0` (`npm run build`, no minification, with sourcemap):
+
+| Asset | Raw | Gzipped |
+|---|---|---|
+| `dist/assets/index-*.js` | 608 KB | 184 KB |
+| `dist/assets/index-*.css` | 311 KB | 40 KB |
+
+Delta vs `0.3.0`: ~+5 KB raw JS / +1 KB gzipped despite 28 new canonicals
+× 2 adapters — the per-component files tree-shake well and most lean on
+existing shadcn / MUI primitives already in the graph. CSS grew ~+3 KB raw
+from the new canonicals' default classes.
+
 ## [0.3.0] — 2026-05-28
 
 Phase 12 — Style depth. The breakpoint × state matrix, transforms /

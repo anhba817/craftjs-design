@@ -58,3 +58,14 @@ export {
   uniqueTabValues,
 } from '../registry/components/tabs'
 export type { TabsProps } from '../registry/components/tabs'
+
+// Phase 13 § 5.7 — Carousel dynamic-canvas helper, same role as
+// tabSlotKeys: derive the per-slide canvas slot keys that match what
+// CanonicalNode allocates via the Carousel canonical's canvasSlots
+// function. Third-party adapters building a custom Carousel impl use
+// this to look up `slotChildren[key]` for each slide.
+export {
+  SLIDE_SLOT_PREFIX,
+  slideSlotKeys,
+} from '../registry/components/carousel'
+export type { CarouselProps } from '../registry/components/carousel'

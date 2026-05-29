@@ -65,9 +65,19 @@ function App() {
 
 ## Customizing the registry
 
-The editor pre-registers 20 canonicals, 3 adapters (shadcn / MUI / Chakra
-example), 2 themes, 7 inspector panels, and 3 starter templates. Override
+The editor pre-registers 48 canonicals, 3 adapters (shadcn / MUI / Chakra
+example), 7 themes, inspector panels, and starter templates. Override
 any of these by calling the SDK BEFORE rendering `<Editor />`:
+
+> **Adapter coverage policy.** shadcn and MUI implement **every** canonical.
+> The Chakra adapter is an *example* — a third-party-adapter demo that
+> renders a representative subset (Box, Heading, Button, Stack, Card,
+> and the basic inputs). It deliberately does **not** track every new
+> canonical. When a document uses a canonical the active adapter doesn't
+> implement, the node renders a labeled placeholder
+> (`<Name> — no impl in adapter "<adapter>"`) instead of crashing, so you
+> can swap adapters or remove the node. If you ship a production Chakra
+> adapter, fill the gaps the same way shadcn / MUI do.
 
 ### Remove a built-in canonical
 

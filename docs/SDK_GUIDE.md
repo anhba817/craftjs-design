@@ -375,6 +375,58 @@ path stays the zero-config default.
 
 ---
 
+## Overlays + dynamic canvases (Phase 13, 0.4.0)
+
+### `useIsEditing()` — the overlay editor-mode contract
+
+```ts
+import { useIsEditing } from '@crafted-design/editor/sdk'
+
+function MyOverlay({ props, children }: AdapterRenderProps) {
+  const editing = useIsEditing() // true while authoring; false in preview / runtime
+  if (editing) return <InlinePreview>{children}</InlinePreview>
+  return <RealDialogPrimitive>{children}</RealDialogPrimitive>
+}
+```
+
+`useIsEditing()` returns Craft's `state.options.enabled`. The built-in
+overlay canonicals (Modal / Drawer / Toast / Tooltip / Popover) follow a
+contract that custom overlay canonicals should mirror:
+
+- **Editing mode** — render an inline, always-open preview so the content
+  is a normal drop target the designer can drop into and style. The
+  built-ins portal this preview into the **Overlay Stage** (the right-side
+  panel) via `createPortal` to `#craftjs-overlay-stage`, but a custom
+  overlay can render inline in place if that fits better.
+- **Preview / runtime** — render the library's real overlay (Dialog,
+  Drawer, Snackbar, Tooltip, Popover) with its own open / hover / dismiss
+  behavior. Open state for click-toggle overlays lives in the overlay
+  runtime store, keyed by the canonical's `name` prop; triggering
+  components (Button, Icon, …) flip it via their `triggers: string[]`.
+
+The top-bar **Preview** toggle flips `state.options.enabled`, so a designer
+can switch between the two branches without leaving the editor.
+
+### Carousel / dynamic-canvas slot helper
+
+```ts
+import { slideSlotKeys, SLIDE_SLOT_PREFIX } from '@crafted-design/editor/sdk'
+import type { CarouselProps } from '@crafted-design/editor/sdk'
+
+// In a custom Carousel adapter impl: look up each slide's canvas child.
+const keys = slideSlotKeys(props.slides)
+return keys.map((k, i) => <Slide key={k}>{slotChildren[k]}</Slide>)
+```
+
+`slideSlotKeys` mirrors `tabSlotKeys` (§ Canonical surface): it derives the
+per-slide canvas slot keys that `CanonicalNode` allocates from the Carousel
+canonical's `canvasSlots(props)` function, so a third-party adapter reads
+the right entries out of `slotChildren`. Both helpers are the pattern for
+**any** dynamic-canvas canonical — a canonical whose `canvasSlots` is a
+`(props) => readonly string[]` function rather than a static list.
+
+---
+
 ## What's NOT exported
 
 The following are internal and may change without notice:

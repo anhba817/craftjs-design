@@ -194,6 +194,78 @@ When each named region needs to be its own independently-droppable canvas (Card 
 
 4. **Document migrations.** Changing a canonical from props-driven to multi-canvas (or back) is a persisted-shape change. Existing saved documents have the old shape baked in. Add a migration step in `src/persistence/migrations.ts` that walks the Craft tree and rewrites stale Card / Splitter / etc. nodes. The Phase-6 Card migration is the reference example — strip the dropped string props AND flip persisted `isCanvas: true` to `false`.
 
+### Adding a dynamic-canvas canonical (one canvas per data item)
+
+When the **number** of canvases depends on a prop (Tabs → one per tab,
+Carousel → one per slide, Stepper → one per step), `canvasSlots` is a
+**function** instead of a static list:
+
+1. Give each item a stable id and derive slot keys from it. Use a
+   `z.string().default(() => genId())` field named `id` — the inspector
+   hides `id`-named ZodDefault fields automatically, so the designer never
+   edits the slot key (editing it would orphan the dropped content). Export
+   a `slotKeys(items)` helper next to the canonical:
+
+   ```ts
+   export function slideSlotKeys(slides: readonly { id: string }[]) {
+     return slides.map((s) => `slide-${s.id}`)
+   }
+   registerCanonical({
+     id: 'carousel',
+     isCanvas: false,
+     styleSlots: ['root', 'slide', /* … */],
+     canvasSlots: (props) => slideSlotKeys((props as CarouselProps).slides),
+     // …
+   })
+   ```
+
+2. The adapter reads `slotChildren[key]` for each item via the same helper.
+   Export the helper from `src/sdk/canonical.ts` so third-party adapters can
+   match the keys (`tabSlotKeys` / `slideSlotKeys` are the precedents).
+
+3. Branch on `useIsEditing()` if the runtime view differs from the authoring
+   view (Carousel pins to the authored `currentSlide` in the editor but owns
+   its own next/prev index at runtime).
+
+### Authoring an overlay canonical (inline in editor, real overlay at runtime)
+
+Modal / Drawer / Toast / Tooltip / Popover follow one contract — copy it for
+any custom overlay:
+
+1. **Branch the adapter on `useIsEditing()`** (`@crafted-design/editor/sdk`):
+
+   ```tsx
+   import { useIsEditing } from '@crafted-design/editor/sdk'
+   import { createPortal } from 'react-dom'
+
+   export function ShadcnMyOverlay({ props, children, rootRef }: AdapterRenderProps) {
+     const editing = useIsEditing()
+     if (editing) {
+       // Inline, always-open preview so the content is a normal drop target.
+       // Built-ins portal this into the Overlay Stage:
+       const stage = document.getElementById('craftjs-overlay-stage')
+       return stage ? createPortal(<Preview ref={rootRef}>{children}</Preview>, stage) : null
+     }
+     // Runtime: the library's real overlay with its own open / dismiss behavior.
+     return <RealDialog>{children}</RealDialog>
+   }
+   ```
+
+2. **Hide it from the toolbox** (`hidden: true` on the canonical) if it should
+   only be reachable by attaching to a trigger. The built-in overlays do this;
+   they're created via the right-click **Attach overlay** menu, which also
+   wires the trigger's `triggers: string[]` to the overlay's `name`.
+
+3. **Open state lives in the overlay runtime store** (keyed by the `name`
+   prop), not in the canonical's own state — so a Button elsewhere in the
+   document can toggle it. Tooltip / Popover instead register their content
+   into the store and let the trigger wrap itself in the library primitive
+   (native hover / click), rather than toggling open.
+
+4. **Test the `useIsEditing` branch both ways** — the top-bar **Preview**
+   toggle flips `state.options.enabled`, so you can confirm the inline preview
+   and the real overlay in the same session.
+
 ### Adding an adapter
 
 A new adapter wraps a UI library and provides impls for some or all canonicals. Missing impls render a labeled placeholder — the user can swap to a covering adapter or remove the node.

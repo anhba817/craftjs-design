@@ -17,8 +17,12 @@ Each item is tagged:
 
 ## Where the editor stands today
 
+> **Update (`0.4.0`, Phase 13):** the canonical count below is now **48**
+> — Section 5 (Component breadth) shipped every § 5.1–5.7 item in both
+> shadcn and MUI. See § 5 for the per-group status.
+
 **What works:**
-- 20 canonical components, full coverage in shadcn + MUI adapters.
+- 48 canonical components, full coverage in shadcn + MUI adapters.
 - Multi-document store with import / export / share-by-URL / templates.
 - Hot canonical reload (registry version + setOptions).
 - Pluggable inspector panels via `registerPanel`.
@@ -557,56 +561,66 @@ ColorPicker (see 2.12) gets this for free.
 
 ## 5. Component breadth — closing the canonical gap
 
-Today the editor ships 20 canonicals. A real component library has 60+.
-Missing canonicals organized by category:
+**Status: shipped in `0.4.0` (Phase 13).** The editor now ships 48
+canonicals (up from 20), every § 5.1–5.7 item rendered in both the shadcn
+and MUI adapters. § 5.8 (Charts) and § 5.9 (Editor primitives) remain
+Stretch — each needs a heavy library and is deferred to a later phase.
 
-### 5.1 Data display *(High / UX)*
-- Table (with rows / cells / headers as canvas slots)
-- DataList (key-value list)
-- Code block (syntax-highlighted)
-- Skeleton (loading placeholder)
+### 5.1 Data display *(High / UX)* — ✅ shipped
+- ✅ Table (rows / cells as slot-component canonicals; per-cell drop
+  zones, column/row resize, Cell-merge panel)
+- ✅ DataList (+ DataListItem)
+- ✅ Code block (static; syntax highlighting queued — Stretch)
+- ✅ Skeleton (text / rectangle / circle)
 
-### 5.2 Navigation *(High / UX)*
-- Breadcrumb
-- Pagination
-- Sidebar / NavMenu
-- Stepper (deferred since Phase 6)
+### 5.2 Navigation *(High / UX)* — ✅ shipped
+- ✅ Breadcrumb
+- ✅ Pagination
+- ✅ NavMenu (+ NavItem)
+- ✅ Stepper (Pattern B dynamic-canvas; Active-step navigator panel)
 
-### 5.3 Overlays *(High / UX)*
-- Modal / Dialog
-- Drawer
-- Toast / Snackbar
-- Tooltip (as canonical, currently mock)
-- Popover
+### 5.3 Overlays *(High / UX)* — ✅ shipped
+- ✅ Modal / Dialog
+- ✅ Drawer
+- ✅ Toast / Snackbar
+- ✅ Tooltip (real canonical; native hover at runtime)
+- ✅ Popover
+- Attached via right-click **Attach overlay**; editor previews them in
+  the Overlay Stage, runtime uses the library primitive. `useIsEditing()`
+  is the adapter contract.
 
-### 5.4 Feedback *(UX)*
-- Progress (linear + circular)
-- Spinner / Loader
+### 5.4 Feedback *(UX)* — ✅ shipped
+- ✅ Progress (linear + circular, determinate)
+- ✅ Spinner / Loader (indeterminate)
 
-### 5.5 Layout *(UX)*
-- Grid (currently just a Box class; deserves first-class canonical)
-- Container (max-width wrapper)
-- Spacer
-- Section / Article semantic wrappers
+### 5.5 Layout *(UX)* — ✅ shipped
+- ✅ Grid (first-class canonical)
+- ✅ Container (max-width wrapper)
+- ✅ Spacer
+- ✅ Section (semantic wrapper)
 
-### 5.6 Time *(UX)*
-- DatePicker
-- TimePicker
-- DateRangePicker
+### 5.6 Time *(UX)* — ✅ shipped
+- ✅ DatePicker
+- ✅ TimePicker
+- ✅ DateRangePicker
+- Native `<input type="date|time">` for v1; rich calendar popover queued
+  (Stretch).
 
-### 5.7 Media *(UX)*
-- Video
-- Audio
-- Carousel (multi-canvas of slides)
+### 5.7 Media *(UX)* — ✅ shipped
+- ✅ Video
+- ✅ Audio
+- ✅ Carousel (Pattern B dynamic-canvas of slides)
 
-### 5.8 Charts *(Stretch)*
+### 5.8 Charts *(Stretch)* — not started
 - Line, Bar, Pie, Area
 - Sparkline
+- Needs a chart library (Recharts / Visx); deferred to a later phase.
 
-### 5.9 Editor primitives *(Stretch)*
+### 5.9 Editor primitives *(Stretch)* — not started
 - Markdown renderer
 - Rich text (WYSIWYG)
 - Math (KaTeX)
+- Each is its own large dependency; deferred.
 
 ---
 
