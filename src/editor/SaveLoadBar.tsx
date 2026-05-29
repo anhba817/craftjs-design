@@ -7,6 +7,7 @@ import { ImportError, importDocumentFromFile } from '@/persistence/importDocumen
 import type { EditorDocument } from '@/persistence/schema'
 import { AdapterSwitcher } from './AdapterSwitcher'
 import { ColorModeToggle } from './ColorModeToggle'
+import { PreviewToggle } from './PreviewToggle'
 import { DocumentMenu } from './documents/DocumentMenu'
 import { ShareButton } from './ShareButton'
 import { ThemeSwitcher } from './ThemeSwitcher'
@@ -103,6 +104,7 @@ export function SaveLoadBar() {
       <DocumentMenu />
       <UndoRedo />
       <div className="flex-1" />
+      <PreviewToggle />
       <AdapterSwitcher />
       <ThemeSwitcher />
       <ThemeEditorButton />

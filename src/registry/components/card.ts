@@ -12,7 +12,11 @@ import { registerComponent } from '../registry'
 // `canvasSlots` only lists droppable regions; `root` is styling-only and is
 // not a canvas. The inspector's SlotPicker exposes all four styleSlots for
 // per-slot class editing.
-export const cardPropsSchema = z.object({})
+export const cardPropsSchema = z.object({
+  // Phase 13 § 5.3 — overlay trigger linking. Clicking a preview card
+  // to open a detail modal is the common UX driving this.
+  triggers: z.array(z.string()),
+})
 export type CardProps = z.infer<typeof cardPropsSchema>
 
 registerComponent<CardProps>({
@@ -25,9 +29,10 @@ registerComponent<CardProps>({
   canvasSlots: ['header', 'body', 'footer'],
   propsSchema: cardPropsSchema,
   defaults: {
-    props: {},
+    props: { triggers: [] },
     style: {
       classes: { root: '', header: '', body: '', footer: '' },
     },
   },
+  hiddenPropFields: ['triggers'],
 })

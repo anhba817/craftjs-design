@@ -1,7 +1,10 @@
 import { useNode } from '@craftjs/core'
 import MuiButton from '@mui/material/Button'
+import { useRef } from 'react'
 import { EditableText } from '@/editor/text-edit/EditableText'
+import type { ButtonProps } from '@/registry/components/button'
 import { useEditorStore } from '@/state/editorStore'
+import { useMuiTriggers } from '../triggers'
 import type { AdapterRenderProps } from '../../types'
 
 const INTENT_TO_COLOR = {
@@ -12,37 +15,39 @@ const INTENT_TO_COLOR = {
 
 type Intent = keyof typeof INTENT_TO_COLOR
 
-// MUI components are forwardRef-wrapped internally, so unlike ShadcnButton we
-// can pass `ref` directly without the `display: contents` span workaround.
-// `rootRef as never` casts because MUI's ref type is HTMLButtonElement-specific;
-// our editor-side callback uses the wider HTMLElement parameter.
 export function MaterialButton({
   props,
   rootRef,
   sx,
   inlineStyle,
 }: AdapterRenderProps) {
-  const { label, intent, disabled } = props as {
-    label: string
-    intent: Intent
-    disabled: boolean
-  }
+  const { label, intent, disabled, triggers } = props as ButtonProps
   const { id } = useNode()
   const setEditingTextNode = useEditorStore((s) => s.setEditingTextNode)
-  return (
+  const anchorRef = useRef<HTMLButtonElement | null>(null)
+  const { onClick, wrap } = useMuiTriggers(triggers, anchorRef)
+
+  return wrap(
     <MuiButton
-      ref={rootRef as never}
+      ref={(el) => {
+        anchorRef.current = el
+        if (typeof rootRef === 'function')
+          (rootRef as (el: HTMLButtonElement | null) => void)(el)
+        else if (rootRef && 'current' in rootRef)
+          (rootRef as React.MutableRefObject<HTMLButtonElement | null>).current = el
+      }}
       variant="contained"
-      color={INTENT_TO_COLOR[intent] ?? 'primary'}
+      color={INTENT_TO_COLOR[intent as Intent] ?? 'primary'}
       disabled={disabled}
       sx={sx}
       style={inlineStyle}
+      onClick={onClick}
       onDoubleClick={(e: React.MouseEvent) => {
         e.stopPropagation()
         setEditingTextNode(id)
       }}
     >
       <EditableText text={label} propPath="label" />
-    </MuiButton>
+    </MuiButton>,
   )
 }

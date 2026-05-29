@@ -27,6 +27,7 @@ import {
 import { Hydrator } from './Hydrator'
 import { Inspector } from './Inspector'
 import { LeftAside } from './LeftAside'
+import { OverlayStage } from './OverlayStage'
 import { ConcurrentEditBanner } from './persistence/ConcurrentEditBanner'
 import { useConcurrentEditWatcher } from './persistence/concurrentEditWatcher'
 import { StorageQuotaBanner } from './persistence/StorageQuotaBanner'
@@ -152,6 +153,12 @@ export function Editor() {
                 </ErrorBoundary>
               </main>
             </ThemeProvider>
+            {/* Phase 13 § 5.3 — Modals / Drawers / Toasts / Tooltips /
+                Popovers portal here in editing mode (via the
+                `craftjs-overlay-stage` div inside) so they don't
+                pollute the canvas layout. Empty when no overlays are
+                attached. */}
+            <OverlayStage />
             <Inspector />
           </div>
         </div>

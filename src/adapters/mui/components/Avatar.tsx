@@ -1,4 +1,8 @@
 import MuiAvatar from '@mui/material/Avatar'
+import { useRef } from 'react'
+import { cn } from '@/lib/utils'
+import type { AvatarProps } from '@/registry/components/avatar'
+import { useMuiTriggers } from '../triggers'
 import type { AdapterRenderProps } from '../../types'
 
 export function MaterialAvatar({
@@ -7,20 +11,27 @@ export function MaterialAvatar({
   className,
   inlineStyle,
 }: AdapterRenderProps) {
-  const { src, alt, fallback } = props as {
-    src: string
-    alt: string
-    fallback: string
-  }
-  return (
+  const { src, alt, fallback, triggers } = props as AvatarProps
+  const anchorRef = useRef<HTMLDivElement | null>(null)
+  const { onClick, wrap } = useMuiTriggers(triggers, anchorRef)
+  const hasTriggers = (triggers ?? []).length > 0
+  return wrap(
     <MuiAvatar
-      ref={rootRef as never}
+      ref={(el) => {
+        anchorRef.current = el as HTMLDivElement | null
+        if (typeof rootRef === 'function')
+          (rootRef as (el: HTMLDivElement | null) => void)(el as HTMLDivElement | null)
+        else if (rootRef && 'current' in rootRef)
+          (rootRef as React.MutableRefObject<HTMLDivElement | null>).current =
+            el as HTMLDivElement | null
+      }}
       src={src || undefined}
       alt={alt}
-      className={className}
+      onClick={onClick}
+      className={cn(hasTriggers && 'cursor-pointer', className)}
       style={inlineStyle}
     >
       {!src && fallback}
-    </MuiAvatar>
+    </MuiAvatar>,
   )
 }

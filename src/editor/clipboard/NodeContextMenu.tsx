@@ -1,60 +1,74 @@
-import { useEditor } from '@craftjs/core'
+import { Element, useEditor } from '@craftjs/core'
 import { ContextMenu } from 'radix-ui'
 import {
+  Bell,
+  Bookmark,
+  ChevronRight,
   ClipboardCopy,
   ClipboardPaste,
   Copy as CopyIcon,
   Group,
+  MessageSquare,
+  PanelRightOpen,
   Scissors,
+  Square,
   Trash2,
 } from 'lucide-react'
+import { getResolver } from '../../craft/resolver'
+import { getComponent } from '../../registry/registry'
 import { useEditorStore } from '@/state/editorStore'
 import { useClipboardActions } from './useClipboardActions'
 import type { ReactNode } from 'react'
 
 // Phase 11 § 3.12 — right-click context menu on canvas nodes.
 //
-// Wraps each canvas region so onContextMenu on any node opens a menu
-// targeted at the clicked node. Items: Cut / Copy / Paste / Duplicate
-// / Delete + the structural Wrap-in-Stack / Wrap-in-Box helpers.
-//
-// "Wrap in" creates a new wrapper canonical at the target's position,
-// then re-parents the target under it. A single Craft action chain via
-// addNodeTree + move so undo rolls it back as one step.
-//
-// Keyboard-accessible: Radix's ContextMenu handles arrow / Enter /
-// Escape internally. The menu also responds to Cmd-equivalent
-// shortcuts shown as right-aligned hint text on each item.
+// Phase 13 § 5.3 adds an "Attach overlay" submenu for trigger
+// components (Button) that creates a hidden overlay canonical
+// (Modal / Drawer / Toast / Tooltip / Popover) parented to ROOT,
+// auto-generates a unique `name`, links it into the trigger's
+// `triggers: string[]`, and selects the new overlay so it appears in
+// the OverlayStage with focus.
 
 interface NodeContextMenuProps {
   children: ReactNode
 }
 
+const OVERLAY_KINDS = [
+  { id: 'modal', displayName: 'Modal', icon: Square, label: 'Modal' },
+  { id: 'drawer', displayName: 'Drawer', icon: PanelRightOpen, label: 'Drawer' },
+  { id: 'toast', displayName: 'Toast', icon: Bell, label: 'Toast' },
+  { id: 'tooltip', displayName: 'Tooltip', icon: MessageSquare, label: 'Tooltip' },
+  { id: 'popover', displayName: 'Popover', icon: Bookmark, label: 'Popover' },
+] as const
+
+// Triggerable components — every canonical that opted into the
+// `triggers: string[]` prop. Kept in sync with `TRIGGERABLE_IDS` in
+// `built-in-panels.ts`.
+const TRIGGERABLE_DISPLAY_NAMES = new Set([
+  'Button',
+  'Icon',
+  'Avatar',
+  'Badge',
+  'Image',
+  'Link',
+  'Nav Item',
+  'Card',
+])
+
 export function NodeContextMenu({ children }: NodeContextMenuProps) {
-  // Subscribing to selection via the collector is REQUIRED — calling
-  // useEditor() without a collector returns actions+query only and
-  // doesn't re-render on state changes. Without this, the menu's
-  // `disabled` props were captured at first render (no selection →
-  // every item greyed) and never updated when handleContextMenu
-  // called actions.selectNode below.
-  const { actions, query, selectedId } = useEditor((state) => {
-    const ids = state.events.selected
-      ? Array.from(state.events.selected)
-      : []
-    return { selectedId: (ids[0] as string | undefined) ?? null }
-  })
+  const { actions, query, selectedId, selectedDisplayName } = useEditor(
+    (state) => {
+      const ids = state.events.selected
+        ? Array.from(state.events.selected)
+        : []
+      const id = (ids[0] as string | undefined) ?? null
+      const dn = id ? (state.nodes[id]?.data.displayName as string | undefined) : undefined
+      return { selectedId: id, selectedDisplayName: dn ?? null }
+    },
+  )
   const { copy, cut, paste, duplicate } = useClipboardActions()
   const clipboard = useEditorStore((s) => s.clipboard)
 
-  // Phase 11 — right-click should ALWAYS select the clicked node before
-  // the menu opens. Craft.js's default connector handles left-click
-  // selection but doesn't fire on contextmenu, so we resolve the
-  // target here by walking up from event.target to the nearest
-  // [data-craft-node-id] (stamped on every canvas node by
-  // CanonicalNode.attachRef) and call actions.selectNode. The
-  // useEditor subscription above ensures the menu re-renders before
-  // Radix shows it, so the items pick up the new selection's enabled
-  // state.
   const handleContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
     const startEl = event.target as HTMLElement | null
     if (!startEl) return
@@ -62,17 +76,11 @@ export function NodeContextMenu({ children }: NodeContextMenuProps) {
     if (!nodeEl) return
     const nodeId = nodeEl.getAttribute('data-craft-node-id')
     if (!nodeId) return
-    // Only re-select when the right-click hits a DIFFERENT node from
-    // the current selection — avoids redundant Craft dispatches.
     if (selectedId !== nodeId) {
       actions.selectNode(nodeId)
     }
   }
 
-  // The target node is the current selection. handleContextMenu
-  // synchronously updates it before Radix opens the menu; the
-  // useEditor subscription above re-renders us so disabled props
-  // reflect the new selection.
   const getTarget = (): string | null => selectedId
 
   const handleCopy = () => {
@@ -97,9 +105,6 @@ export function NodeContextMenu({ children }: NodeContextMenuProps) {
     if (id && id !== 'ROOT') actions.delete(id)
   }
 
-  // "Wrap in X" creates a wrapper canonical at the target's position
-  // and reparents the target under it. Uses the editor's resolver to
-  // build the wrapper element from the canonical's defaults.
   const handleWrap = (wrapperCanonicalId: 'stack' | 'box') => {
     const targetId = getTarget()
     if (!targetId || targetId === 'ROOT') return
@@ -112,12 +117,6 @@ export function NodeContextMenu({ children }: NodeContextMenuProps) {
     const sourceIndex = siblings.indexOf(targetId)
     if (sourceIndex < 0) return
 
-    // Build the wrapper from the canonical registry's defaults. We
-    // can't import the registry directly inside this file (boundary
-    // discipline), but parseSerializedNode handles a minimal
-    // SerializedNode shape — type.resolvedName + props + custom +
-    // displayName. The resolver inside Craft.js maps that back to
-    // the bound React component.
     const wrapperNodeData: Parameters<
       typeof query.parseSerializedNode
     >[0] = {
@@ -138,9 +137,71 @@ export function NodeContextMenu({ children }: NodeContextMenuProps) {
       .parseSerializedNode(wrapperNodeData)
       .toNode()
     actions.add(wrapperNode, parentId, sourceIndex)
-    // After add(), wrapperNode.id is the actual id. Move the target
-    // into it as the first child.
     actions.move(targetId, wrapperNode.id, 0)
+  }
+
+  // Phase 13 § 5.3 — attach an overlay to the selected trigger.
+  // Creates the overlay node at ROOT with a unique `name`, appends
+  // the name to the trigger's `triggers` array, selects the new
+  // overlay so the OverlayStage focuses on it.
+  const handleAttachOverlay = (kind: typeof OVERLAY_KINDS[number]) => {
+    const targetId = getTarget()
+    if (!targetId) return
+    const def = getComponent(kind.id)
+    if (!def) return
+    const resolver = getResolver()
+    const Bound = resolver[kind.displayName]
+    if (!Bound) return
+
+    // Generate a unique `name` across all overlay nodes in the doc so
+    // triggers don't collide.
+    const taken = new Set<string>()
+    const allNodes = query.getNodes()
+    for (const node of Object.values(allNodes)) {
+      const dn = node.data.displayName as string | undefined
+      if (
+        dn &&
+        (OVERLAY_KINDS as readonly { displayName: string }[]).some(
+          (k) => k.displayName === dn,
+        )
+      ) {
+        const nm = (node.data.props as { nodeProps?: { name?: string } })
+          .nodeProps?.name
+        if (nm) taken.add(nm)
+      }
+    }
+    let candidate: string = kind.id
+    let n = 0
+    while (taken.has(candidate)) {
+      n++
+      candidate = `${kind.id}-${n}`
+    }
+
+    const nodeProps = { ...def.defaults.props, name: candidate }
+    const element = (
+      <Element
+        is={Bound}
+        canvas={def.isCanvas}
+        nodeProps={nodeProps}
+        style={def.defaults.style}
+      />
+    )
+    const tree = query.parseReactElement(element).toNodeTree()
+    actions.addNodeTree(tree, 'ROOT')
+
+    // Append to the trigger's triggers array.
+    actions.setProp(
+      targetId,
+      (p: { nodeProps?: { triggers?: string[] } }) => {
+        if (!p.nodeProps) return
+        const existing = p.nodeProps.triggers ?? []
+        p.nodeProps.triggers = [...existing, candidate]
+      },
+    )
+
+    // Select the new overlay so the user immediately sees it in the
+    // OverlayStage.
+    actions.selectNode(tree.rootNodeId)
   }
 
   const hasSelection = getTarget() !== null
@@ -148,27 +209,21 @@ export function NodeContextMenu({ children }: NodeContextMenuProps) {
   const canCutCopy = hasSelection && !targetIsRoot
   const canPaste = clipboard !== null
   const canWrap = canCutCopy
+  const canAttachOverlay =
+    hasSelection &&
+    !targetIsRoot &&
+    selectedDisplayName !== null &&
+    TRIGGERABLE_DISPLAY_NAMES.has(selectedDisplayName)
 
   return (
     <ContextMenu.Root>
-      {/* asChild slotted into <CanvasKeyboardRegion> previously, but
-          that's a function component without forwarded refs — Radix's
-          Slot then can't attach the contextmenu listener and right-
-          click silently does nothing. Wrapping children in a real
-          <div> that the Trigger owns fixes it. `contents` keeps the
-          wrapper layout-transparent so the canvas's flex sizing isn't
-          disturbed. */}
       <ContextMenu.Trigger asChild>
         <div className="contents" onContextMenu={handleContextMenu}>
           {children}
         </div>
       </ContextMenu.Trigger>
       <ContextMenu.Portal>
-        <ContextMenu.Content
-          // Tailwind classes mirror the existing shadcn Popover style
-          // so the menu fits the editor's visual language.
-          className="z-50 min-w-[12rem] rounded-lg border border-border bg-popover p-1 text-sm text-popover-foreground shadow-md outline-none"
-        >
+        <ContextMenu.Content className="z-50 min-w-[12rem] rounded-lg border border-border bg-popover p-1 text-sm text-popover-foreground shadow-md outline-none">
           <ContextMenu.Item
             disabled={!canCutCopy}
             onSelect={handleCut}
@@ -216,6 +271,36 @@ export function NodeContextMenu({ children }: NodeContextMenuProps) {
           >
             <Group size={12} aria-hidden /> Wrap in Box
           </ContextMenu.Item>
+          <ContextMenu.Separator className="my-1 h-px bg-border" />
+          {/* Phase 13 § 5.3 — Attach overlay (only for triggerable
+              components). Submenu lists every overlay canonical;
+              picking one creates it parented to ROOT and links it
+              into the trigger's `triggers` array. */}
+          <ContextMenu.Sub>
+            <ContextMenu.SubTrigger
+              disabled={!canAttachOverlay}
+              className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-muted data-[disabled]:opacity-40"
+            >
+              <PanelRightOpen size={12} aria-hidden /> Attach overlay
+              <ChevronRight size={12} aria-hidden className="ml-auto" />
+            </ContextMenu.SubTrigger>
+            <ContextMenu.Portal>
+              <ContextMenu.SubContent className="z-50 min-w-[10rem] rounded-lg border border-border bg-popover p-1 text-sm text-popover-foreground shadow-md outline-none">
+                {OVERLAY_KINDS.map((kind) => {
+                  const Icon = kind.icon
+                  return (
+                    <ContextMenu.Item
+                      key={kind.id}
+                      onSelect={() => handleAttachOverlay(kind)}
+                      className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-muted"
+                    >
+                      <Icon size={12} aria-hidden /> {kind.label}
+                    </ContextMenu.Item>
+                  )
+                })}
+              </ContextMenu.SubContent>
+            </ContextMenu.Portal>
+          </ContextMenu.Sub>
           <ContextMenu.Separator className="my-1 h-px bg-border" />
           <ContextMenu.Item
             disabled={!canCutCopy}

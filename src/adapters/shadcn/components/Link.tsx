@@ -1,4 +1,6 @@
 import { cn } from '@/lib/utils'
+import type { LinkProps } from '@/registry/components/link'
+import { useShadcnTriggers } from '../triggers'
 import type { AdapterRenderProps } from '../../types'
 
 export function ShadcnLink({
@@ -7,16 +9,18 @@ export function ShadcnLink({
   className,
   inlineStyle,
 }: AdapterRenderProps) {
-  const { href, label, target } = props as {
-    href: string
-    label: string
-    target: '_self' | '_blank'
+  const { href, label, target, triggers } = props as LinkProps
+  const { onClick: triggersOnClick, wrap } = useShadcnTriggers(triggers)
+
+  // preventDefault keeps the editor from navigating off-canvas; trigger
+  // handlers still fire so tooltip / popover / modal behavior works
+  // even when href is set.
+  const handleClick: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
+    e.preventDefault()
+    triggersOnClick?.()
   }
-  // In editor mode, clicking the link shouldn't navigate (would yank the user
-  // off the canvas). Phase 5 just renders without a real navigation handler —
-  // the href is informational for the user authoring the link. Phase 6 polish
-  // could intercept clicks within the editor's canvas.
-  return (
+
+  return wrap(
     <a
       ref={rootRef as never}
       href={href}
@@ -24,9 +28,9 @@ export function ShadcnLink({
       rel={target === '_blank' ? 'noopener noreferrer' : undefined}
       className={cn(className)}
       style={inlineStyle}
-      onClick={(e) => e.preventDefault()}
+      onClick={handleClick}
     >
       {label}
-    </a>
+    </a>,
   )
 }

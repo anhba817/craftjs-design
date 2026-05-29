@@ -6,6 +6,9 @@ export const avatarPropsSchema = z.object({
   alt: z.string(),
   // Two-letter fallback shown when src is empty or fails to load.
   fallback: z.string(),
+  // Phase 13 § 5.3 — overlay trigger linking. Hover-tooltip / click-popover
+  // are the natural avatar interactions; modal / drawer / toast also work.
+  triggers: z.array(z.string()),
 })
 export type AvatarProps = z.infer<typeof avatarPropsSchema>
 
@@ -18,7 +21,8 @@ registerComponent<AvatarProps>({
   styleSlots: ['root'],
   propsSchema: avatarPropsSchema,
   defaults: {
-    props: { src: '', alt: 'Avatar', fallback: 'AB' },
+    props: { src: '', alt: 'Avatar', fallback: 'AB', triggers: [] },
     style: { classes: { root: '' } },
   },
+  hiddenPropFields: ['triggers'],
 })

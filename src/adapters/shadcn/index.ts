@@ -12,15 +12,18 @@ import { ShadcnContainer } from './components/Container'
 import { ShadcnDataList } from './components/DataList'
 import { ShadcnDataListItem } from './components/DataListItem'
 import { ShadcnDivider } from './components/Divider'
+import { ShadcnDrawer } from './components/Drawer'
 import { ShadcnGrid } from './components/Grid'
 import { ShadcnHeading } from './components/Heading'
 import { ShadcnIcon } from './components/Icon'
 import { ShadcnImage } from './components/Image'
 import { ShadcnInput } from './components/Input'
 import { ShadcnLink } from './components/Link'
+import { ShadcnModal } from './components/Modal'
 import { ShadcnNavItem } from './components/NavItem'
 import { ShadcnNavMenu } from './components/NavMenu'
 import { ShadcnPagination } from './components/Pagination'
+import { ShadcnPopover } from './components/Popover'
 import { ShadcnRadio } from './components/Radio'
 import { ShadcnSection } from './components/Section'
 import { ShadcnSelect } from './components/Select'
@@ -34,6 +37,8 @@ import { ShadcnTableCell } from './components/TableCell'
 import { ShadcnTabs } from './components/Tabs'
 import { ShadcnText } from './components/Text'
 import { ShadcnTextarea } from './components/Textarea'
+import { ShadcnToast } from './components/Toast'
+import { ShadcnTooltip } from './components/Tooltip'
 
 registerAdapter({
   id: 'shadcn',
@@ -80,5 +85,11 @@ registerAdapter({
     'nav-menu': ShadcnNavMenu,
     'nav-item': ShadcnNavItem,
     stepper: ShadcnStepper,
+    // Phase 13 § 5.3 — overlays.
+    modal: ShadcnModal,
+    drawer: ShadcnDrawer,
+    toast: ShadcnToast,
+    tooltip: ShadcnTooltip,
+    popover: ShadcnPopover,
   },
 })

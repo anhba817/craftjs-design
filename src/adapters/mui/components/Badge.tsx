@@ -1,4 +1,8 @@
 import Chip from '@mui/material/Chip'
+import { useRef } from 'react'
+import { cn } from '@/lib/utils'
+import type { BadgeProps } from '@/registry/components/badge'
+import { useMuiTriggers } from '../triggers'
 import type { AdapterRenderProps } from '../../types'
 
 // MUI's Chip is the rough equivalent of shadcn's Badge — slightly different
@@ -26,16 +30,27 @@ export function MaterialBadge({
   className,
   inlineStyle,
 }: AdapterRenderProps) {
-  const { label, intent } = props as { label: string; intent: string }
-  return (
+  const { label, intent, triggers } = props as BadgeProps
+  const anchorRef = useRef<HTMLDivElement | null>(null)
+  const { onClick, wrap } = useMuiTriggers(triggers, anchorRef)
+  const hasTriggers = (triggers ?? []).length > 0
+  return wrap(
     <Chip
-      ref={rootRef as never}
+      ref={(el) => {
+        anchorRef.current = el as HTMLDivElement | null
+        if (typeof rootRef === 'function')
+          (rootRef as (el: HTMLDivElement | null) => void)(el as HTMLDivElement | null)
+        else if (rootRef && 'current' in rootRef)
+          (rootRef as React.MutableRefObject<HTMLDivElement | null>).current =
+            el as HTMLDivElement | null
+      }}
       label={label}
       color={INTENT_TO_COLOR[intent] ?? 'default'}
       variant={INTENT_TO_VARIANT[intent] ?? 'filled'}
+      onClick={onClick}
       size="small"
-      className={className}
+      className={cn(hasTriggers && 'cursor-pointer', className)}
       style={inlineStyle}
-    />
+    />,
   )
 }

@@ -18,11 +18,10 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import type { IconProps } from '@/registry/components/icon'
+import { useShadcnTriggers } from '../triggers'
 import type { AdapterRenderProps } from '../../types'
 
-// Explicit imports keep the bundle predictable. Phase 5 ships 16 named icons;
-// Phase 6+ can swap to lucide's dynamicIconImports map if breadth becomes a
-// real requirement.
 const ICONS: Record<string, LucideIcon> = {
   star: Star,
   heart: Heart,
@@ -55,13 +54,26 @@ export function ShadcnIcon({
   className,
   inlineStyle,
 }: AdapterRenderProps) {
-  const { name, size } = props as { name: string; size: string }
+  const { name, size, triggers } = props as IconProps
   const I = ICONS[name] ?? Star
-  // lucide-react icons are SVG elements; we wrap in a span for the rootRef so
-  // Craft connectors attach reliably regardless of the icon's internal markup.
-  return (
-    <span ref={rootRef} style={{ display: 'inline-flex', ...inlineStyle }} className={cn(className)}>
+  const { onClick, wrap } = useShadcnTriggers(triggers)
+  const hasTriggers = (triggers ?? []).length > 0
+  // lucide-react icons are SVG elements; the span wraps them so Craft
+  // connectors attach reliably and onClick fires from anywhere on the
+  // glyph (the SVG itself doesn't always catch events on transparent
+  // pixels).
+  return wrap(
+    <span
+      ref={rootRef}
+      onClick={onClick}
+      style={{
+        display: 'inline-flex',
+        cursor: hasTriggers ? 'pointer' : undefined,
+        ...inlineStyle,
+      }}
+      className={cn(className)}
+    >
       <I size={SIZE_PX[size] ?? 20} />
-    </span>
+    </span>,
   )
 }

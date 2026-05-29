@@ -9,6 +9,9 @@ export const navItemPropsSchema = z.object({
   label: z.string(),
   href: z.string(),
   icon: z.enum(['', ...ICON_NAMES]),
+  // Phase 13 § 5.3 — overlay trigger linking. Tooltip on a collapsed
+  // icon-only sidebar is the canonical example.
+  triggers: z.array(z.string()),
 })
 export type NavItemProps = z.infer<typeof navItemPropsSchema>
 
@@ -21,11 +24,12 @@ registerComponent<NavItemProps>({
   styleSlots: ['root'],
   propsSchema: navItemPropsSchema,
   defaults: {
-    props: { label: 'Item', href: '#', icon: '' },
+    props: { label: 'Item', href: '#', icon: '', triggers: [] },
     style: {
       classes: {
         root: 'rounded px-3 py-1.5 text-sm text-foreground hover:bg-accent',
       },
     },
   },
+  hiddenPropFields: ['triggers'],
 })

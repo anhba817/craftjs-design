@@ -8,6 +8,9 @@ export const imagePropsSchema = z.object({
   // no class; the others map to `aspect-square`, `aspect-video`. Phase 6 can
   // extend with arbitrary ratios once the doc-safelist pipeline lands.
   aspectRatio: z.enum(['auto', 'square', '16/9']),
+  // Phase 13 § 5.3 — overlay trigger linking. Click image → open lightbox
+  // modal; hover → caption tooltip; etc.
+  triggers: z.array(z.string()),
 })
 export type ImageProps = z.infer<typeof imagePropsSchema>
 
@@ -24,7 +27,9 @@ registerComponent<ImageProps>({
       src: 'https://placehold.co/600x400',
       alt: 'Image',
       aspectRatio: 'auto',
+      triggers: [],
     },
     style: { classes: { root: 'w-full' } },
   },
+  hiddenPropFields: ['triggers'],
 })

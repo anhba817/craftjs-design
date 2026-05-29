@@ -5,6 +5,11 @@ export const alertPropsSchema = z.object({
   intent: z.enum(['info', 'warning', 'error', 'success']),
   title: z.string(),
   description: z.string(),
+  // Phase 13 § 5.3 — runtime trigger linking. Buttons reference this
+  // name via `triggers` to dismiss / re-show the alert. Alerts default
+  // open since most are persistent banners.
+  name: z.string(),
+  defaultOpen: z.boolean(),
 })
 export type AlertProps = z.infer<typeof alertPropsSchema>
 
@@ -22,7 +27,13 @@ registerComponent<AlertProps>({
   styleSlots: ['root'],
   propsSchema: alertPropsSchema,
   defaults: {
-    props: { intent: 'info', title: 'Alert', description: 'Description' },
+    props: {
+      intent: 'info',
+      title: 'Alert',
+      description: 'Description',
+      name: 'alert',
+      defaultOpen: true,
+    },
     style: { classes: { root: '' } },
   },
 })

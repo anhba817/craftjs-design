@@ -1,5 +1,6 @@
 import { AssetLibraryPanel } from '../assets/AssetLibraryPanel'
 import { AppearancePanel } from './AppearancePanel'
+import { ButtonTriggersPanel } from './ButtonTriggersPanel'
 import { EffectsPanel } from './EffectsPanel'
 import { FiltersPanel } from './FiltersPanel'
 import { FontUploadPanel } from './FontUploadPanel'
@@ -134,6 +135,30 @@ registerPanel({
   order: 85,
   applicableTo: () => true,
   component: FontUploadPanel,
+})
+
+// Phase 13 § 5.3 — overlay triggers. Lists every overlay in the
+// document and lets the user check which ones this component should
+// trigger at runtime. The raw `triggers: string[]` prop is hidden from
+// the default PropsPanel; this panel renders a labeled checklist
+// instead. Applies to every canonical that opted in via a `triggers`
+// array on its props — Button + the seven additions from § 5.3.
+const TRIGGERABLE_IDS = new Set([
+  'button',
+  'icon',
+  'avatar',
+  'badge',
+  'image',
+  'link',
+  'nav-item',
+  'card',
+])
+registerPanel({
+  id: 'overlayTriggers',
+  displayName: 'Triggers',
+  order: 75,
+  applicableTo: (def) => TRIGGERABLE_IDS.has(def.id),
+  component: ButtonTriggersPanel,
 })
 
 // Phase 13 § 5.2 — Stepper active-step navigator. Renders prev/next +

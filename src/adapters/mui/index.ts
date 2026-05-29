@@ -13,15 +13,18 @@ import { MaterialContainer } from './components/Container'
 import { MaterialDataList } from './components/DataList'
 import { MaterialDataListItem } from './components/DataListItem'
 import { MaterialDivider } from './components/Divider'
+import { MaterialDrawer } from './components/Drawer'
 import { MaterialGrid } from './components/Grid'
 import { MaterialHeading } from './components/Heading'
 import { MaterialIcon } from './components/Icon'
 import { MaterialImage } from './components/Image'
 import { MaterialInput } from './components/Input'
 import { MaterialLink } from './components/Link'
+import { MaterialModal } from './components/Modal'
 import { MaterialNavItem } from './components/NavItem'
 import { MaterialNavMenu } from './components/NavMenu'
 import { MaterialPagination } from './components/Pagination'
+import { MaterialPopover } from './components/Popover'
 import { MaterialRadio } from './components/Radio'
 import { MaterialSection } from './components/Section'
 import { MaterialSelect } from './components/Select'
@@ -35,6 +38,8 @@ import { MaterialTableCell } from './components/TableCell'
 import { MaterialTabs } from './components/Tabs'
 import { MaterialText } from './components/Text'
 import { MaterialTextarea } from './components/Textarea'
+import { MaterialToast } from './components/Toast'
+import { MaterialTooltip } from './components/Tooltip'
 
 registerAdapter({
   id: 'mui',
@@ -82,5 +87,11 @@ registerAdapter({
     'nav-menu': MaterialNavMenu,
     'nav-item': MaterialNavItem,
     stepper: MaterialStepper,
+    // Phase 13 § 5.3 — overlays.
+    modal: MaterialModal,
+    drawer: MaterialDrawer,
+    toast: MaterialToast,
+    tooltip: MaterialTooltip,
+    popover: MaterialPopover,
   },
 })

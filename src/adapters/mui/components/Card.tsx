@@ -2,6 +2,10 @@ import MuiCard from '@mui/material/Card'
 import CardActions from '@mui/material/CardActions'
 import CardContent from '@mui/material/CardContent'
 import CardHeader from '@mui/material/CardHeader'
+import { useRef } from 'react'
+import { cn } from '@/lib/utils'
+import type { CardProps } from '@/registry/components/card'
+import { useMuiTriggers } from '../triggers'
 import type { AdapterRenderProps } from '../../types'
 
 // MUI's CardHeader's `title` / `subheader` props expect strings — for the
@@ -9,15 +13,28 @@ import type { AdapterRenderProps } from '../../types'
 // header region directly. MUI's CardHeader does accept arbitrary children (it
 // renders them after the title/subheader area), so this works visually.
 export function MaterialCard({
+  props,
   rootRef,
   composedClasses = {},
   composedInlineStyles = {},
   slotChildren = {},
 }: AdapterRenderProps) {
-  return (
+  const { triggers } = props as CardProps
+  const anchorRef = useRef<HTMLDivElement | null>(null)
+  const { onClick, wrap } = useMuiTriggers(triggers, anchorRef)
+  const hasTriggers = (triggers ?? []).length > 0
+  return wrap(
     <MuiCard
-      ref={rootRef as never}
-      className={composedClasses.root}
+      ref={(el) => {
+        anchorRef.current = el as HTMLDivElement | null
+        if (typeof rootRef === 'function')
+          (rootRef as (el: HTMLDivElement | null) => void)(el as HTMLDivElement | null)
+        else if (rootRef && 'current' in rootRef)
+          (rootRef as React.MutableRefObject<HTMLDivElement | null>).current =
+            el as HTMLDivElement | null
+      }}
+      onClick={onClick}
+      className={cn(hasTriggers && 'cursor-pointer', composedClasses.root)}
       style={composedInlineStyles.root}
     >
       <CardHeader
@@ -37,6 +54,6 @@ export function MaterialCard({
       >
         {slotChildren.footer}
       </CardActions>
-    </MuiCard>
+    </MuiCard>,
   )
 }

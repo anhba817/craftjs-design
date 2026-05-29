@@ -27,6 +27,10 @@ export type IconName = (typeof ICON_NAMES)[number]
 export const iconPropsSchema = z.object({
   name: z.enum(ICON_NAMES),
   size: z.enum(['sm', 'base', 'lg', 'xl']),
+  // Phase 13 § 5.3 — overlay trigger linking; same shape as Button.
+  // The Triggers inspector panel writes here; the field is hidden from
+  // the default PropsPanel.
+  triggers: z.array(z.string()),
 })
 export type IconProps = z.infer<typeof iconPropsSchema>
 
@@ -39,7 +43,8 @@ registerComponent<IconProps>({
   styleSlots: ['root'],
   propsSchema: iconPropsSchema,
   defaults: {
-    props: { name: 'star', size: 'base' },
+    props: { name: 'star', size: 'base', triggers: [] },
     style: { classes: { root: 'text-foreground' } },
   },
+  hiddenPropFields: ['triggers'],
 })
