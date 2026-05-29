@@ -3,6 +3,7 @@ import { AppearancePanel } from './AppearancePanel'
 import { EffectsPanel } from './EffectsPanel'
 import { FiltersPanel } from './FiltersPanel'
 import { FontUploadPanel } from './FontUploadPanel'
+import { TableMergePanel } from './TableMergePanel'
 import { LayoutPanel } from './LayoutPanel'
 import { PropsPanel } from './PropsPanel'
 import { registerPanel } from './panel-registry'
@@ -132,4 +133,16 @@ registerPanel({
   order: 85,
   applicableTo: () => true,
   component: FontUploadPanel,
+})
+
+// Phase 13 § 5.1 — Table cell merge. Applies when a TableCell is selected.
+// The panel reads the full selection from editorStore — when multiple
+// cells of the same Table are selected (Cmd-click), it offers a Merge
+// button; for a single cell inside an existing merge, an Unmerge button.
+registerPanel({
+  id: 'tableMerge',
+  displayName: 'Cell merge',
+  order: 35,
+  applicableTo: (def) => def.id === 'table-cell',
+  component: TableMergePanel,
 })

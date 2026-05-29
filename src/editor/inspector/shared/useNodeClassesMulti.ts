@@ -85,6 +85,11 @@ export function useNodeClassesMulti(
       const current = readClass(node.props)
       const next = transform(current)
       throttled.setProp(node.id, (props: NodeProps) => {
+        // Initialize style for nodes that don't have one yet (Pattern B
+        // canvas slots, etc.). Without this writeBucketClasses crashes
+        // trying to mutate undefined.
+        if (!props.style) props.style = { classes: {} }
+        if (!props.style.classes) props.style.classes = {}
         writeBucketClasses(props.style, slot, activeBreakpoint, activeState, next)
       })
     }
@@ -101,6 +106,7 @@ export function useNodeClassesMulti(
     const throttled = actions.history.throttle(500)
     for (const node of perNode) {
       throttled.setProp(node.id, (props: NodeProps) => {
+        if (!props.style) props.style = { classes: {} }
         writeBucketInline(
           props.style,
           slot,
@@ -133,6 +139,7 @@ export function useNodeClassesMulti(
         ] ?? ''
       const next = computeNext(current)
       throttled.setProp(node.id, (props: NodeProps) => {
+        if (!props.style) props.style = { classes: {} }
         writeBucketInline(
           props.style,
           slot,

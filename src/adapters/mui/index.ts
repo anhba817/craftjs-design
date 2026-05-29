@@ -7,7 +7,10 @@ import { MaterialBox } from './components/Box'
 import { MaterialButton } from './components/Button'
 import { MaterialCard } from './components/Card'
 import { MaterialCheckbox } from './components/Checkbox'
+import { MaterialCode } from './components/Code'
 import { MaterialContainer } from './components/Container'
+import { MaterialDataList } from './components/DataList'
+import { MaterialDataListItem } from './components/DataListItem'
 import { MaterialDivider } from './components/Divider'
 import { MaterialGrid } from './components/Grid'
 import { MaterialHeading } from './components/Heading'
@@ -18,9 +21,12 @@ import { MaterialLink } from './components/Link'
 import { MaterialRadio } from './components/Radio'
 import { MaterialSection } from './components/Section'
 import { MaterialSelect } from './components/Select'
+import { MaterialSkeleton } from './components/Skeleton'
 import { MaterialSpacer } from './components/Spacer'
 import { MaterialStack } from './components/Stack'
 import { MaterialSwitch } from './components/Switch'
+import { MaterialTable } from './components/Table'
+import { MaterialTableCell } from './components/TableCell'
 import { MaterialTabs } from './components/Tabs'
 import { MaterialText } from './components/Text'
 import { MaterialTextarea } from './components/Textarea'
@@ -58,5 +64,12 @@ registerAdapter({
     container: MaterialContainer,
     spacer: MaterialSpacer,
     section: MaterialSection,
+    // Phase 13 § 5.1 — data display.
+    table: MaterialTable,
+    'table-cell': MaterialTableCell,
+    'data-list': MaterialDataList,
+    'data-list-item': MaterialDataListItem,
+    code: MaterialCode,
+    skeleton: MaterialSkeleton,
   },
 })

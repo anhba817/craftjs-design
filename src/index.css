@@ -200,7 +200,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.5rem;
+  /* border-radius intentionally NOT set — Pattern B slots with their own
+     canonical (table-cell, etc.) author the radius via NodeStyle classes,
+     and a hardcoded 0.5rem here used to win on specificity. */
   outline: 1.5px dashed var(--border);
   outline-offset: -1.5px;
   color: var(--muted-foreground);
@@ -210,6 +212,15 @@ body {
 
 .canvas-slot:empty::before {
   content: "Drop here";
+}
+
+/* Phase 13 § 5.1 — Table cells. The cell's `<td>` resizes with the
+   table's colWidths / rowHeights; the canvas-slot inside should track
+   that so the drop zone visually matches the cell. `min-height` on the
+   slot is still the fallback when the table row has no explicit height. */
+table td > .canvas-slot {
+  width: 100%;
+  height: 100%;
 }
 
 /* Phase 9 § 1.4 — suppress the browser default focus ring on canvas

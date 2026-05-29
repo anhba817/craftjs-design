@@ -53,8 +53,11 @@ export interface NodeStyle {
   >;
 }
 
-// Inspector panel ids. Each canonical declares (or defaults) which panels apply.
-export type PanelId =
+// Built-in inspector panel ids — listed for autocomplete on
+// `applicablePanels`. The type also admits arbitrary strings so SDK
+// consumers (and internal custom panels like Phase 13's tableMerge) can
+// be opted-in by id without extending this union.
+export type BuiltinPanelId =
   | "layout"
   | "spacing"
   | "size"
@@ -62,6 +65,7 @@ export type PanelId =
   | "appearance"
   | "effects"
   | "componentProps";
+export type PanelId = BuiltinPanelId | (string & {});
 
 export interface CanonicalComponent<Props = Record<string, unknown>> {
   id: CanonicalId;
@@ -95,4 +99,24 @@ export interface CanonicalComponent<Props = Record<string, unknown>> {
   // from category + isCanvas. Use this field to override defaults, e.g., Button
   // omitting 'typography' because shadcn's flex centering ignores text utils.
   applicablePanels?: readonly PanelId[];
+
+  // Phase 13 § 5.1 — when true, the canonical is registered for use as a
+  // child / slot component but hidden from the Toolbox listing. Hosts and
+  // composite canonicals (Table → table-cell) spawn them programmatically.
+  hidden?: boolean;
+
+  // Phase 13 § 5.1 — Pattern B multi-canvas slots can override the default
+  // `<Element is="div">` wrapper with another canonical (looked up by id in
+  // the registry, rendered via its resolver entry). The slot then becomes a
+  // proper CanonicalNode with its own NodeStyle, applicablePanels, etc.
+  // Used by Table to give every cell a TableCell canonical (per-cell
+  // styling via the standard inspector panels). When unset, slots are
+  // plain divs.
+  slotComponent?: CanonicalId;
+
+  // Phase 13 § 5.1 — opt out of the canvas-overlay drag-resize handles.
+  // The 8-handle ResizeOverlay isn't meaningful for every node — Table
+  // cells, for example, are sized by the parent Table's colWidths /
+  // rowHeights, not by a per-node width/height. Default true.
+  canResize?: boolean;
 }

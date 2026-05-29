@@ -25,11 +25,15 @@ export const NON_BASE_STATES = ['hover', 'focus', 'active'] as const
 // --- class string read/write -------------------------------------------------
 
 export function readBucketClasses(
-  style: NodeStyle,
+  style: NodeStyle | undefined,
   slot: string,
   bp: string,
   state: StyleState,
 ): string {
+  // Tolerate nodes without a NodeStyle (Pattern B canvas slots like Table
+  // cells are bare Craft Elements with no style shape; their selection
+  // shouldn't crash the panels that happen to mount before filtering).
+  if (!style) return ''
   if (state === 'base') {
     return bp === 'base'
       ? (style.classes?.[slot] ?? '')
@@ -73,11 +77,12 @@ export function writeBucketClasses(
 // --- inline read/write (per CSS property) ------------------------------------
 
 export function readBucketInline(
-  style: NodeStyle,
+  style: NodeStyle | undefined,
   slot: string,
   bp: string,
   state: StyleState,
 ): Record<string, string> {
+  if (!style) return {}
   if (state === 'base') {
     return bp === 'base'
       ? (style.inline?.[slot] ?? {})

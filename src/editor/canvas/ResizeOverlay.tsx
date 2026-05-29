@@ -8,6 +8,7 @@ import {
 } from 'react'
 import { mergeSize } from '@/style/tw-classes'
 import type { SizeValue } from '@/style/tw-classes'
+import { getComponentByDisplayName } from '@/registry/registry'
 import type { NodeStyle } from '@/registry/types'
 import { useEditorStore } from '@/state/editorStore'
 import { snapToSizeToken } from './snap'
@@ -84,32 +85,53 @@ export function ResizeOverlay() {
   // to the FIRST selected node. Multi-resize (gang-resize) is a
   // Phase 12+ stretch; v1 scopes to primary only.
   const primaryId = useEditorStore((s) => s.selection[0] ?? null)
-  const { actions, selectedId, selectedDom, styleKey } = useEditor(
-    (_state, query) => {
-      if (!primaryId) {
-        return { selectedId: null, selectedDom: null, styleKey: '' }
+  const {
+    actions,
+    selectedId,
+    selectedDom,
+    styleKey,
+    hasStyle,
+    canResize,
+  } = useEditor((_state, query) => {
+    if (!primaryId) {
+      return {
+        selectedId: null,
+        selectedDom: null,
+        styleKey: '',
+        hasStyle: false,
+        canResize: true,
       }
-      let dom: HTMLElement | null = null
-      let styleKey = ''
-      try {
-        const node = query.node(primaryId).get()
-        dom = node.dom
-        // Phase 12 — a style signature so the overlay recomputes when
-        // the selected node's style changes. CSS transforms (rotate /
-        // scale / translate) change the element's visual bounds but
-        // fire NO ResizeObserver / scroll / resize event, so without
-        // this the dashed outline would stay at the pre-transform rect.
-        // Stringifying the whole style object also covers any future
-        // property that shifts the box.
-        styleKey = JSON.stringify(
-          (node.data.props as { style?: unknown }).style ?? null,
-        )
-      } catch {
-        // Node may have been removed mid-render — treat as no DOM.
-      }
-      return { selectedId: primaryId, selectedDom: dom, styleKey }
-    },
-  )
+    }
+    let dom: HTMLElement | null = null
+    let styleKey = ''
+    let hasStyle = false
+    let canResize = true
+    try {
+      const node = query.node(primaryId).get()
+      dom = node.dom
+      // Phase 12 — a style signature so the overlay recomputes when
+      // the selected node's style changes.
+      const style = (node.data.props as { style?: unknown }).style
+      hasStyle = !!style && typeof style === 'object'
+      styleKey = JSON.stringify(style ?? null)
+      // Phase 13 § 5.1 — canonicals can opt out of the 8-handle resize
+      // overlay (e.g. table-cell, where size comes from the parent
+      // Table's colWidths / rowHeights). The selection outline still
+      // renders so the user can see what's selected.
+      const displayName = (node.data.displayName as string) || ''
+      const def = getComponentByDisplayName(displayName)
+      if (def && def.canResize === false) canResize = false
+    } catch {
+      // Node may have been removed mid-render — treat as no DOM.
+    }
+    return {
+      selectedId: primaryId,
+      selectedDom: dom,
+      styleKey,
+      hasStyle,
+      canResize,
+    }
+  })
 
   const [rect, setRect] = useState<DOMRect | null>(null)
   // Phase 9 Group C — keep the overlay's size in lock-step with the dragged
@@ -161,7 +183,10 @@ export function ResizeOverlay() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [styleKey])
 
-  if (!rect || !selectedDom || !selectedId) return null
+  // Skip nodes without a `style` shape (Pattern B canvas slots like Table
+  // cells are plain Craft Elements with no NodeStyle — there's nothing to
+  // size, and the resize recipe would crash reading `style.inline`).
+  if (!rect || !selectedDom || !selectedId || !hasStyle) return null
 
   const startResize = (handle: HandleKind) => (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -273,9 +298,10 @@ export function ResizeOverlay() {
         outlineOffset: '2px',
       }}
     >
-      {ALL_HANDLES.map((kind) => (
-        <Handle key={kind} kind={kind} onMouseDown={startResize(kind)} />
-      ))}
+      {canResize &&
+        ALL_HANDLES.map((kind) => (
+          <Handle key={kind} kind={kind} onMouseDown={startResize(kind)} />
+        ))}
     </div>
   )
 }

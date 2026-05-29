@@ -1,8 +1,9 @@
 import { Element, useNode } from '@craftjs/core'
-import type { CSSProperties, ReactNode } from 'react'
+import { useMemo, type CSSProperties, type ReactNode } from 'react'
 import { useActiveAdapter } from '../adapters/AdapterContext'
 import type { ClassMapResult } from '../adapters/types'
 import { getCanvasSlots, getComponent } from '../registry/registry'
+import { getResolver } from './resolver'
 import type { NodeStyle } from '../registry/types'
 import { useEditorStore } from '../state/editorStore'
 import {
@@ -186,20 +187,47 @@ export function CanonicalNode({
   //    so without this they collapse to 0px and can't accept drops);
   //  - render a "Drop here" hint via `:empty` for unfilled slots, so users see
   //    where to drop.
-  const slotChildren: Record<string, ReactNode> | undefined = usesSlotChildren
-    ? Object.fromEntries(
-        canvasSlots.map((slot) => [
-          slot,
+  // Memoize the slot Element children keyed by the slot-id string so we
+  // don't recreate (and force Craft to re-process) the same `<Element>`
+  // instances on every parent re-render. Stability matters most for
+  // Pattern B canonicals with many slots (a 3×3 Table has 9 slots, so
+  // every parent re-render would otherwise reconcile 9 Elements + fire
+  // Craft's setState-in-render warnings 9× in dev mode).
+  const slotKey = usesSlotChildren ? canvasSlots.join(',') : ''
+  // Phase 13 § 5.1 — when the canonical sets `slotComponent`, each slot
+  // becomes a CanonicalNode for that component (Table → table-cell) so the
+  // standard inspector panels can edit per-slot style. Otherwise slots
+  // stay as plain <div>s with the canvas-slot empty-state CSS hook.
+  const slotComponentId = def.slotComponent
+  const slotDef = slotComponentId ? getComponent(slotComponentId) : null
+  const SlotBound = slotDef ? getResolver()[slotDef.displayName] : null
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const slotChildren: Record<string, ReactNode> | undefined = useMemo(() => {
+    if (!usesSlotChildren) return undefined
+    return Object.fromEntries(
+      canvasSlots.map((slot) => [
+        slot,
+        SlotBound && slotDef ? (
+          <Element
+            key={slot}
+            id={slot}
+            is={SlotBound}
+            canvas={slotDef.isCanvas}
+            nodeProps={slotDef.defaults.props}
+            style={slotDef.defaults.style}
+          />
+        ) : (
           <Element
             key={slot}
             id={slot}
             is="div"
             canvas
             className="canvas-slot"
-          />,
-        ]),
-      )
-    : undefined
+          />
+        ),
+      ]),
+    )
+  }, [usesSlotChildren, slotKey, SlotBound, slotDef])
 
   return (
     <>

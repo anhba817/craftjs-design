@@ -41,6 +41,9 @@ interface NodeQueryShape {
   data: {
     parent: string | null | undefined
     nodes: string[] | undefined
+    // Linked children (slot id → node id) for Pattern B multi-canvas
+    // components — Card header/body/footer, Tabs per-tab, Table per-cell.
+    linkedNodes: Record<string, string> | undefined
     dom: HTMLElement | null
   }
 }
@@ -73,27 +76,45 @@ export function CanvasKeyboardRegion({ children }: { children: ReactNode }) {
     [query],
   )
 
+  // A node's children = regular `data.nodes` followed by linked-slot
+  // children (Pattern B multi-canvas — Card slots, Tabs tabs, Table cells).
+  // Linked nodes are kept in `data.linkedNodes` keyed by slot id; we walk
+  // their values in insertion order so traversal matches the visual layout
+  // (e.g., cell-r0-c0, cell-r0-c1, … for the Table). Without this the
+  // arrow keys can't reach any cell / tab / Card slot.
+  const childIdsOf = useCallback(
+    (id: string): string[] => {
+      const node = getNode(id)
+      if (!node) return []
+      const nodes = node.data.nodes ?? []
+      const linked = node.data.linkedNodes
+        ? Object.values(
+            node.data.linkedNodes as Record<string, string>,
+          )
+        : []
+      return [...nodes, ...linked]
+    },
+    [getNode],
+  )
+
   // Walk the next focusable node in depth-first pre-order. Returns null
   // when there's nothing after `id` (last node in tree).
   const nextInTree = useCallback(
     (id: string): string | null => {
-      const node = getNode(id)
-      if (!node) return null
-      const children = node.data.nodes ?? []
+      const children = childIdsOf(id)
       if (children.length > 0) return children[0]
       let current = id
       while (true) {
         const cur = getNode(current)
         const parentId = cur?.data.parent
         if (!parentId) return null
-        const parent = getNode(parentId)
-        const siblings = parent?.data.nodes ?? []
+        const siblings = childIdsOf(parentId)
         const idx = siblings.indexOf(current)
         if (idx >= 0 && idx < siblings.length - 1) return siblings[idx + 1]
         current = parentId
       }
     },
-    [getNode],
+    [getNode, childIdsOf],
   )
 
   const prevInTree = useCallback(
@@ -101,29 +122,23 @@ export function CanvasKeyboardRegion({ children }: { children: ReactNode }) {
       const node = getNode(id)
       const parentId = node?.data.parent
       if (!parentId) return null
-      const parent = getNode(parentId)
-      const siblings = parent?.data.nodes ?? []
+      const siblings = childIdsOf(parentId)
       const idx = siblings.indexOf(id)
       if (idx <= 0) return parentId
       // Walk down to the rightmost leaf of the previous sibling.
       let cursor = siblings[idx - 1]
       while (true) {
-        const cur = getNode(cursor)
-        const kids = cur?.data.nodes ?? []
+        const kids = childIdsOf(cursor)
         if (kids.length === 0) return cursor
         cursor = kids[kids.length - 1]
       }
     },
-    [getNode],
+    [getNode, childIdsOf],
   )
 
   const firstChild = useCallback(
-    (id: string): string | null => {
-      const node = getNode(id)
-      const kids = node?.data.nodes ?? []
-      return kids[0] ?? null
-    },
-    [getNode],
+    (id: string): string | null => childIdsOf(id)[0] ?? null,
+    [childIdsOf],
   )
 
   const nextSibling = useCallback(
@@ -131,13 +146,12 @@ export function CanvasKeyboardRegion({ children }: { children: ReactNode }) {
       const node = getNode(id)
       const parentId = node?.data.parent
       if (!parentId) return null
-      const parent = getNode(parentId)
-      const siblings = parent?.data.nodes ?? []
+      const siblings = childIdsOf(parentId)
       const idx = siblings.indexOf(id)
       if (idx < 0 || idx >= siblings.length - 1) return null
       return siblings[idx + 1]
     },
-    [getNode],
+    [getNode, childIdsOf],
   )
 
   // Scroll the newly-selected node into view so the ResizeOverlay's outline

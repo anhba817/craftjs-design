@@ -103,7 +103,13 @@ export function Toolbox() {
     getRegistryVersion,
   )
   const resolver = getResolver()
-  const allDefs = useMemo(() => listComponents(), [version])
+  // Filter out `hidden` canonicals — they're spawned programmatically by
+  // a parent composite (Table → table-cell) and shouldn't appear as
+  // draggable toolbox tiles.
+  const allDefs = useMemo(
+    () => listComponents().filter((d) => !d.hidden),
+    [version],
+  )
   const byId = useMemo(() => {
     const m = new Map<string, CanonicalComponent>()
     for (const d of allDefs) m.set(d.id, d)

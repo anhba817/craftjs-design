@@ -6,7 +6,10 @@ import { ShadcnBox } from './components/Box'
 import { ShadcnButton } from './components/Button'
 import { ShadcnCard } from './components/Card'
 import { ShadcnCheckbox } from './components/Checkbox'
+import { ShadcnCode } from './components/Code'
 import { ShadcnContainer } from './components/Container'
+import { ShadcnDataList } from './components/DataList'
+import { ShadcnDataListItem } from './components/DataListItem'
 import { ShadcnDivider } from './components/Divider'
 import { ShadcnGrid } from './components/Grid'
 import { ShadcnHeading } from './components/Heading'
@@ -17,9 +20,12 @@ import { ShadcnLink } from './components/Link'
 import { ShadcnRadio } from './components/Radio'
 import { ShadcnSection } from './components/Section'
 import { ShadcnSelect } from './components/Select'
+import { ShadcnSkeleton } from './components/Skeleton'
 import { ShadcnSpacer } from './components/Spacer'
 import { ShadcnStack } from './components/Stack'
 import { ShadcnSwitch } from './components/Switch'
+import { ShadcnTable } from './components/Table'
+import { ShadcnTableCell } from './components/TableCell'
 import { ShadcnTabs } from './components/Tabs'
 import { ShadcnText } from './components/Text'
 import { ShadcnTextarea } from './components/Textarea'
@@ -56,5 +62,12 @@ registerAdapter({
     container: ShadcnContainer,
     spacer: ShadcnSpacer,
     section: ShadcnSection,
+    // Phase 13 § 5.1 — data display.
+    table: ShadcnTable,
+    'table-cell': ShadcnTableCell,
+    'data-list': ShadcnDataList,
+    'data-list-item': ShadcnDataListItem,
+    code: ShadcnCode,
+    skeleton: ShadcnSkeleton,
   },
 })

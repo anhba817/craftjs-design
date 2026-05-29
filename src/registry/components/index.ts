@@ -27,3 +27,12 @@ import './grid'
 import './container'
 import './spacer'
 import './section'
+// Phase 13 § 5.1 — data display.
+import './table'
+// table-cell is registered as hidden — only spawned by Table via
+// slotComponent: 'table-cell'.
+import './table-cell'
+import './data-list'
+import './data-list-item'
+import './code'
+import './skeleton'
