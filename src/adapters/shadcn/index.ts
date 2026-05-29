@@ -37,6 +37,8 @@ import { ShadcnTableCell } from './components/TableCell'
 import { ShadcnTabs } from './components/Tabs'
 import { ShadcnText } from './components/Text'
 import { ShadcnTextarea } from './components/Textarea'
+import { ShadcnProgress } from './components/Progress'
+import { ShadcnSpinner } from './components/Spinner'
 import { ShadcnToast } from './components/Toast'
 import { ShadcnTooltip } from './components/Tooltip'
 
@@ -91,5 +93,8 @@ registerAdapter({
     toast: ShadcnToast,
     tooltip: ShadcnTooltip,
     popover: ShadcnPopover,
+    // Phase 13 § 5.4 — feedback.
+    progress: ShadcnProgress,
+    spinner: ShadcnSpinner,
   },
 })

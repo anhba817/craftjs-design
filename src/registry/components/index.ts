@@ -48,3 +48,6 @@ import './drawer'
 import './toast'
 import './tooltip'
 import './popover'
+// Phase 13 § 5.4 — feedback.
+import './progress'
+import './spinner'

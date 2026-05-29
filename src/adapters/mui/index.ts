@@ -38,6 +38,8 @@ import { MaterialTableCell } from './components/TableCell'
 import { MaterialTabs } from './components/Tabs'
 import { MaterialText } from './components/Text'
 import { MaterialTextarea } from './components/Textarea'
+import { MaterialProgress } from './components/Progress'
+import { MaterialSpinner } from './components/Spinner'
 import { MaterialToast } from './components/Toast'
 import { MaterialTooltip } from './components/Tooltip'
 
@@ -93,5 +95,8 @@ registerAdapter({
     toast: MaterialToast,
     tooltip: MaterialTooltip,
     popover: MaterialPopover,
+    // Phase 13 § 5.4 — feedback.
+    progress: MaterialProgress,
+    spinner: MaterialSpinner,
   },
 })
