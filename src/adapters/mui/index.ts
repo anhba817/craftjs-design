@@ -38,11 +38,14 @@ import { MaterialTableCell } from './components/TableCell'
 import { MaterialTabs } from './components/Tabs'
 import { MaterialText } from './components/Text'
 import { MaterialTextarea } from './components/Textarea'
+import { MaterialAudio } from './components/Audio'
+import { MaterialCarousel } from './components/Carousel'
 import { MaterialDatePicker } from './components/DatePicker'
 import { MaterialDateRangePicker } from './components/DateRangePicker'
 import { MaterialProgress } from './components/Progress'
 import { MaterialSpinner } from './components/Spinner'
 import { MaterialTimePicker } from './components/TimePicker'
+import { MaterialVideo } from './components/Video'
 import { MaterialToast } from './components/Toast'
 import { MaterialTooltip } from './components/Tooltip'
 
@@ -105,5 +108,9 @@ registerAdapter({
     'date-picker': MaterialDatePicker,
     'time-picker': MaterialTimePicker,
     'date-range-picker': MaterialDateRangePicker,
+    // Phase 13 § 5.7 — media.
+    video: MaterialVideo,
+    audio: MaterialAudio,
+    carousel: MaterialCarousel,
   },
 })

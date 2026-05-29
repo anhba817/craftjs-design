@@ -48,11 +48,20 @@ registerPanel({
   component: SpacingPanel,
 })
 
+// Carousel opts into typography so designers can set the chevron-icon
+// color via its `prevButton` / `nextButton` style slots — lucide icons
+// inherit `currentColor`, which the Typography panel's text-color
+// picker writes. Video / Audio stay out by category (their <video> /
+// <audio> roots ignore color).
+const TYPOGRAPHY_OPT_IN_IDS = new Set(['carousel'])
 registerPanel({
   id: 'typography',
   displayName: 'Typography',
   order: 40,
-  applicableTo: (def) => def.category === 'content' || def.category === 'layout',
+  applicableTo: (def) =>
+    def.category === 'content' ||
+    def.category === 'layout' ||
+    TYPOGRAPHY_OPT_IN_IDS.has(def.id),
   component: TypographyPanel,
 })
 

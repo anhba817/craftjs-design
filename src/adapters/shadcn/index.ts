@@ -37,11 +37,14 @@ import { ShadcnTableCell } from './components/TableCell'
 import { ShadcnTabs } from './components/Tabs'
 import { ShadcnText } from './components/Text'
 import { ShadcnTextarea } from './components/Textarea'
+import { ShadcnAudio } from './components/Audio'
+import { ShadcnCarousel } from './components/Carousel'
 import { ShadcnDatePicker } from './components/DatePicker'
 import { ShadcnDateRangePicker } from './components/DateRangePicker'
 import { ShadcnProgress } from './components/Progress'
 import { ShadcnSpinner } from './components/Spinner'
 import { ShadcnTimePicker } from './components/TimePicker'
+import { ShadcnVideo } from './components/Video'
 import { ShadcnToast } from './components/Toast'
 import { ShadcnTooltip } from './components/Tooltip'
 
@@ -103,5 +106,9 @@ registerAdapter({
     'date-picker': ShadcnDatePicker,
     'time-picker': ShadcnTimePicker,
     'date-range-picker': ShadcnDateRangePicker,
+    // Phase 13 § 5.7 — media.
+    video: ShadcnVideo,
+    audio: ShadcnAudio,
+    carousel: ShadcnCarousel,
   },
 })

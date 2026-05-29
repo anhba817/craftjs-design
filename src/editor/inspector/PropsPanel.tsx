@@ -17,6 +17,17 @@ function isImageField(canonicalId: string, field: string): boolean {
   return IMAGE_FIELDS[canonicalId]?.has(field) ?? false
 }
 
+// `currentSlide` → "Current slide", `showChevrons` → "Show chevrons",
+// `aria-label` → "Aria label". Schema keys are camelCase / kebab-case in
+// the source; humans want sentence case in the inspector.
+function humanizeKey(key: string): string {
+  const spaced = key
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[-_]+/g, ' ')
+    .toLowerCase()
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+}
+
 // Auto-generates form controls from each canonical's Zod propsSchema. The
 // recursive PropField dispatcher in ./fields/ handles every kind we support:
 // ZodEnum, ZodString, ZodBoolean, ZodNumber, ZodArray, ZodObject. Unknown
@@ -71,7 +82,7 @@ export function PropsPanel({ nodeId }: { nodeId: string }) {
       {Object.entries(shape)
         .filter(([key]) => !hiddenFields.has(key))
         .map(([key, fieldSchema]) => (
-        <PanelRow key={key} label={key}>
+        <PanelRow key={key} label={humanizeKey(key)}>
           {isImageField(def.id, key) ? (
             <ImagePicker
               value={(nodeProps[key] as string | undefined) ?? ''}

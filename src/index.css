@@ -223,6 +223,17 @@ table td > .canvas-slot {
   height: 100%;
 }
 
+/* Phase 13 § 5.7 — Carousel slide. The slide wrapper is flex-column
+   with a min-height; the inner canvas-slot uses flex-1 + min-h-0 so
+   the drop zone fills the entire visible slide area (otherwise the
+   slot collapses to its 2.5rem fallback and the user can only drop
+   into a thin strip at the top). */
+[data-carousel-slide] > .canvas-slot {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
 /* Phase 9 § 1.4 — suppress the browser default focus ring on canvas
    nodes (they all carry tabindex=-1 from CanonicalNode so they can be
    focused programmatically; we don't want a ring on every selection).

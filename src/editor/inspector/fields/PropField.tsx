@@ -18,6 +18,21 @@ export function PropField({
   value: unknown
   onChange: (v: unknown) => void
 }) {
+  // Unwrap ZodDefault / ZodOptional so wrappers around a known kind don't
+  // fall through to the "unsupported" branch. `defaults.ts` already does
+  // the symmetric unwrap when seeding "+ Add" values; without this path
+  // here, Tabs's `id: z.string().default(...)` and Carousel's similar
+  // slide id would render an "unsupported Zod kind (ZodDefault)" badge.
+  if (schema instanceof z.ZodDefault) {
+    const inner = (schema as unknown as { _def: { innerType: z.ZodType } })
+      ._def.innerType
+    return <PropField schema={inner} value={value} onChange={onChange} />
+  }
+  if (schema instanceof z.ZodOptional) {
+    const inner = (schema as unknown as { _def: { innerType: z.ZodType } })
+      ._def.innerType
+    return <PropField schema={inner} value={value} onChange={onChange} />
+  }
   if (schema instanceof z.ZodEnum) {
     return (
       <ValueSelect

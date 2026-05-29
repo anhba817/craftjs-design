@@ -55,3 +55,7 @@ import './spinner'
 import './date-picker'
 import './time-picker'
 import './date-range-picker'
+// Phase 13 § 5.7 — media.
+import './video'
+import './audio'
+import './carousel'
