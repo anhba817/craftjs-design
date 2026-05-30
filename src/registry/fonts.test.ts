@@ -3,6 +3,8 @@ import {
   _resetFontTokensForTest,
   getFontRegistryVersion,
   getFontToken,
+  isSafeFontFamily,
+  isSafeFontUrl,
   listFontTokens,
   registerFontToken,
   subscribeFontRegistry,
@@ -28,6 +30,43 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+})
+
+// Phase 15 § 11.2 — CSS-injection hardening for the font surface.
+describe('font value validation', () => {
+  it('accepts legitimate font URLs (incl. the Google Fonts CSS API + data:)', () => {
+    expect(isSafeFontUrl('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap')).toBe(true)
+    expect(isSafeFontUrl('/fonts/inter.woff2')).toBe(true)
+    expect(isSafeFontUrl('data:font/woff2;base64,AAAA')).toBe(true)
+  })
+
+  it('rejects URLs that break out of url("…") or use unsafe schemes', () => {
+    expect(isSafeFontUrl('x") } body { display: none } @font-face { src: url("y')).toBe(false) // quotes/parens
+    expect(isSafeFontUrl('javascript:alert(1)')).toBe(false) // scheme
+    expect(isSafeFontUrl('https://x/\n@import "evil"')).toBe(false) // control char
+    expect(isSafeFontUrl('https://x/<script>')).toBe(false) // angle brackets
+  })
+
+  it('accepts legitimate font families (stacks, quotes, var(), hyphens, spaces)', () => {
+    expect(isSafeFontFamily('"Inter Variable", sans-serif')).toBe(true)
+    expect(isSafeFontFamily('var(--font-sans)')).toBe(true)
+    expect(isSafeFontFamily('ui-monospace, SFMono-Regular, "Roboto Mono", monospace')).toBe(true)
+  })
+
+  it('rejects families that break out of the font-family rule', () => {
+    expect(isSafeFontFamily('x } body { display: none }')).toBe(false) // braces
+    expect(isSafeFontFamily('sans-serif; } .evil {')).toBe(false) // semicolon + brace
+    expect(isSafeFontFamily('</style><script>')).toBe(false) // tag breakout
+  })
+
+  it('registerFontToken throws on an unsafe url or family', () => {
+    expect(() =>
+      registerFontToken({ id: 'evil1', name: 'E', family: 'sans-serif', url: 'x") } .e {' }),
+    ).toThrow(/unsafe font url/)
+    expect(() =>
+      registerFontToken({ id: 'evil2', name: 'E', family: 'x } .e {' }),
+    ).toThrow(/unsafe font family/)
+  })
 })
 
 describe('registerFontToken / getFontToken', () => {

@@ -43,6 +43,10 @@ jobs:
       - name: Bundle budget
         run: npm run check:size
 
-      - name: Audit (advisory)
-        # Dependency vuln scan — non-blocking for now (Group B tightens it).
+      - name: License audit
+        run: npm run check:licenses
+
+      - name: Dependency audit (advisory)
+        # Vuln scan on production deps. Advisory (|| true) so a transitive
+        # advisory doesn't block merges; review the output in the run.
         run: npm audit --omit=dev || true

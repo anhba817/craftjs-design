@@ -112,6 +112,43 @@ function escapeFamily(family: string): string {
 
 const ID_RE = /^[a-z0-9-]+$/
 
+// Phase 15 § 11.2 — XSS / CSS-injection hardening for the font-token
+// surface. `url` and `family` are injected raw into the runtime
+// `<style>` block (`src: url("…")`, `font-family: …`). Without validation
+// a value containing `")`, `}`, or `</style>` could break out of the rule
+// and inject arbitrary CSS — so we reject the breakout characters here,
+// at the registration boundary, before anything reaches the stylesheet.
+
+// A font URL must not contain CSS/HTML breakout characters: quotes,
+// parens, angle brackets, backslash, or control chars (incl. CR/LF).
+// (Legit font URLs — incl. the Google Fonts CSS API — only use these in
+// percent-encoded form.) If a scheme is present it must be http(s) or
+// data:; relative URLs (no scheme) are allowed.
+// eslint-disable-next-line no-control-regex -- intentional control-char + breakout-char denylist
+const FONT_URL_FORBIDDEN_RE = /["'()\\<>\u0000-\u001f\u007f]/
+const URL_SCHEME_RE = /^([a-zA-Z][a-zA-Z0-9+.-]*):/
+
+export function isSafeFontUrl(url: string): boolean {
+  if (FONT_URL_FORBIDDEN_RE.test(url)) return false
+  const scheme = URL_SCHEME_RE.exec(url)
+  if (scheme) {
+    const s = scheme[1].toLowerCase()
+    if (s !== 'http' && s !== 'https' && s !== 'data') return false
+  }
+  return true
+}
+
+// A font-family value is injected into `font-family: <value>;`. It
+// legitimately contains commas, quotes, hyphens, spaces and `var(...)`
+// (so parens are allowed), but must not contain rule/tag breakout
+// characters: `{`, `}`, `;`, `<`, `>`, or control chars.
+// eslint-disable-next-line no-control-regex -- intentional control-char + breakout-char denylist
+const FONT_FAMILY_FORBIDDEN_RE = /[{};<>\u0000-\u001f\u007f]/
+
+export function isSafeFontFamily(family: string): boolean {
+  return !FONT_FAMILY_FORBIDDEN_RE.test(family)
+}
+
 /**
  * Register a font token so it appears in the Typography panel's Font
  * dropdown. URL-backed tokens trigger an `@font-face` declaration; the
@@ -137,6 +174,20 @@ export function registerFontToken(token: FontToken): void {
   if (!ID_RE.test(token.id)) {
     throw new Error(
       `[craftjs-design] invalid font token id '${token.id}' — must match /^[a-z0-9-]+$/`,
+    )
+  }
+  // Phase 15 § 11.2 — reject CSS-injection vectors before the value
+  // reaches the injected <style>. `family` and `url` are interpolated raw
+  // into `font-family:` / `url("…")`; a breakout char would otherwise
+  // inject arbitrary CSS rules.
+  if (!isSafeFontFamily(token.family)) {
+    throw new Error(
+      `[craftjs-design] unsafe font family for '${token.id}' — must not contain { } ; < > or control characters`,
+    )
+  }
+  if (token.url !== undefined && !isSafeFontUrl(token.url)) {
+    throw new Error(
+      `[craftjs-design] unsafe font url for '${token.id}' — must be an http(s)/data URL without quotes, parens, angle brackets, whitespace or control characters`,
     )
   }
   tokens.set(token.id, token)

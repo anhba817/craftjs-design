@@ -53,6 +53,7 @@
     "prebuild:dist": "npm run gen-safelist",
     "docs": "typedoc",
     "check:size": "tsx scripts/check-bundle-size.ts",
+    "check:licenses": "tsx scripts/check-licenses.ts",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "npm run build:dist && changeset publish --tag next",

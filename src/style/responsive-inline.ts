@@ -19,8 +19,25 @@ function camelToKebab(s: string): string {
   return s.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)
 }
 
+// Phase 15 § 11.2 — these declarations are emitted as RAW text inside a
+// runtime `<style>` block (base inline styles go through React's
+// CSSOM-safe `style={}` prop instead; the responsive / pseudo-state
+// variants can't, so they're generated here). A value containing `}` (or
+// `</style>`) would break out of the rule and inject arbitrary CSS, so we
+// drop any declaration whose property name or value carries a CSS/HTML
+// breakout character. Legit values (`1px solid red`, `url(...)`,
+// `linear-gradient(...)`) contain none of these.
+// eslint-disable-next-line no-control-regex
+const UNSAFE_DECL_VALUE_RE = /[{}<>\u0000-\u001f\u007f]/
+const SAFE_DECL_PROP_RE = /^[a-zA-Z][a-zA-Z-]*$/
+
+export function isSafeDeclaration(prop: string, value: string): boolean {
+  return SAFE_DECL_PROP_RE.test(prop) && !UNSAFE_DECL_VALUE_RE.test(value)
+}
+
 function declarations(obj: Record<string, string>): string {
   return Object.entries(obj)
+    .filter(([k, v]) => isSafeDeclaration(camelToKebab(k), v))
     .map(([k, v]) => `${camelToKebab(k)}: ${v};`)
     .join(' ')
 }
