@@ -1,12 +1,14 @@
 # Phase 14 — Persistence beyond localStorage (Section 6)
 
-**Status:** planned
+**Status:** ✅ complete — shipped as `0.5.0` (see close-out at bottom).
 **Cuts as:** `0.5.0`
 **Audience:** whoever implements the storage refactor + the people who'll
 plug a server backend into the editor.
-**Scope discipline:** PRODUCTION_READINESS § 6 non-Stretch only — 6.1
+**Scope discipline:** PRODUCTION_READINESS § 6 non-Stretch — 6.1
 (IndexedDB), 6.2 (storage adapter), 6.3 (versioning), 6.4 (migration
-framework), 6.5 (export to React code). Stretch (6.6 other formats, 6.7
+framework). 6.5 (export to React code) was in the original plan but is now
+**out of scope — won't be supported** (a source-code generator is a
+different product; see close-out). Stretch (6.6 other formats, 6.7
 real-time collab, 6.8 templates marketplace) stays queued.
 
 ## Goal
@@ -32,7 +34,7 @@ In-scope items (PRODUCTION_READINESS § 6.1–6.5, all non-Stretch):
 | 6.1 | B — IndexedDB default adapter | `IndexedDBStorageAdapter` as the default; localStorage adapter as fallback; one-time migration of existing localStorage docs into IDB |
 | 6.4 | C — Schema migration framework | Version-stamped envelope; ordered `up()` pipeline; fold the existing ad-hoc Card/Tabs migrations into steps |
 | 6.3 | D — Document versioning | Auto-snapshot on save (keep last N), manual "save points", restore + a lightweight version list |
-| 6.5 | E — Export to React code | ⏸ **Deferred** — prototyped then cut (generic fallback emitted `<div>` for most canonicals; faithful coverage estimated ~8–11 days, re-queued as Stretch) |
+| 6.5 | E — Export to React code | ❌ **Out of scope (won't support)** — prototyped then removed; a source-code generator is a different product, out of step with a runtime editor + document model (see close-out) |
 |  | F — Close-out | verification, docs, `0.5.0` cut |
 
 Group A ships first — the adapter interface + async plumbing is the spine
@@ -284,25 +286,22 @@ assertions.
 
 ---
 
-## Group E — Export to React code (§ 6.5)
+## Group E — Export to React code (§ 6.5) — ❌ DROPPED (won't support)
 
-**Land**
+Originally planned as per-adapter JSX codegen (`craftTreeToJsx` + shadcn /
+MUI emitters + an export UI). A prototype was built and then **removed**:
+exporting framework **source code** is a different product (a
+design-to-code generator), out of step with this library's intent — a
+runtime, adapter-pluggable editor whose documents are data (JSON) the
+chosen adapter renders live. A faithful exporter would re-implement every
+adapter component as a string template (48 canonicals × N adapters) plus a
+compile-verification harness to stop them drifting — a large, brittle
+surface for a capability the library isn't trying to provide.
 
-1. **Pure codegen core** — `craftTreeToJsx(tree, { emitter })` → string.
-   Walks the serialized tree, resolves each node's canonical, delegates to
-   the emitter for the JSX fragment, indents + assembles a component.
-2. **shadcn + MUI emitters** — canonical → library JSX, using the composed
-   class strings / `sx` the adapter already computes.
-3. **Slot + dynamic-canvas handling** — nested children per slot; one block
-   per Tabs tab / Carousel slide.
-4. **Gap markers** — runtime-only props and unknown canonicals emit
-   `// TODO` comments rather than silently dropping (decision 6).
-5. **UI** — "Export → React code" in the document menu: downloadable `.tsx`
-   + copy-to-clipboard preview.
-
-**Output**
-
-- Codegen core + 2 emitters + export UI. Pure → fully unit-tested.
+Portability is served by JSON export / import / share-by-URL and by
+embedding `<Editor />` (or rendering the document model at runtime).
+Hosts that truly need code can build their own generator on the exported
+JSON + the public registry metadata.
 
 ---
 
@@ -312,21 +311,18 @@ assertions.
 
 1. **Smoke pass.** Create / save / reload / delete / duplicate across IDB;
    force the localStorage fallback (disable IDB) and confirm parity; verify
-   cross-tab edits surface via BroadcastChannel; restore a version; export a
-   document to JSX and confirm it compiles.
+   cross-tab edits surface via BroadcastChannel; restore a version.
 2. **`npm run build:dist`** emits `.d.ts` for the new SDK surface
-   (`StorageAdapter`, `setStorageAdapter`, `DocumentVersion`, codegen
-   entry).
+   (`StorageAdapter`, `setStorageAdapter`, `DocumentVersion`).
 3. **Doc updates:**
-   - PRODUCTION_READINESS § 6 — status banner; ✅ for 6.1–6.5; 6.6–6.8 left
-     Stretch.
+   - PRODUCTION_READINESS § 6 — status banner; ✅ for 6.1–6.4; 6.5 marked
+     out of scope; 6.6–6.8 left Stretch.
    - CHANGELOG `0.5.0` entry + version bump.
-   - SDK_GUIDE — `StorageAdapter` contract + `setStorageAdapter`; codegen
-     entry point.
+   - SDK_GUIDE — `StorageAdapter` contract + `setStorageAdapter`.
    - INTEGRATION_GUIDE — "plug your backend" walkthrough (implement the
      interface, register it); note the async store API.
    - DEVELOPER_GUIDE recipes: "Writing a StorageAdapter", "Adding a schema
-     migration step", "Writing a codegen emitter for a custom adapter".
+     migration step".
 4. **Close-out section** in this file (per-group deliverables, decisions,
    bundle delta, the adapter contract surface).
 
@@ -341,7 +337,8 @@ assertions.
 
 | Item | § | Why deferred / target |
 |---|---|---|
-| Export to HTML (static, no React) | 6.6 | Stretch — a third emitter; the React emitters land the pattern first. |
+| **Export to React code** | 6.5 | **Won't support** — a source-code generator is a different product, out of step with a runtime editor + document model. Prototyped and removed in Phase 14. |
+| Export to HTML (static, no React) | 6.6 | Stretch — same "code generator" objection as 6.5; not planned. |
 | Figma / Sketch import | 6.6 | Stretch — large, separate ingestion pipeline. |
 | Real-time collaboration (Yjs / Liveblocks / Automerge) | 6.7 | Stretch — big engineering item; defer until a host requests it. The `StorageAdapter` + BroadcastChannel groundwork is collab-friendly but not collab. |
 | Templates marketplace | 6.8 | Stretch — ecosystem/server work beyond local persistence. |
@@ -384,10 +381,68 @@ No valves. Every risk has a mitigation that delivers the item.
 
 Documents persist to **IndexedDB by default** through a documented,
 host-replaceable `StorageAdapter`; a schema-migration **pipeline** runs
-versioned steps on load; users can **snapshot / restore** versions; and a
-document **exports to runnable React/JSX** in both the shadcn and MUI
-adapters. The localStorage fallback keeps the editor working where IDB
-isn't available.
+versioned steps on load; and users can **snapshot / restore** versions. The
+localStorage fallback keeps the editor working where IDB isn't available.
+(Export-to-React-code, § 6.5, is explicitly out of scope — see Group E.)
 
-When 6.1–6.5 satisfy this bar, Phase 14 is complete and `0.5.0` cuts at the
+When 6.1–6.4 satisfy this bar, Phase 14 is complete and `0.5.0` cuts at the
 close-out commit.
+
+---
+
+## Close-out (`0.5.0`, 2026-05-30)
+
+**Shipped.** § 6.1–6.4 complete; § 6.5 dropped as out of scope (won't
+support); § 6.6–6.8 remain Stretch. Documents persist to IndexedDB by
+default behind a host-replaceable `StorageAdapter`, with a localStorage
+fallback; a versioned migration pipeline runs on load; documents
+auto-snapshot and restore.
+
+### Per-group result
+
+| Group | § | Result | Key files |
+|---|---|---|---|
+| A — Storage adapter + async core | 6.2 | ✅ | `persistence/types.ts` (`StorageAdapter`), `persistence/storageAdapter.ts`, `persistence/adapters/localStorageAdapter.ts`, `persistence/docBroadcast.ts`, async `documentStore.ts` |
+| B — IndexedDB default | 6.1 | ✅ | `persistence/adapters/indexedDBAdapter.ts` (+ localStorage→IDB import), `adapters/adapterContract.ts` (shared suite) |
+| C — Migration framework | 6.4 | ✅ | `persistence/schema.ts` (`CURRENT_DOCUMENT_VERSION`), `persistence/migrations.ts` (ordered `up()` steps) |
+| D — Versioning | 6.3 | ✅ | IDB version methods, `documentStore` snapshot/restore, `editor/documents/useVersionHistory.ts` + `VersionHistory.tsx` |
+| E — Export to React code | 6.5 | ❌ dropped | prototyped + removed — not a feature of this library |
+| F — Close-out | — | ✅ | docs + `0.5.0` |
+
+### Key decisions
+
+- **The `StorageAdapter` seam is the foundation** — IndexedDB is its
+  default implementation, not a special case; a server backend is just
+  another implementation a host registers via `setStorageAdapter`.
+- **Async core, sync index** — blob I/O is async; the index stays in
+  synchronous Zustand state so the UI is unchanged. `ready` gates a brief
+  loading veil on first read.
+- **BroadcastChannel** replaces the localStorage `storage` event for
+  cross-tab sync (the event is silent on IDB).
+- **One-way versioned migrations** — integer `version`, ordered `up()`
+  steps, no `down`. The Phase 6/7/10 content migrations became step 2.
+- **Snapshots ring-buffer** (last 20 autos/doc) with exempt manual save
+  points; the localStorage fallback omits versioning and the UI hides
+  itself.
+- **Export-to-code is out of scope** — a runtime editor + JSON document
+  model is the product; a source-code generator is a different one.
+
+### Bundle delta
+
+`npm run build` (no minification, with sourcemap):
+
+| Asset | `0.4.0` raw / gz | `0.5.0` raw / gz |
+|---|---|---|
+| `index-*.js` | 608 / 184 KB | 621 / 187 KB |
+| `index-*.css` | 311 / 40 KB | 311 / 40 KB |
+
+~+13 KB raw JS for the IDB adapter, migration pipeline, and versioning. No
+runtime dependency added (`fake-indexeddb` is devDependency-only).
+
+### Tests
+
+601 passing. New: localStorage + IndexedDB adapter contract suites (shared
+spec), IDB localStorage-import + version-snapshot tests, migration
+version-gating tests, BroadcastChannel watcher decision tests.
+
+**Phase 14 complete.** The next PRODUCTION_READINESS section is unblocked.

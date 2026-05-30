@@ -627,8 +627,8 @@ Stretch — each needs a heavy library and is deferred to a later phase.
 ## 6. Persistence — beyond localStorage
 
 **Status: § 6.1–6.4 shipped in `0.5.0` (Phase 14).** § 6.5 (export to
-React code) was prototyped and deferred (see below); § 6.6–6.8 remain
-Stretch. Documents persist to IndexedDB by default behind a
+React code) is **out of scope — won't be supported** (see below). § 6.6–6.8
+remain Stretch. Documents persist to IndexedDB by default behind a
 host-replaceable `StorageAdapter`; a versioned migration pipeline runs on
 load; documents snapshot / restore.
 
@@ -661,18 +661,23 @@ localStorage; a concrete HTTP / Supabase / etc. adapter is the host's job
 - ✅ The Phase 6 / 7 / 10 content migrations are folded into step 2.
 - One-way only — no `down` steps (export-before-downgrade policy).
 
-### 6.5 Export to React code *(Production-blocker / UX)* — ⏸ deferred
+### 6.5 Export to React code — ❌ out of scope (won't support)
 
-Prototyped during Phase 14, then cut. A useful exporter needs a per-
-canonical emitter for all 48 canonicals × 2 adapters (shadcn + MUI) plus
-a compile-verification harness to keep the emitters from drifting from the
-real adapter components — estimated ~8–11 engineering days for faithful
-coverage. The generic-fallback prototype emitted `<div>` placeholders for
-most components, which isn't useful, so it was removed. Re-queued; the
-likely shape is a Tier-1/2 pass (leaf + slotted canonicals) behind a
-compile harness first, with overlays/table as documented TODOs (their
-trigger/runtime model doesn't map to static JSX). JSON export / import /
-share-by-URL remain the shipped portability paths.
+**Not a feature of this library, by design.** crafted-design is a runtime,
+adapter-pluggable editor + document model: a document is data (JSON)
+rendered live by the chosen adapter (shadcn / MUI / …). Emitting framework
+**source code** is a fundamentally different product — a design-to-code
+generator — that would have to re-implement every adapter component as a
+string template and keep ~48 canonicals × N adapters of those templates
+from drifting from the real components. That's out of step with the
+library's intent and a large, brittle maintenance surface.
+
+A prototype was built during Phase 14 and removed once this was clear.
+Portability is served instead by **JSON export / import / share-by-URL**
+(round-trips the document model) and by **embedding `<Editor />`** or
+rendering the document model at runtime via the chosen adapter. Hosts that
+genuinely need code output can layer their own generator on top of the
+exported JSON + the public registry metadata.
 
 ### 6.6 Export to other formats *(Stretch)*
 - HTML (static, no React)
@@ -1013,28 +1018,30 @@ external developers and designers" honest, it would be:
 3. CI pipeline (9.4)
 4. CSP + XSS audit (11.1, 11.2)
 5. Bundle size budget + analyzer (12.3)
-6. IndexedDB or server-backed storage adapter (6.1, 6.2)
-7. Export to React code (6.5)
-8. Stable per-tab ids in Tabs (2.11)
-9. Layer tree / outline view (3.4)
-10. Copy / paste / duplicate node (3.2)
-11. Inline text editing on Text canonicals (3.11)
-12. Image upload / asset library (3.10)
-13. Real Profiler + axe-core measurement pass (1.2, 1.3)
-14. TypeDoc API reference site (10.1)
-15. Bug tracking infrastructure (9.10)
+6. IndexedDB or server-backed storage adapter (6.1, 6.2) — ✅ shipped 0.5.0
+7. Stable per-tab ids in Tabs (2.11)
+8. Layer tree / outline view (3.4)
+9. Copy / paste / duplicate node (3.2)
+10. Inline text editing on Text canonicals (3.11)
+11. Image upload / asset library (3.10)
+12. Real Profiler + axe-core measurement pass (1.2, 1.3)
+13. TypeDoc API reference site (10.1)
+14. Bug tracking infrastructure (9.10)
+
+(Export to React code, formerly listed here, is **out of scope** — a
+source-code generator isn't part of a runtime editor + document model.)
 
 **Should:**
-16. Canvas keyboard navigation (1.4)
-17. Hot reload of fonts / adapters / themes (2.7–9)
-18. CSS variable picker for host themes (4.9)
-19. Color contrast checking (4.14)
-20. Telemetry provider (13.1)
-21. Lazy adapter loading + tree-shakable SDK (8.3, 8.4)
-22. SDK boundary lint rule (2.5)
-23. Subpath imports + multiple bundle formats (12.1, 12.2)
-24. Schema migration framework (6.4)
-25. Real Vite plugin for Tailwind safelist (4.1)
+15. Canvas keyboard navigation (1.4)
+16. Hot reload of fonts / adapters / themes (2.7–9)
+17. CSS variable picker for host themes (4.9)
+18. Color contrast checking (4.14)
+19. Telemetry provider (13.1)
+20. Lazy adapter loading + tree-shakable SDK (8.3, 8.4)
+21. SDK boundary lint rule (2.5)
+22. Subpath imports + multiple bundle formats (12.1, 12.2)
+23. Schema migration framework (6.4) — ✅ shipped 0.5.0
+24. Real Vite plugin for Tailwind safelist (4.1)
 
 **Nice-to-have but not blocking:**
 - Everything in §5 (component breadth)
@@ -1042,7 +1049,7 @@ external developers and designers" honest, it would be:
 - Most of §4 beyond CSS variable picker + color contrast
 - Most of §10 beyond TypeDoc
 
-The "must" list is ~15 items. With genuine effort and no timeline
+The "must" list is ~14 items. With genuine effort and no timeline
 pressure, that's the path to "this is a real product." Anything beyond
 the must list is product breadth, not production readiness — they
 strengthen the offering but don't block claiming production status.

@@ -131,7 +131,8 @@ IndexedDB by default behind a host-replaceable `StorageAdapter`, a
 versioned schema-migration pipeline runs on load, and documents can be
 snapshotted / restored. Additive to the `0.4.x` SDK surface (new exports
 only); the document-store internals went async but they aren't part of the
-public SDK. (§ 6.5 export-to-React-code is deferred — see Stretch.)
+public SDK. (§ 6.5 export-to-React-code is intentionally **not** supported —
+see below.)
 
 ### Added
 
@@ -162,14 +163,16 @@ public SDK. (§ 6.5 export-to-React-code is deferred — see Stretch.)
   adapter's optional version methods; the UI hides itself when the adapter
   doesn't support them.
 
-### Deferred
+### Not supported (out of scope)
 
-- **Export to React code** (§ 6.5) is **not** in `0.5.0`. A prototype
-  (per-adapter JSX emitters) was cut: faithful output requires a
-  per-canonical emitter for all 48 canonicals × 2 adapters plus a
-  compile-verification harness to keep them from drifting from the real
-  adapter components — too large for the value at this stage. Re-queued as
-  Stretch. JSON export / import / share-by-URL are unchanged.
+- **Export to React code** (§ 6.5) is **not** a feature of this library and
+  won't be added. The library is a runtime, adapter-pluggable editor +
+  document model: documents are data (JSON) rendered live by the chosen
+  adapter. Emitting framework source code is a different product (a
+  design-to-code generator) that would duplicate every adapter component as
+  drifting string templates — out of step with the library's intent. A
+  prototype was built during Phase 14 and removed. Portability stays
+  through JSON export / import / share-by-URL and embedding `<Editor />`.
 
 ### Changed
 

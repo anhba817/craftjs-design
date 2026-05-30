@@ -778,41 +778,67 @@ Templates seed new documents with pre-arranged canvas content. Three ship today 
 
 Pattern B multi-canvas templates (Card with header/body/footer children, Tabs with per-tab content) aren't supported by the current builder — that's a Phase 8 polish item. Workaround: ship a Pattern-A-only template; users can drop Card/Tabs and populate the slots manually.
 
-### Adding a document migration
+### Adding a schema migration step (Phase 14 § 6.4)
 
-When a canonical's persisted shape changes incompatibly (renamed a prop, dropped a field, changed a type), existing saved documents need a one-shot transformation at load time. Migrations live in `src/persistence/migrations.ts` and run inside `migrateDocument()`.
+When a canonical's persisted shape changes incompatibly (renamed a prop, dropped a field, changed a type), existing saved documents need a one-shot transformation at load time. Migrations live in `src/persistence/migrations.ts` and run through the versioned pipeline in `migrateDocument()`: each step declares the `version` it upgrades a document **to**, and `migrateDocument` runs every step whose `version` exceeds the document's stamped version, then re-stamps to `CURRENT_DOCUMENT_VERSION`.
 
-Example — when Phase 7 moved Tabs content from a string prop into per-tab canvases, the migration stripped the obsolete `content` field:
+To add one:
+
+1. Bump `CURRENT_DOCUMENT_VERSION` in `src/persistence/schema.ts`.
+2. Add a step to `MIGRATION_STEPS` whose `up(tree)` mutates the parsed Craft tree in place:
 
 ```ts
 // src/persistence/migrations.ts
-function migrateTabsPropsV7(tree: CraftTree): void {
-  for (const nodeId of Object.keys(tree)) {
-    const node = tree[nodeId]
-    if (node.displayName !== 'Tabs') continue
-    const tabs = node.props?.nodeProps?.tabs
-    if (!Array.isArray(tabs)) continue
-    for (const tab of tabs) {
-      if (tab && typeof tab === 'object' && 'content' in tab) {
-        delete (tab as Record<string, unknown>).content
+const MIGRATION_STEPS: MigrationStep[] = [
+  { version: 2, up: (tree) => { migrateCardPropsV6(tree); /* … */ } },
+  {
+    version: 3, // ← new
+    up: (tree) => {
+      for (const id of Object.keys(tree)) {
+        const node = tree[id]
+        if (node.displayName !== 'MyCanonical') continue
+        // …transform node.props.nodeProps in place…
       }
-    }
-  }
-}
-
-export function migrateDocument(doc: EditorDocument): EditorDocument {
-  // ... parse craftJson ...
-  migrateCardPropsV6(tree)
-  migrateTabsPropsV7(tree)   // ← add new step here
-  // ... stringify ...
-}
+    },
+  },
+]
 ```
 
 Migration rules:
-- **Idempotent.** Running the migration twice on the same document must produce the same result as running it once. Tests assert this.
-- **Walks the tree directly.** No Craft.js APIs are available at migration time — operate on the raw serialized node map.
-- **Drops, don't transform** for shape changes that can't be losslessly converted. Auto-converting Phase-5 Card `title` strings into child Text canonicals would require synthesizing fresh Craft node ids + linked-parent wiring — that's a different complexity class from the strip-and-go pattern. The phase plan calls out which migrations dropped data; designers export before upgrading.
-- **Add a test case.** Each migration step gets at least three tests in `migrations.test.ts`: happy path, isolation (only affects matching nodes), idempotency.
+- **Idempotent.** Running a step twice must equal running it once — a document hand-stamped at the new version won't re-run it, but keep steps idempotent anyway. Tests assert this.
+- **One-way.** There are no `down` steps (newer canonicals can't round-trip to an older schema; the policy is export-before-downgrade).
+- **Walks the tree directly.** No Craft.js APIs at migration time — operate on the raw serialized node map.
+- **Drops, don't transform** for changes that can't be losslessly converted (synthesizing fresh node ids + linked-parent wiring is a different complexity class).
+- **Add test cases** in `migrations.test.ts`: happy path, isolation, idempotency, and version-gating (a doc already at the new version is untouched).
+
+### Writing a StorageAdapter (Phase 14 § 6.2)
+
+The editor persists through a `StorageAdapter` (default: IndexedDB → localStorage fallback). To back persistence with your own store (a server, a different local DB), implement the interface and register it before `<Editor />` mounts:
+
+```ts
+import { setStorageAdapter } from '@design/sdk'
+import type { StorageAdapter } from '@design/sdk'
+
+const adapter: StorageAdapter = {
+  async readIndex() { /* → { documents, activeId } */ },
+  async writeIndex(index) { /* persist */ return { ok: true } },
+  async readDocument(id) { /* → EditorDocument | null */ },
+  async writeDocument(id, doc) { /* persist */ return { ok: true } },
+  async deleteDocument(id) { /* … */ },
+  async estimateUsage() { return { usedBytes: 0, totalBytes: Infinity, percent: 0 } },
+  // Optional: init() (one-time setup, awaited before first read),
+  // and listVersions / readVersion / writeVersion to enable version history.
+}
+setStorageAdapter(adapter)
+```
+
+Adapter rules:
+- **All methods async.** The document store awaits blob I/O; the index is held in synchronous Zustand state after bootstrap so the UI is unchanged.
+- **Return typed `WriteResult`.** `{ ok: true }` or `{ ok: false, kind: 'quota' | 'schema' | 'unknown', error }`. `'quota'` triggers the storage-full UI.
+- **Validate + migrate on read.** `readDocument` should parse with `documentSchema` and run `migrateDocument` (the built-in adapters do) so older envelopes upgrade on load.
+- **Versioning is opt-in.** Omit the `*Version` methods and the version-history UI hides itself; implement them (ring-buffer your autos) to enable snapshots.
+- **Cross-tab.** The store posts BroadcastChannel messages on write; you don't need to — but if another process writes your backend, broadcast an `index-changed` / `doc-changed` yourself to keep open tabs in sync.
+- **Contract test.** Run your adapter through `runStorageAdapterContract` (`src/persistence/adapters/adapterContract.ts`) the way the localStorage + IndexedDB adapters do.
 
 ### Adding a UI control that mutates a node directly
 

@@ -460,9 +460,11 @@ before the first read), and the version trio `listVersions` /
 `readVersion` / `writeVersion` (omit them and the version-history UI hides
 itself). `getStorageAdapter()` returns the active adapter.
 
-> Export to React/JSX code (§ 6.5) was prototyped in Phase 14 and deferred —
-> there is no `exportDocumentAsJsx` in the SDK. JSON export (`exportDocument`),
-> import, and share-by-URL remain the portability surface.
+> Export to React/JSX **source code** is intentionally not part of this
+> library (it's a runtime editor + document model, not a design-to-code
+> generator). There is no `exportDocumentAsJsx`. Portability is JSON
+> export (`exportDocument`), import, and share-by-URL — round-tripping the
+> document model, which the chosen adapter renders live.
 
 ---
 

@@ -235,37 +235,65 @@ Read the active provider from a custom panel or component with
 
 ## Persistence
 
-The editor's default storage is localStorage under
-`craftjs-design:doc-index:v2` + `craftjs-design:doc:<id>:v2`. Integration
-hosts that want their own backend can:
+The editor persists documents to **IndexedDB by default** (0.5.0+), behind
+a `StorageAdapter` seam, with an automatic fallback to localStorage where
+IndexedDB is unavailable (private mode, locked-down browsers). Integration
+hosts that want their own backend implement the adapter and register it
+**before** `<Editor />` mounts — this is the recommended path:
 
-1. **Read/write the active document directly** via `useDocumentStore`:
+```tsx
+import { setStorageAdapter } from '@crafted-design/editor/sdk'
+import type { StorageAdapter } from '@crafted-design/editor/sdk'
 
-   ```tsx
-   import { useDocumentStore } from '@design/editor'
+const apiAdapter: StorageAdapter = {
+  async readIndex() {
+    return myApi.getIndex() // { documents: DocumentSummary[], activeId }
+  },
+  async writeIndex(index) {
+    await myApi.putIndex(index)
+    return { ok: true } // or { ok: false, kind: 'quota' | 'schema' | 'unknown', error }
+  },
+  async readDocument(id) {
+    return myApi.getDoc(id) // EditorDocument | null
+  },
+  async writeDocument(id, doc) {
+    await myApi.putDoc(id, doc)
+    return { ok: true }
+  },
+  async deleteDocument(id) {
+    await myApi.deleteDoc(id)
+  },
+  async estimateUsage() {
+    return { usedBytes: 0, totalBytes: Infinity, percent: 0 }
+  },
+  // Optional: init() for one-time setup (awaited before the first read);
+  // listVersions / readVersion / writeVersion to enable the version-history
+  // UI (omit them and it stays hidden).
+}
 
-   // Save to your backend whenever the user clicks Save
-   const handleSave = async () => {
-     const doc = useDocumentStore.getState().loadActiveDocument()
-     if (doc) await myApi.saveDocument(doc)
-   }
-   ```
+setStorageAdapter(apiAdapter)
+```
 
-2. **Bypass the store** entirely with the lower-level helpers:
+All methods are **async**. Return `{ ok: false, kind: 'quota' }` from a
+write to trigger the editor's storage-full UI. The document store reads the
+index synchronously into memory after bootstrap (so the UI subscribes the
+usual way) but document blobs are loaded through the adapter on demand —
+`useDocumentStore.getState().loadActiveDocument()` returns a `Promise`.
 
-   ```tsx
-   import {
-     exportDocument,
-     importDocumentFromFile,
-   } from '@design/editor'
+For one-off blob round-trips outside the store, the lower-level helpers
+still exist:
 
-   // Blob → host backend
-   const blob = exportDocument(myEnvelope)
-   await myApi.upload(blob)
+```tsx
+import { exportDocument, importDocumentFromFile } from '@design/editor'
 
-   // File from host → editor
-   const env = await importDocumentFromFile(file)
-   ```
+const blob = exportDocument(myEnvelope)        // → JSON Blob
+const env = await importDocumentFromFile(file) // File → validated envelope
+```
+
+> **Note:** the library does not generate framework source code from a
+> document — it's a runtime editor whose documents are JSON rendered live
+> by the chosen adapter. Portability is the JSON envelope (export / import /
+> share-by-URL) + embedding `<Editor />`.
 
 ## Error handling
 
