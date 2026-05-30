@@ -24,10 +24,18 @@ interface Budget {
   maxGzipKB: number
 }
 
+// Budgets are gzipped KB, seeded from the corrected `0.6.0` baseline with
+// ~10% headroom. The editor JS bundles BOTH adapter sets (shadcn + MUI)
+// eagerly — MUI is ~290 KB gz of `index.js`. Splitting the heavy adapter
+// onto its own subpath entry so consumers opt in (§ 8.3) is a queued
+// optimization; until then this budget reflects the honest full size.
+// (The pre-0.6.0 ~120 KB figure was a BROKEN bundle: a too-aggressive
+// `sideEffects` field had tree-shaken the adapter/canonical registrations
+// out entirely — fixed in Phase 15 Group C.)
 const BUDGETS: Budget[] = [
-  { label: 'editor JS (index.js)', match: /^index\.js$/, maxGzipKB: 150 },
+  { label: 'editor JS (index.js)', match: /^index\.js$/, maxGzipKB: 460 },
   { label: 'editor CSS (index.css)', match: /^index\.css$/, maxGzipKB: 150 },
-  { label: 'SDK chunk (sdk-*.js)', match: /^sdk-.*\.js$/, maxGzipKB: 55 },
+  { label: 'SDK chunk (sdk-*.js)', match: /^sdk-.*\.js$/, maxGzipKB: 60 },
   { label: 'vite-plugin', match: /^vite-plugin\.js$/, maxGzipKB: 5 },
 ]
 

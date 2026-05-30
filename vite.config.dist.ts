@@ -3,6 +3,13 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import dts from 'vite-plugin-dts'
+import { visualizer } from 'rollup-plugin-visualizer'
+
+// Phase 15 § 12.3 — `npm run analyze` sets ANALYZE=1 to emit an
+// interactive treemap of the dist bundle (dist-lib/stats.html) so bundle
+// growth (and which dep — e.g. MUI — dominates a chunk) is inspectable.
+// Off for normal builds.
+const ANALYZE = process.env.ANALYZE === '1'
 
 // Dist build configuration. Used by `npm run build:dist` to produce an
 // embeddable bundle for integration consumers and the npm-publish artifact.
@@ -46,6 +53,18 @@ export default defineConfig({
       rollupTypes: true,
       tsconfigPath: './tsconfig.app.json',
     }),
+    ...(ANALYZE
+      ? [
+          visualizer({
+            // Repo root (not dist-lib) so it never lands in the published
+            // files; gitignored.
+            filename: 'bundle-stats.html',
+            gzipSize: true,
+            brotliSize: true,
+            template: 'treemap',
+          }),
+        ]
+      : []),
   ],
   resolve: {
     alias: {

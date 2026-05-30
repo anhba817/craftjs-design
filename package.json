@@ -31,7 +31,15 @@
     "./package.json": "./package.json"
   },
   "sideEffects": [
-    "**/*.css"
+    "**/*.css",
+    "**/main-app.tsx",
+    "**/registry/components/**",
+    "**/registry/fonts.ts",
+    "**/adapters/shadcn/**",
+    "**/adapters/mui/**",
+    "**/themes/**",
+    "**/editor/inspector/built-in-panels.ts",
+    "**/persistence/templates/**"
   ],
   "files": [
     "dist-lib",
@@ -54,6 +62,7 @@
     "docs": "typedoc",
     "check:size": "tsx scripts/check-bundle-size.ts",
     "check:licenses": "tsx scripts/check-licenses.ts",
+    "analyze": "ANALYZE=1 vite build --config vite.config.dist.ts",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "npm run build:dist && changeset publish --tag next",
@@ -103,6 +112,7 @@
     "lefthook": "^2.1.9",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "rollup-plugin-visualizer": "^7.0.1",
     "tailwindcss": "^4.3.0",
     "tsx": "^4.22.3",
     "typedoc": "^0.28.19",

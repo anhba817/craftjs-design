@@ -408,34 +408,42 @@ Older React 18 hosts would fail at runtime; the dist's `peerDependencies`
 declare `^19`. To use the editor in a React 18 host, downgrade the editor to
 a pre-Phase-9 version.
 
-### Bundle size
+### Module format + bundle size
 
-Measured at end of Phase 9 (`npm run build:dist`, no minification, with
-sourcemap):
+**ESM only.** The package ships ES modules (no CommonJS/UMD). React 19 and
+the adapter stack are ESM-first, and a dual package risks two copies of the
+registry singletons (the dual-package hazard). Consume it from an ESM-aware
+bundler (Vite, Next, Rollup, esbuild, modern webpack).
 
-| Asset | Raw | Gzipped |
-|---|---|---|
-| `dist-lib/index.js` | 1.6 MB | 336 KB |
-| `dist-lib/index.css` | 390 KB | 114 KB |
-| Combined | 2.0 MB | **450 KB gzipped** |
+**Two entry points** (`package.json` `exports`):
 
-Phase 9 net delta: roughly +100 KB raw JS / +10 KB gzipped from the
-reliability infrastructure (axe-init for dev, async error handler,
-malformed-doc recovery, storage quota tracking, concurrent-edit
-watcher, canvas keyboard nav). axe-init is dev-only via
-`import.meta.env.DEV` and tree-shakes out of the production bundle —
-the +100 KB is the production-shipping reliability surface itself.
+| Import | Builds to | Gzipped | Contains |
+|---|---|---|---|
+| `@crafted-design/editor` | `dist-lib/index.js` (+ `index.css`) | ~414 KB JS / ~124 KB CSS | the full editor + the shadcn **and** MUI adapters + all 48 canonicals |
+| `@crafted-design/editor/sdk` | `dist-lib/sdk.js` | ~44 KB | the authoring SDK only (register\* helpers, hooks, types) — **no** editor UI, no adapter impls |
 
-The CSS is large because the Tailwind safelist covers every utility × every
-breakpoint that the inspector can emit (270+ `@source inline()` directives).
-Hosts running their own Tailwind build can dedupe by sharing the safelist;
-see the Tailwind troubleshooting section above.
+So a host that only authors canonicals/adapters/panels against the SDK
+pays ~44 KB, not the full editor — the entries are separate chunks and the
+SDK surface doesn't pull the editor or MUI in.
 
-The dist build doesn't minify by default — your host's bundler should
-handle that. Minifying `index.js` cuts it roughly in half.
+**MUI weight.** The full-editor entry eagerly bundles *both* the shadcn and
+MUI adapters; MUI is roughly 290 KB gz of `index.js`. Splitting the heavy
+adapter onto its own opt-in subpath entry (so shadcn-only hosts don't pay
+for MUI) is a queued optimization (PRODUCTION_READINESS § 8.3). The Chakra
+adapter is an **example** and is *not* in the published bundle (only the
+dogfood app registers it).
 
-The Chakra example adapter is included by default; remove it via
-`unregisterAdapter('chakra-example')` if you don't need it (saves ~5 KB).
+**Minification.** The dist is intentionally **not** minified (easier to
+debug post-install, smaller diffs in sourcemaps); your bundler minifies it
+as part of your app build — minifying `index.js` roughly halves it. Run
+`npm run analyze` to emit an interactive treemap (`bundle-stats.html`) of
+what's in the bundle.
+
+**CSS size.** The CSS is large because the Tailwind safelist covers every
+utility × breakpoint the inspector can emit (270+ `@source inline()`
+directives). Hosts running their own Tailwind build can dedupe by sharing
+the safelist; see the Tailwind troubleshooting section above, and the
+optional `@crafted-design/editor/vite-plugin` safelist generator.
 
 ### Document storage quota
 

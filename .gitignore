@@ -27,3 +27,4 @@ src/style/safelist.generated.css
 *.njsproj
 *.sln
 *.sw?
+bundle-stats.html
