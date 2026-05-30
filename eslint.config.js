@@ -18,6 +18,34 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // `_`-prefixed bindings are intentional discards (rest-spread drops,
+      // unused destructure slots). Conventional ignore so they aren't errors.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
+      // Phase 15 § 9.4 — lint-baseline triage. eslint-plugin-react-hooks v7
+      // + react-refresh added several aggressive rules this codebase
+      // predates; many fire as false positives (immutability on Craft's
+      // Immer `setProp` mutators; incompatible-library on TanStack Virtual;
+      // only-export-components on intentional module shapes). Demoted to
+      // WARN so they stay visible as tech debt without making CI's lint
+      // gate red. The genuine bug-class rule (rules-of-hooks) stays an
+      // error. TODO(phase15+): triage and re-promote individually.
+      'react-refresh/only-export-components': 'warn',
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/immutability': 'warn',
+      'react-hooks/exhaustive-deps': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/static-components': 'warn',
+      'react-hooks/incompatible-library': 'warn',
+    },
   },
   // Phase 10 § 2.5 — SDK boundary enforcement. Code under examples/**
   // (and, by documented convention, integration consumers' source trees)

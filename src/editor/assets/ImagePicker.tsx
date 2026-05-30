@@ -170,7 +170,6 @@ export function ImagePicker({
                       : 'border-gray-200 hover:border-gray-400',
                   )}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={asset.thumbnail ?? asset.url}
                     alt=""

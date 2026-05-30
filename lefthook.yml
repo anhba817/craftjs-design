@@ -1,0 +1,23 @@
+# Phase 15 § 9.5 — pre-commit hooks (opt-in).
+#
+# Contributors enable these with `npx lefthook install` (CONTRIBUTING.md
+# documents it; the `prepare` script also runs it on `npm install`, guarded
+# so a missing binary never breaks install). On commit, lint + typecheck
+# the staged files so obvious breakage is caught before CI.
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: lint
+      glob: '*.{ts,tsx}'
+      run: npx eslint {staged_files}
+    - name: typecheck
+      # tsc -b is project-wide (no per-file mode with project references),
+      # so run the whole typecheck when any TS file is staged.
+      glob: '*.{ts,tsx}'
+      run: npx tsc -b
+
+pre-push:
+  jobs:
+    - name: test
+      run: npx vitest run

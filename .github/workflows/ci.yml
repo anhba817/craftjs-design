@@ -1,0 +1,48 @@
+name: CI
+
+# Phase 15 § 9.4 — lint + typecheck + test + dist build + bundle budget on
+# every push and PR. The bundle-budget step (check:size) reads the
+# build:dist output, so it runs after the build.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc -b
+
+      - name: Test
+        run: npx vitest run
+
+      - name: Build (dist)
+        run: npm run build:dist
+
+      - name: Bundle budget
+        run: npm run check:size
+
+      - name: Audit (advisory)
+        # Dependency vuln scan — non-blocking for now (Group B tightens it).
+        run: npm audit --omit=dev || true

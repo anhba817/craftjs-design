@@ -112,7 +112,6 @@ export function AssetLibraryPanel() {
           key={asset.url}
           className="group relative aspect-square overflow-hidden rounded border border-gray-200"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={asset.thumbnail ?? asset.url}
             alt=""

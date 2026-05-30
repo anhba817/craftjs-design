@@ -136,9 +136,12 @@ export function getComponent<P = Record<string, unknown>>(
  * user-component name — see `src/craft/resolver.tsx`). This is the
  * one path back to the canonical def.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getComponentByDisplayName(
   displayName: string,
+  // The registry stores canonicals of mixed prop generics; `any` is the
+  // pragmatic erasure for the cross-generic lookup (callers narrow via the
+  // returned def's own schema). Scoped disable on the type line itself.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): CanonicalComponent<any> | undefined {
   for (const c of components.values()) {
     if (c.displayName === displayName) return c;

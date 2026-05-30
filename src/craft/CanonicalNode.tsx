@@ -79,17 +79,19 @@ export function CanonicalNode({
 
   // Adapter coverage gap: render a labeled placeholder instead of throwing.
   // The placeholder lets users swap adapters or remove the node without
-  // crashing. Phase 5 fills MUI coverage gaps as part of adapter parity.
-  if (!Impl) {
-    return (
-      <div
-        ref={attachRef}
-        className="inline-block rounded border border-dashed border-destructive/50 bg-destructive/5 px-2 py-1 text-xs text-destructive"
-      >
-        {def.displayName} — no impl in adapter "{adapter.displayName}"
-      </div>
-    )
-  }
+  // crashing. NOTE: this is computed as a value (not an early return) so
+  // every Hook below still runs unconditionally — returning here would
+  // change the Hook call order between adapters that do/don't implement
+  // this canonical (react-hooks/rules-of-hooks). The actual return is
+  // gated just before the final render, after all Hooks.
+  const missingImpl = !Impl ? (
+    <div
+      ref={attachRef}
+      className="inline-block rounded border border-dashed border-destructive/50 bg-destructive/5 px-2 py-1 text-xs text-destructive"
+    >
+      {def.displayName} — no impl in adapter "{adapter.displayName}"
+    </div>
+  ) : null
 
   // Compose per-slot maps. Every slot the canonical declares gets a full
   // responsive composition + inline merge. Pattern A canonicals (one slot
@@ -228,6 +230,10 @@ export function CanonicalNode({
       ]),
     )
   }, [usesSlotChildren, slotKey, SlotBound, slotDef])
+
+  // All Hooks have run — safe to bail to the missing-impl placeholder now.
+  // Guard on `Impl` (not `missingImpl`) so TS narrows it to defined below.
+  if (!Impl) return missingImpl
 
   return (
     <>

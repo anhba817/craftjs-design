@@ -52,6 +52,11 @@
     "prebuild": "npm run gen-safelist",
     "prebuild:dist": "npm run gen-safelist",
     "docs": "typedoc",
+    "check:size": "tsx scripts/check-bundle-size.ts",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "npm run build:dist && changeset publish --tag next",
+    "prepare": "lefthook install || true",
     "prepublishOnly": "npm run build:dist && vitest run"
   },
   "peerDependencies": {
@@ -80,6 +85,7 @@
   },
   "devDependencies": {
     "@axe-core/react": "^4.11.3",
+    "@changesets/cli": "^2.31.0",
     "@craftjs/core": "^0.2.12",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.0",
@@ -93,6 +99,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "fake-indexeddb": "^6.2.5",
     "globals": "^17.6.0",
+    "lefthook": "^2.1.9",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "tailwindcss": "^4.3.0",

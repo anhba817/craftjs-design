@@ -37,7 +37,7 @@ export function ButtonTriggersPanel({
       if (!overlayName) continue
       out.push({ id, type: dn, name: overlayName })
     }
-    let triggers: string[] = []
+    let triggers: string[]
     try {
       const node = query.node(nodeId).get()
       triggers =
