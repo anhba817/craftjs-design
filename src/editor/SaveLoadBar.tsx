@@ -43,9 +43,12 @@ export function SaveLoadBar() {
   }
 
   const handleLoad = () => {
-    const doc = useDocumentStore.getState().loadActiveDocument()
-    if (!doc) return
-    applyEnvelope(doc)
+    void useDocumentStore
+      .getState()
+      .loadActiveDocument()
+      .then((doc) => {
+        if (doc) applyEnvelope(doc)
+      })
   }
 
   const handleExport = () => {

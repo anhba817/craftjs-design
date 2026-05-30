@@ -41,19 +41,20 @@ export function useDocumentSwitcher() {
   )
 
   const switchTo = useCallback(
-    (targetId: string) => {
+    async (targetId: string) => {
       const store = useDocumentStore.getState()
       if (store.activeId === targetId) return
 
       // Snapshot the current doc only if there IS an active doc to save into.
       // Brand-new editors (activeId=null) have nothing to save — their canvas
-      // is just the Frame's default seed.
+      // is just the Frame's default seed. Await so the blob is durable before
+      // we flip the active pointer and read the target.
       if (store.activeId) {
-        store.saveActiveDocument(snapshotCurrent())
+        await store.saveActiveDocument(snapshotCurrent())
       }
 
       store.setActiveId(targetId)
-      const loaded = store.loadActiveDocument()
+      const loaded = await store.loadActiveDocument()
       if (loaded) {
         applyEnvelope(targetId, loaded)
         return
@@ -67,10 +68,10 @@ export function useDocumentSwitcher() {
   )
 
   const createBlank = useCallback(
-    (name: string) => {
+    async (name: string) => {
       const store = useDocumentStore.getState()
       if (store.activeId) {
-        store.saveActiveDocument(snapshotCurrent())
+        await store.saveActiveDocument(snapshotCurrent())
       }
       const empty = getTemplate('empty')
       const newId = store.createDocument(name, empty?.envelope)
@@ -81,14 +82,14 @@ export function useDocumentSwitcher() {
   )
 
   const createFromTemplate = useCallback(
-    (templateId: string, name: string) => {
+    async (templateId: string, name: string) => {
       const template = getTemplate(templateId)
       if (!template) {
         throw new Error(`template not found: ${templateId}`)
       }
       const store = useDocumentStore.getState()
       if (store.activeId) {
-        store.saveActiveDocument(snapshotCurrent())
+        await store.saveActiveDocument(snapshotCurrent())
       }
       const newId = store.createDocument(name, template.envelope)
       applyEnvelope(newId, template.envelope)

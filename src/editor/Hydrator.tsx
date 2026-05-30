@@ -19,17 +19,23 @@ let hydrated = false
 
 export function Hydrator() {
   const { actions } = useEditor()
+  // Phase 14 § 6.2 — wait for the async bootstrap to resolve the index
+  // before hydrating, so we read the real activeId rather than the
+  // empty pre-bootstrap one.
+  const ready = useDocumentStore((s) => s.ready)
 
   useEffect(() => {
-    if (hydrated) return
+    if (!ready || hydrated) return
     hydrated = true
+
     // Shared URL fragment takes precedence over local state — opening a
     // shared link creates a new document and makes it active. The previous
     // active document is preserved in the index, just no longer active.
     const sharedDoc = loadFromSharedFragment()
     if (sharedDoc) {
-      // createDocument returns the new id; use it for malformed-state
-      // archive scoping if the shared envelope turns out to be broken.
+      // createDocument returns the new id synchronously (the blob write
+      // happens in the background); use it for malformed-state archive
+      // scoping if the shared envelope turns out to be broken.
       const newId = useDocumentStore
         .getState()
         .createDocument('Shared document', sharedDoc)
@@ -38,11 +44,15 @@ export function Hydrator() {
       return
     }
 
-    const doc = useDocumentStore.getState().loadActiveDocument()
-    if (!doc) return
-    const activeId = useDocumentStore.getState().activeId ?? 'unknown'
-    applyEnvelopeSafely(actions, activeId, doc)
-  }, [actions])
+    void useDocumentStore
+      .getState()
+      .loadActiveDocument()
+      .then((doc) => {
+        if (!doc) return
+        const activeId = useDocumentStore.getState().activeId ?? 'unknown'
+        applyEnvelopeSafely(actions, activeId, doc)
+      })
+  }, [actions, ready])
 
   return null
 }

@@ -1,101 +1,72 @@
 import { useEffect } from 'react'
 import {
-  STORAGE_KEY_INDEX,
-  storageKeyForDocument,
-} from '@/persistence/documentRegistry'
+  type DocBroadcastMessage,
+  subscribeDocBroadcast,
+} from '@/persistence/docBroadcast'
 import { useDocumentStore } from '@/persistence/documentStore'
-import { documentSchema } from '@/persistence/schema'
+import { getStorageAdapter } from '@/persistence/storageAdapter'
 import { useEditorStore } from '@/state/editorStore'
 
-// Phase 9 § 1.8 — listens for cross-tab localStorage edits and routes
-// them into editorStore.concurrentEditConflict / documentStore. The
-// `storage` event only fires for writes from OTHER tabs (the spec
-// excludes the originating tab), so this handler can assume any event
-// it sees represents an external change.
+// Phase 14 § 6.2 — cross-tab edit watcher over BroadcastChannel.
 //
-// Three cases:
-//   - Index changed (STORAGE_KEY_INDEX) — another tab created /
-//     renamed / deleted a document, or changed activeId. Re-read the
-//     index into the local store so the document menu reflects it.
-//   - Active doc's blob changed and parses cleanly — surface the
-//     remote envelope via setConcurrentEditConflict. The banner lets
-//     the user pick whose version wins.
-//   - Active doc's blob changed but doesn't parse (corrupt write) —
-//     ignored; the other tab will surface its own MalformedDocument
-//     state when it tries to read.
+// (Was Phase 9 § 1.8 over the localStorage `storage` event; the event is
+// localStorage-only and goes silent once the backend is IndexedDB, so the
+// transport moved to BroadcastChannel — see docBroadcast.ts.)
 //
-// Inactive-doc edits are also ignored — switching to that doc later
-// reads the freshest version naturally via Hydrator /
-// useDocumentSwitcher.
+// Two cases, mirroring the old behavior:
+//   - index-changed — another tab created / renamed / deleted a document
+//     or changed the active pointer. Re-read the index into the local
+//     store so the document menu reflects it.
+//   - doc-changed for the ACTIVE doc — another tab saved over the document
+//     we're editing. Read the remote envelope via the adapter and surface
+//     it through setConcurrentEditConflict; the banner lets the user pick
+//     whose version wins. doc-changed for an inactive doc is ignored —
+//     switching to it later reads the freshest version naturally.
+//
+// BroadcastChannel doesn't echo a message back to the posting tab, so we
+// never react to our own writes.
 
-// Pure helper so the storage-event logic can be tested without a React
-// host. Exported for vitest. Returns one of:
-//   - { action: 'ignore' } — event isn't relevant to us
-//   - { action: 'reload-index' } — caller should call reloadIndexFromStorage
-//   - { action: 'conflict', docId, remoteEnvelope } — caller should set
-//     the editorStore conflict state
-//   - { action: 'remote-deleted', docId } — the active doc was deleted
-//     from the index in another tab; current implementation falls
-//     under 'reload-index' because the index change triggers its own
-//     storage event when the other tab also rewrites the index.
-export type StorageEventDecision =
+export type BroadcastDecision =
   | { action: 'ignore' }
   | { action: 'reload-index' }
-  | {
-      action: 'conflict'
-      docId: string
-      remoteEnvelope: ReturnType<typeof documentSchema.parse>
-    }
+  | { action: 'check-conflict'; docId: string }
 
-export function decideStorageEvent(
-  event: { key: string | null; newValue: string | null },
+// Pure decision helper — message + active id → what the caller should do.
+// The remote-envelope read is async (adapter) so it lives in the effect,
+// not here; this stays synchronously testable.
+export function decideBroadcast(
+  message: DocBroadcastMessage,
   activeId: string | null,
-): StorageEventDecision {
-  const { key, newValue } = event
-  if (!key) return { action: 'ignore' }
-  if (key === STORAGE_KEY_INDEX) return { action: 'reload-index' }
-  if (!activeId) return { action: 'ignore' }
-  if (key !== storageKeyForDocument(activeId)) return { action: 'ignore' }
-  if (!newValue) {
-    // The doc blob was removed (delete from another tab). The other tab
-    // will also rewrite the index, which fires a separate storage event
-    // we already handle. Treat blob-only removal as ignorable.
-    return { action: 'ignore' }
-  }
-  try {
-    const parsed = documentSchema.parse(JSON.parse(newValue))
-    return { action: 'conflict', docId: activeId, remoteEnvelope: parsed }
-  } catch {
-    // Corrupt remote write — the other tab will surface its own
-    // MalformedDocumentBanner when it tries to read. Don't propagate
-    // the corruption here.
-    return { action: 'ignore' }
-  }
+): BroadcastDecision {
+  if (message.type === 'index-changed') return { action: 'reload-index' }
+  // doc-changed
+  if (!activeId || message.docId !== activeId) return { action: 'ignore' }
+  return { action: 'check-conflict', docId: activeId }
 }
 
 export function useConcurrentEditWatcher(): void {
   useEffect(() => {
-    const handler = (event: StorageEvent) => {
+    return subscribeDocBroadcast((message) => {
       const activeId = useDocumentStore.getState().activeId
-      const decision = decideStorageEvent(
-        { key: event.key, newValue: event.newValue },
-        activeId,
-      )
+      const decision = decideBroadcast(message, activeId)
       switch (decision.action) {
         case 'ignore':
           return
         case 'reload-index':
-          useDocumentStore.getState().reloadIndexFromStorage()
+          void useDocumentStore.getState().reloadIndexFromStorage()
           return
-        case 'conflict':
-          useEditorStore.getState().setConcurrentEditConflict({
-            docId: decision.docId,
-            remoteEnvelope: decision.remoteEnvelope,
-          })
+        case 'check-conflict':
+          void getStorageAdapter()
+            .readDocument(decision.docId)
+            .then((remoteEnvelope) => {
+              if (!remoteEnvelope) return
+              useEditorStore.getState().setConcurrentEditConflict({
+                docId: decision.docId,
+                remoteEnvelope,
+              })
+            })
           return
       }
-    }
-    window.addEventListener('storage', handler)
-    return () => window.removeEventListener('storage', handler)
+    })
   }, [])
 }

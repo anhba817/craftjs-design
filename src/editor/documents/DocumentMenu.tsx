@@ -121,8 +121,9 @@ export function DocumentMenu() {
             <button
               type="button"
               onClick={() => {
-                const newId = duplicateDocument(activeSummary.id)
-                switchTo(newId)
+                void duplicateDocument(activeSummary.id).then((newId) =>
+                  switchTo(newId),
+                )
               }}
               className="flex flex-1 items-center gap-1.5 rounded px-1.5 py-1 text-xs text-gray-600 hover:bg-muted"
             >

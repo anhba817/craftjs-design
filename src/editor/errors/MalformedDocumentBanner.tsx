@@ -1,7 +1,7 @@
 import { useEditor } from '@craftjs/core'
 import { AlertOctagon, Download, FileText, RefreshCcw } from 'lucide-react'
 import { useState } from 'react'
-import { writeDocument } from '@/persistence/documentRegistry'
+import { getStorageAdapter } from '@/persistence/storageAdapter'
 import { getTemplate } from '@/persistence/templates/registry'
 import { useEditorStore } from '@/state/editorStore'
 
@@ -74,7 +74,10 @@ export function MalformedDocumentBanner() {
       // doc has a real id — shared-fragment failures skip the rewrite
       // because there's no slot to write to).
       if (malformed.docId !== 'shared') {
-        writeDocument(malformed.docId, empty.envelope)
+        // Route through the active adapter (the blob may live in IDB,
+        // not localStorage). Fire-and-forget — the in-memory reset below
+        // is what the user sees immediately; the durable write follows.
+        void getStorageAdapter().writeDocument(malformed.docId, empty.envelope)
       }
       // Apply Empty in-memory.
       actions.deserialize(empty.envelope.craftJson)

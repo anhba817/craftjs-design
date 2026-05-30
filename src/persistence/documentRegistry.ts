@@ -1,6 +1,13 @@
 import { migrateDocument } from './migrations'
 import { documentSchema } from './schema'
 import type { EditorDocument } from './schema'
+import type { DocumentIndex, DocumentSummary, WriteResult } from './types'
+
+// Phase 14 § 6.2 — the canonical type defs moved to ./types so the
+// StorageAdapter seam can reference them without importing this
+// localStorage-specific module. Re-exported here so existing importers
+// (and documentRegistry.test) keep resolving them from documentRegistry.
+export type { DocumentIndex, DocumentSummary, WriteResult } from './types'
 
 // Phase 7 multi-document storage. Each document lives at its own localStorage
 // key keyed by stable id; a single index key tracks the document list and the
@@ -15,20 +22,6 @@ export const LEGACY_V1_KEY = 'craftjs-design:doc:v1'
 
 export function storageKeyForDocument(id: string): string {
   return `craftjs-design:doc:${id}:v2`
-}
-
-export interface DocumentSummary {
-  id: string
-  name: string
-  // Epoch milliseconds. Tracked in the index so the document picker can sort
-  // by recency without reading every blob.
-  created: number
-  updated: number
-}
-
-export interface DocumentIndex {
-  documents: DocumentSummary[]
-  activeId: string | null
 }
 
 const EMPTY_INDEX: DocumentIndex = { documents: [], activeId: null }
@@ -53,15 +46,6 @@ export function readDocumentIndex(): DocumentIndex {
     return { ...EMPTY_INDEX }
   }
 }
-
-// Phase 9 § 1.7 — every write returns a typed result so callers can react
-// to a QuotaExceededError without parsing console logs. `'quota'` is the
-// only programmatically-recoverable failure; `'schema'` (Zod parse) and
-// `'unknown'` mean the data was rejected and the caller can't help —
-// they still get a result so they can keep state consistent.
-export type WriteResult =
-  | { ok: true }
-  | { ok: false; kind: 'quota' | 'schema' | 'unknown'; error: unknown }
 
 function isQuotaExceededError(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false

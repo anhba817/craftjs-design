@@ -1,8 +1,12 @@
 import { Editor as Craft, Element, Frame } from '@craftjs/core'
+import { Loader2 } from 'lucide-react'
 import { useEffect } from 'react'
 import { AdapterProvider } from '../adapters/AdapterContext'
 import { getResolver } from '../craft/resolver'
-import { getStorageUsage } from '../persistence/documentRegistry'
+import {
+  bootstrapDocumentStore,
+  useDocumentStore,
+} from '../persistence/documentStore'
 import { _markEditorMounted, getComponent } from '../registry/registry'
 import { useEditorStore } from '../state/editorStore'
 import { ThemeProvider } from '../themes/ThemeProvider'
@@ -42,12 +46,12 @@ export function Editor() {
     _markEditorMounted()
   }, [])
 
-  // Phase 9 § 1.7 — seed the storage quota percent on mount so the
-  // banner reflects the actual state from the start. Subsequent writes
-  // update this via documentStore.reportWrite().
+  // Phase 14 § 6.2 — bootstrap the async document store on mount: runs the
+  // adapter's one-time init (legacy migration / IDB import), reads the index,
+  // flips `ready`, and seeds the storage-quota percent. Hydrator waits on
+  // `ready` before applying the active document.
   useEffect(() => {
-    const usage = getStorageUsage()
-    useEditorStore.getState().setStorageQuotaPercent(usage.percent)
+    void bootstrapDocumentStore()
   }, [])
 
   const resolver = getResolver()
@@ -150,6 +154,10 @@ export function Editor() {
                       pointer-events-none on the outer wrapper so
                       drops still hit the Frame underneath. */}
                   {!malformedDocument && <EmptyCanvasHint />}
+                  {/* Phase 14 § 6.2 — cover the canvas while the async
+                      document bootstrap is in flight so the user doesn't
+                      see / interact with the pre-hydration seed. */}
+                  <DocumentLoadingOverlay />
                 </ErrorBoundary>
               </main>
             </ThemeProvider>
@@ -169,6 +177,27 @@ export function Editor() {
 
 // Re-export for App.tsx to wrap the entire editor in a top-shell boundary.
 export { ErrorBoundary, TopShellErrorFallback }
+
+// Phase 14 § 6.2 — brief loading veil over the canvas until the async
+// document store finishes its first index read (and Hydrator applies the
+// active document). Subscribes to the store's `ready` flag; renders
+// nothing once ready so it adds no overhead to the steady state.
+function DocumentLoadingOverlay() {
+  const ready = useDocumentStore((s) => s.ready)
+  if (ready) return null
+  return (
+    <div
+      className="absolute inset-0 z-20 flex items-center justify-center bg-muted/60 backdrop-blur-sm"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 size={16} className="animate-spin" aria-hidden />
+        Loading document…
+      </div>
+    </div>
+  )
+}
 
 // Tiny inert host for the storage-event listener. The watcher hook can't
 // live directly in <Editor /> because that component renders <Craft>,
