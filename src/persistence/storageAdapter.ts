@@ -1,3 +1,7 @@
+import {
+  createIndexedDBAdapter,
+  isIndexedDBAvailable,
+} from './adapters/indexedDBAdapter'
 import { createLocalStorageAdapter } from './adapters/localStorageAdapter'
 import type { StorageAdapter } from './types'
 
@@ -5,22 +9,25 @@ import type { StorageAdapter } from './types'
 //
 // Hosts call `setStorageAdapter(myAdapter)` BEFORE `<Editor />` mounts to
 // route persistence at their own backend (mirrors registerAdapter /
-// registerTheme). When unset, the default is resolved lazily by
-// `defaultAdapterFactory` — Group A ships the localStorage adapter as the
-// default; Group B swaps in IndexedDB (with a localStorage fallback when
-// IDB is unavailable).
+// registerTheme). When unset, the default (§ 6.1) is IndexedDB, with an
+// automatic fallback to localStorage where IDB is unavailable (private
+// mode, locked-down browsers) — so the editor degrades to the Group A
+// behavior rather than failing to load.
 
 let active: StorageAdapter | null = null
 
-// Indirection so Group B can replace the default without this module
-// importing the (heavier) IndexedDB adapter directly. Group A's default
-// is localStorage.
-let defaultAdapterFactory: () => StorageAdapter = createLocalStorageAdapter
+// The default backend chooser. IndexedDB when available, else localStorage.
+// Overridable via setDefaultStorageAdapterFactory (tests inject a fake).
+let defaultAdapterFactory: () => StorageAdapter = () =>
+  isIndexedDBAvailable()
+    ? createIndexedDBAdapter()
+    : createLocalStorageAdapter()
 
 /**
- * Override the default adapter factory. Group B calls this at module load
- * to make IndexedDB the default; tests use it to inject a fake. Does not
- * affect an adapter already set via `setStorageAdapter`.
+ * Override the default adapter factory. Tests use it to inject a fake or
+ * pin a specific backend; does not affect an adapter already set via
+ * `setStorageAdapter`. Call `resetStorageAdapter()` afterward if a default
+ * adapter was already built.
  */
 export function setDefaultStorageAdapterFactory(
   factory: () => StorageAdapter,
