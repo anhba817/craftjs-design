@@ -32,7 +32,7 @@ In-scope items (PRODUCTION_READINESS § 6.1–6.5, all non-Stretch):
 | 6.1 | B — IndexedDB default adapter | `IndexedDBStorageAdapter` as the default; localStorage adapter as fallback; one-time migration of existing localStorage docs into IDB |
 | 6.4 | C — Schema migration framework | Version-stamped envelope; ordered `up()` pipeline; fold the existing ad-hoc Card/Tabs migrations into steps |
 | 6.3 | D — Document versioning | Auto-snapshot on save (keep last N), manual "save points", restore + a lightweight version list |
-| 6.5 | E — Export to React code | Per-adapter JSX codegen from the Craft tree (shadcn + MUI emitters) |
+| 6.5 | E — Export to React code | ⏸ **Deferred** — prototyped then cut (generic fallback emitted `<div>` for most canonicals; faithful coverage estimated ~8–11 days, re-queued as Stretch) |
 |  | F — Close-out | verification, docs, `0.5.0` cut |
 
 Group A ships first — the adapter interface + async plumbing is the spine

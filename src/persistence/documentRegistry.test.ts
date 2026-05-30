@@ -12,11 +12,14 @@ import {
   writeDocument,
   writeDocumentIndex,
 } from './documentRegistry'
+import { CURRENT_DOCUMENT_VERSION } from './schema'
 import type { EditorDocument } from './schema'
 
 function makeEnvelope(overrides: Partial<EditorDocument> = {}): EditorDocument {
   return {
-    version: 1,
+    // CURRENT so read round-trips are exact (readDocument re-stamps older
+    // envelopes via migrateDocument). The migration test overrides this.
+    version: CURRENT_DOCUMENT_VERSION,
     adapterId: 'shadcn',
     themeId: 'default',
     craftJson: JSON.stringify({ ROOT: { displayName: 'Box', props: {} } }),
@@ -82,7 +85,8 @@ describe('documentRegistry — basic CRUD', () => {
     }
     writeDocument(
       'doc-old',
-      makeEnvelope({ craftJson: JSON.stringify(oldShapeTree) }),
+      // version 1 so the v2 migration step runs on read.
+      makeEnvelope({ version: 1, craftJson: JSON.stringify(oldShapeTree) }),
     )
     const out = readDocument('doc-old')
     expect(out).not.toBeNull()

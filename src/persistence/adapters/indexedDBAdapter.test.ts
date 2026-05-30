@@ -1,4 +1,4 @@
-import { IDBFactory } from 'fake-indexeddb'
+import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   makeContractEnvelope,
@@ -16,6 +16,9 @@ beforeEach(() => {
   // don't leak between cases. Each test also builds a fresh adapter, whose
   // dbPromise re-opens against this factory.
   vi.stubGlobal('indexedDB', new IDBFactory())
+  // The adapter references the global IDBKeyRange (a real-browser global);
+  // provide fake-indexeddb's in the test env.
+  vi.stubGlobal('IDBKeyRange', IDBKeyRange)
 })
 
 describe('IndexedDB StorageAdapter — contract', () => {
@@ -79,5 +82,51 @@ describe('IndexedDB StorageAdapter — localStorage import on first boot', () =>
     const index = await idb.readIndex()
     expect(index.documents).toHaveLength(1)
     expect(index.documents[0].id).toBe('idb-doc')
+  })
+})
+
+describe('IndexedDB StorageAdapter — version snapshots (§ 6.3)', () => {
+  it('writeVersion → listVersions → readVersion round-trips', async () => {
+    const idb = createIndexedDBAdapter()
+    const env = makeContractEnvelope({ themeId: 'rose' })
+    const res = await idb.writeVersion!('doc-1', env, {
+      kind: 'manual',
+      label: 'First',
+    })
+    expect(res).toEqual({ ok: true })
+
+    const versions = await idb.listVersions!('doc-1')
+    expect(versions).toHaveLength(1)
+    expect(versions[0].label).toBe('First')
+    expect(versions[0].kind).toBe('manual')
+
+    const restored = await idb.readVersion!('doc-1', versions[0].versionId)
+    expect(restored).toEqual(env)
+  })
+
+  it('scopes versions per document', async () => {
+    const idb = createIndexedDBAdapter()
+    await idb.writeVersion!('doc-a', makeContractEnvelope(), { kind: 'manual' })
+    await idb.writeVersion!('doc-b', makeContractEnvelope(), { kind: 'manual' })
+    expect(await idb.listVersions!('doc-a')).toHaveLength(1)
+    expect(await idb.listVersions!('doc-b')).toHaveLength(1)
+  })
+
+  it('ring-buffers auto snapshots but keeps manual save points', async () => {
+    const idb = createIndexedDBAdapter()
+    // 22 autos — exceeds the cap of 20, so 2 oldest are evicted.
+    for (let i = 0; i < 22; i++) {
+      await idb.writeVersion!('doc-1', makeContractEnvelope(), { kind: 'auto' })
+    }
+    // A manual save point is exempt from eviction.
+    await idb.writeVersion!('doc-1', makeContractEnvelope(), {
+      kind: 'manual',
+      label: 'Keep me',
+    })
+    const versions = await idb.listVersions!('doc-1')
+    const autos = versions.filter((v) => v.kind === 'auto')
+    const manuals = versions.filter((v) => v.kind === 'manual')
+    expect(autos.length).toBe(20)
+    expect(manuals.length).toBe(1)
   })
 })

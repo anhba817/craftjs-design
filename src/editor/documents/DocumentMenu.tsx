@@ -20,6 +20,7 @@ import { useDocumentStore } from '@/persistence/documentStore'
 import { reopenOnboardingTour } from '../discoverability/OnboardingTour'
 import { TemplatePicker } from './TemplatePicker'
 import { useDocumentSwitcher } from './useDocumentSwitcher'
+import { VersionHistory } from './VersionHistory'
 
 // Top-bar dropdown. Trigger button shows the active doc name + chevron;
 // dropdown content has the management surface (new, switch, rename, dup, del).
@@ -204,6 +205,10 @@ export function DocumentMenu() {
             </div>
           </>
         )}
+
+        {/* Phase 14 § 6.3 — version history (hidden when the active
+            adapter doesn't support snapshots). */}
+        <VersionHistory activeId={activeId} />
       </DropdownMenuContent>
     </DropdownMenu>
   )

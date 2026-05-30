@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { migrateDocument } from './migrations'
+import { CURRENT_DOCUMENT_VERSION } from './schema'
 
 describe('migrateDocument — Phase 6 Card props strip', () => {
   it('removes stale Card props (title, description, showFooter, footerText)', () => {
@@ -356,5 +357,61 @@ describe('migrateDocument — Phase 10 Tabs id injection', () => {
     expect(tabs[0].id).toBe('a')
     expect(tabs[1].id).toBe('_unset_1')
     expect(tabs[2].id).toBe('a__1')
+  })
+})
+
+// Phase 14 § 6.4 — the versioned pipeline: steps run only when their
+// target version exceeds the document's stamped version, and the output
+// is re-stamped to CURRENT.
+describe('migrateDocument — version gating', () => {
+  const staleCardTree = {
+    'node-card': {
+      displayName: 'Card',
+      isCanvas: true,
+      props: { nodeProps: { title: 'stale' } },
+    },
+  }
+
+  it('re-stamps the output to CURRENT_DOCUMENT_VERSION', () => {
+    const doc = {
+      version: 1 as const,
+      adapterId: 'shadcn',
+      craftJson: JSON.stringify({ ROOT: { displayName: 'Box', props: {} } }),
+    }
+    expect(migrateDocument(doc).version).toBe(CURRENT_DOCUMENT_VERSION)
+  })
+
+  it('runs content steps on a version-1 document', () => {
+    const doc = {
+      version: 1 as const,
+      adapterId: 'shadcn',
+      craftJson: JSON.stringify(staleCardTree),
+    }
+    const out = JSON.parse(migrateDocument(doc).craftJson)
+    expect(out['node-card'].props.nodeProps).toEqual({})
+    expect(out['node-card'].isCanvas).toBe(false)
+  })
+
+  it('does NOT re-run content steps on a CURRENT-version document', () => {
+    // A document already stamped at CURRENT keeps its tree verbatim — the
+    // v2 step is gated out. (Hand-authored stale shape at v2 is the
+    // designer's responsibility; the stamp is the contract.)
+    const doc = {
+      version: CURRENT_DOCUMENT_VERSION,
+      adapterId: 'shadcn',
+      craftJson: JSON.stringify(staleCardTree),
+    }
+    const out = JSON.parse(migrateDocument(doc).craftJson)
+    expect(out['node-card'].props.nodeProps).toEqual({ title: 'stale' })
+    expect(out['node-card'].isCanvas).toBe(true)
+  })
+
+  it('treats a missing version as 0 and runs every step', () => {
+    const doc = {
+      adapterId: 'shadcn',
+      craftJson: JSON.stringify(staleCardTree),
+    } as unknown as Parameters<typeof migrateDocument>[0]
+    const out = JSON.parse(migrateDocument(doc).craftJson)
+    expect(out['node-card'].props.nodeProps).toEqual({})
   })
 })

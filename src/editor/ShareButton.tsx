@@ -3,7 +3,10 @@ import { Check, Copy } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { SHARE_URL_MAX_PAYLOAD, shareUrlFor } from '@/persistence/share'
-import type { EditorDocument } from '@/persistence/schema'
+import {
+  CURRENT_DOCUMENT_VERSION,
+  type EditorDocument,
+} from '@/persistence/schema'
 import { useEditorStore } from '@/state/editorStore'
 
 // Share button + popover. The popover content unmounts when closed (Radix
@@ -16,7 +19,7 @@ export function ShareButton() {
   const buildEnvelope = (): EditorDocument => {
     const { activeThemeId, activeAdapterId } = useEditorStore.getState()
     return {
-      version: 1,
+      version: CURRENT_DOCUMENT_VERSION,
       adapterId: activeAdapterId,
       themeId: activeThemeId,
       craftJson: query.serialize(),

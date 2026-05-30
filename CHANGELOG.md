@@ -124,6 +124,78 @@ App build (`npm run build`):
 
 (none yet)
 
+## [0.5.0] — 2026-05-30
+
+Phase 14 — Persistence beyond localStorage. Documents now persist to
+IndexedDB by default behind a host-replaceable `StorageAdapter`, a
+versioned schema-migration pipeline runs on load, and documents can be
+snapshotted / restored. Additive to the `0.4.x` SDK surface (new exports
+only); the document-store internals went async but they aren't part of the
+public SDK. (§ 6.5 export-to-React-code is deferred — see Stretch.)
+
+### Added
+
+- **`StorageAdapter` seam + async document store** (§ 6.2). One async
+  interface (`readIndex` / `writeIndex` / `readDocument` / `writeDocument`
+  / `deleteDocument` / `estimateUsage`, optional `init` + version
+  methods) the editor talks to. The document store went sync → async over
+  it (the index stays in synchronous Zustand state for the UI; blob I/O is
+  async). SDK: `setStorageAdapter`, `getStorageAdapter`, the
+  `StorageAdapter` / `DocumentIndex` / `DocumentSummary` / `DocumentVersion`
+  / `StorageUsage` / `WriteResult` / `EditorDocument` types.
+- **IndexedDB default backend** (§ 6.1). `IndexedDBStorageAdapter` lifts
+  the ~100-document localStorage ceiling (IDB has hundreds of MB). Falls
+  back to a localStorage adapter when IDB is unavailable (private mode).
+  On first boot it imports any existing localStorage documents into IDB.
+  `estimateUsage` reads the real quota via `navigator.storage.estimate()`.
+- **Cross-tab sync via BroadcastChannel** (§ 6.2). Replaces the
+  localStorage `storage` event (which is silent on IDB); concurrent-edit
+  detection now works regardless of backend.
+- **Versioned schema-migration pipeline** (§ 6.4). The envelope `version`
+  is a monotonic integer; ordered `up()` steps run for every version above
+  the stamped one, then re-stamp. The Phase 6 / 7 / 10 content migrations
+  are folded into step 2. One-way (no `down`).
+- **Document versioning** (§ 6.3). Auto-snapshot on every save
+  (ring-buffered, last 20 per document) plus labeled manual save points
+  (exempt from eviction); restore any version from the document menu
+  (snapshots current first so restore is undoable). Stored via the
+  adapter's optional version methods; the UI hides itself when the adapter
+  doesn't support them.
+
+### Deferred
+
+- **Export to React code** (§ 6.5) is **not** in `0.5.0`. A prototype
+  (per-adapter JSX emitters) was cut: faithful output requires a
+  per-canonical emitter for all 48 canonicals × 2 adapters plus a
+  compile-verification harness to keep them from drifting from the real
+  adapter components — too large for the value at this stage. Re-queued as
+  Stretch. JSON export / import / share-by-URL are unchanged.
+
+### Changed
+
+- `documentSchema.version` widened from `z.literal(1)` to `z.number().int()`
+  so the migration pipeline can stamp newer versions; `0.4.x` documents
+  (version 1) validate and migrate forward on load. New writes stamp
+  `CURRENT_DOCUMENT_VERSION`.
+- The document store's blob operations (`loadActiveDocument`,
+  `duplicateDocument`, `saveActiveDocument`) and the document-switcher /
+  version-history hooks are now async. These are internal modules, not part
+  of `@crafted-design/editor/sdk`.
+
+### Bundle
+
+Measured at `0.5.0` (`npm run build`, no minification, with sourcemap):
+
+| Asset | Raw | Gzipped |
+|---|---|---|
+| `dist/assets/index-*.js` | 621 KB | 187 KB |
+| `dist/assets/index-*.css` | 311 KB | 40 KB |
+
+Delta vs `0.4.0`: ~+13 KB raw JS / +3 KB gzipped (the IndexedDB adapter,
+migration pipeline, and versioning). No external dependency added at
+runtime — `fake-indexeddb` is a devDependency for the adapter contract
+tests only.
+
 ## [0.4.0] — 2026-05-30
 
 Phase 13 — Component breadth (Section 5). 28 new canonicals across seven

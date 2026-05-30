@@ -4,7 +4,10 @@ import { useEditorStore } from '@/state/editorStore'
 import { useDocumentStore } from '@/persistence/documentStore'
 import { downloadDocument } from '@/persistence/exportDocument'
 import { ImportError, importDocumentFromFile } from '@/persistence/importDocument'
-import type { EditorDocument } from '@/persistence/schema'
+import {
+  CURRENT_DOCUMENT_VERSION,
+  type EditorDocument,
+} from '@/persistence/schema'
 import { AdapterSwitcher } from './AdapterSwitcher'
 import { ColorModeToggle } from './ColorModeToggle'
 import { PreviewToggle } from './PreviewToggle'
@@ -22,7 +25,7 @@ export function SaveLoadBar() {
     const { activeThemeId, activeAdapterId, colorMode } =
       useEditorStore.getState()
     return {
-      version: 1,
+      version: CURRENT_DOCUMENT_VERSION,
       adapterId: activeAdapterId,
       themeId: activeThemeId,
       colorMode,

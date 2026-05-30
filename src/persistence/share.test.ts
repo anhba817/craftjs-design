@@ -7,11 +7,13 @@ import {
   readSharedFragment,
   shareUrlFor,
 } from './share'
+import { CURRENT_DOCUMENT_VERSION } from './schema'
 import type { EditorDocument } from './schema'
 
 function makeEnvelope(overrides: Partial<EditorDocument> = {}): EditorDocument {
   return {
-    version: 1,
+    // CURRENT so decode (which migrates) round-trips exactly.
+    version: CURRENT_DOCUMENT_VERSION,
     adapterId: 'shadcn',
     themeId: 'rose',
     craftJson: JSON.stringify({
@@ -78,7 +80,11 @@ describe('encodeDocument / decodeDocument', () => {
         props: { nodeProps: { title: 'stale' } },
       },
     }
-    const env = makeEnvelope({ craftJson: JSON.stringify(oldShapeTree) })
+    // version 1 so the v2 migration step runs on decode.
+    const env = makeEnvelope({
+      version: 1,
+      craftJson: JSON.stringify(oldShapeTree),
+    })
     const { encoded } = encodeDocument(env)
     const decoded = decodeDocument(encoded)
     const tree = JSON.parse(decoded.craftJson)

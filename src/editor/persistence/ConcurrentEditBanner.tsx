@@ -1,6 +1,7 @@
 import { useEditor } from '@craftjs/core'
 import { GitBranch } from 'lucide-react'
 import { useDocumentStore } from '@/persistence/documentStore'
+import { CURRENT_DOCUMENT_VERSION } from '@/persistence/schema'
 import { useEditorStore } from '@/state/editorStore'
 import { applyEnvelopeSafely } from '../errors/applyEnvelopeSafely'
 
@@ -31,7 +32,7 @@ export function ConcurrentEditBanner() {
 
   const handleOverwrite = () => {
     const snapshot = {
-      version: 1 as const,
+      version: CURRENT_DOCUMENT_VERSION,
       adapterId: useEditorStore.getState().activeAdapterId,
       themeId: useEditorStore.getState().activeThemeId,
       craftJson: query.serialize(),

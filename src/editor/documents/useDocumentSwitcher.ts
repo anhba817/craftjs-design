@@ -1,7 +1,10 @@
 import { useEditor } from '@craftjs/core'
 import { useCallback } from 'react'
 import { useDocumentStore } from '@/persistence/documentStore'
-import type { EditorDocument } from '@/persistence/schema'
+import {
+  CURRENT_DOCUMENT_VERSION,
+  type EditorDocument,
+} from '@/persistence/schema'
 import { getTemplate } from '@/persistence/templates/registry'
 import { useEditorStore } from '@/state/editorStore'
 import { applyEnvelopeSafely } from '@/editor/errors/applyEnvelopeSafely'
@@ -23,7 +26,7 @@ export function useDocumentSwitcher() {
   const snapshotCurrent = useCallback((): EditorDocument => {
     const { activeThemeId, activeAdapterId } = useEditorStore.getState()
     return {
-      version: 1,
+      version: CURRENT_DOCUMENT_VERSION,
       adapterId: activeAdapterId,
       themeId: activeThemeId,
       craftJson: query.serialize(),

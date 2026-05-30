@@ -626,63 +626,53 @@ Stretch — each needs a heavy library and is deferred to a later phase.
 
 ## 6. Persistence — beyond localStorage
 
-### 6.1 IndexedDB migration *(High / Production-blocker)*
+**Status: § 6.1–6.4 shipped in `0.5.0` (Phase 14).** § 6.5 (export to
+React code) was prototyped and deferred (see below); § 6.6–6.8 remain
+Stretch. Documents persist to IndexedDB by default behind a
+host-replaceable `StorageAdapter`; a versioned migration pipeline runs on
+load; documents snapshot / restore.
 
-5–10 MB quota fills at ~100 documents. IndexedDB has hundreds of MB.
-Refactor `documentRegistry.ts` to async + IndexedDB-backed. Storage
-adapter pattern (allow hosts to plug their own).
+### 6.1 IndexedDB migration *(High / Production-blocker)* — ✅ shipped
 
-### 6.2 Server-backed storage adapter *(Production-blocker)*
+- ✅ Async storage core; `IndexedDBStorageAdapter` is the default (hundreds
+  of MB vs localStorage's ~5 MB). localStorage adapter is the fallback.
+- ✅ First-boot import of existing localStorage documents into IDB.
 
-Integration consumers want their docs in their backend, not the
-browser. A documented `StorageAdapter` interface:
+### 6.2 Server-backed storage adapter *(Production-blocker)* — ✅ interface shipped
 
-```ts
-interface StorageAdapter {
-  list(): Promise<DocumentSummary[]>
-  load(id: string): Promise<EditorDocument | null>
-  save(id: string, doc: EditorDocument): Promise<void>
-  delete(id: string): Promise<void>
-}
-```
+The documented `StorageAdapter` interface (async; `readIndex` /
+`writeIndex` / `readDocument` / `writeDocument` / `deleteDocument` /
+`estimateUsage`, optional `init` + version methods). Register via
+`setStorageAdapter(...)`. The editor's default is IndexedDB →
+localStorage; a concrete HTTP / Supabase / etc. adapter is the host's job
+(INTEGRATION_GUIDE has the recipe).
 
-Host plugs theirs; editor's default is localStorage / IndexedDB.
+### 6.3 Document versioning beyond Craft's undo *(UX)* — ✅ shipped
 
-### 6.3 Document versioning beyond Craft's undo *(UX)*
+- ✅ Auto-snapshot on save (ring-buffered, last 20 per doc).
+- ✅ Manual save points (labeled, exempt from eviction).
+- ✅ Restore from the document menu (snapshots current first).
+- Version **diff view** remains a Stretch follow-up.
 
-Craft undo is session-only. "Show me yesterday's version" requires
-saved snapshots. Could:
+### 6.4 Schema migration framework *(DevEx)* — ✅ shipped
 
-- Auto-snapshot on save (keep last N versions per doc).
-- Manual save points ("publish version").
-- Version diff view.
+- ✅ Envelope `version` is a monotonic integer; ordered `up()` steps run
+  for every version above the stamped one, then re-stamp.
+- ✅ The Phase 6 / 7 / 10 content migrations are folded into step 2.
+- One-way only — no `down` steps (export-before-downgrade policy).
 
-### 6.4 Schema migration framework *(DevEx)*
+### 6.5 Export to React code *(Production-blocker / UX)* — ⏸ deferred
 
-`migrations.ts` is ad-hoc per change. Real framework:
-
-- Migration step has `version: number` + `up(tree)` + `down(tree)`.
-- Pipeline runs steps in order.
-- Version stamped in envelope; load detects + runs missing steps.
-
-### 6.5 Export to React code *(Production-blocker / UX)*
-
-Designers build documents; they want runnable JSX output. Generate:
-
-```tsx
-// landing-page.tsx — auto-generated
-export function LandingPage() {
-  return (
-    <div className="p-12 flex flex-col items-center">
-      <h1 className="text-4xl font-bold">Welcome</h1>
-      {/* … */}
-    </div>
-  )
-}
-```
-
-Per-adapter export (shadcn version vs MUI version). Big design item:
-how to handle props with computed values, slots, etc.
+Prototyped during Phase 14, then cut. A useful exporter needs a per-
+canonical emitter for all 48 canonicals × 2 adapters (shadcn + MUI) plus
+a compile-verification harness to keep the emitters from drifting from the
+real adapter components — estimated ~8–11 engineering days for faithful
+coverage. The generic-fallback prototype emitted `<div>` placeholders for
+most components, which isn't useful, so it was removed. Re-queued; the
+likely shape is a Tier-1/2 pass (leaf + slotted canonicals) behind a
+compile harness first, with overlays/table as documented TODOs (their
+trigger/runtime model doesn't map to static JSX). JSON export / import /
+share-by-URL remain the shipped portability paths.
 
 ### 6.6 Export to other formats *(Stretch)*
 - HTML (static, no React)

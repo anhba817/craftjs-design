@@ -427,6 +427,45 @@ the right entries out of `slotChildren`. Both helpers are the pattern for
 
 ---
 
+## Persistence backend + code export (Phase 14, 0.5.0)
+
+### `setStorageAdapter` — plug your own backend
+
+Documents persist to IndexedDB by default (with a localStorage fallback).
+To store them in your backend instead, implement `StorageAdapter` and
+register it **before** `<Editor />` mounts:
+
+```ts
+import { setStorageAdapter } from '@crafted-design/editor/sdk'
+import type { StorageAdapter } from '@crafted-design/editor/sdk'
+
+const myAdapter: StorageAdapter = {
+  async readIndex() { return fetch('/api/docs').then((r) => r.json()) },
+  async writeIndex(index) {
+    await fetch('/api/docs', { method: 'PUT', body: JSON.stringify(index) })
+    return { ok: true }
+  },
+  async readDocument(id) { /* … */ return null },
+  async writeDocument(id, doc) { /* … */ return { ok: true } },
+  async deleteDocument(id) { /* … */ },
+  async estimateUsage() { return { usedBytes: 0, totalBytes: Infinity, percent: 0 } },
+}
+setStorageAdapter(myAdapter)
+```
+
+All methods are async. `WriteResult` is `{ ok: true } | { ok: false; kind:
+'quota' | 'schema' | 'unknown'; error }` — return `kind: 'quota'` so the
+editor's storage-full UI fires. Optional: `init()` (one-time setup, awaited
+before the first read), and the version trio `listVersions` /
+`readVersion` / `writeVersion` (omit them and the version-history UI hides
+itself). `getStorageAdapter()` returns the active adapter.
+
+> Export to React/JSX code (§ 6.5) was prototyped in Phase 14 and deferred —
+> there is no `exportDocumentAsJsx` in the SDK. JSON export (`exportDocument`),
+> import, and share-by-URL remain the portability surface.
+
+---
+
 ## What's NOT exported
 
 The following are internal and may change without notice:

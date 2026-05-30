@@ -4,7 +4,12 @@ import type { StorageSaveFailedInfo } from '@/state/editorStore'
 import { postDocBroadcast } from './docBroadcast'
 import { newDocumentId } from './documentRegistry'
 import { getStorageAdapter } from './storageAdapter'
-import type { DocumentIndex, DocumentSummary, WriteResult } from './types'
+import type {
+  DocumentIndex,
+  DocumentSummary,
+  DocumentVersion,
+  WriteResult,
+} from './types'
 import type { EditorDocument } from './schema'
 
 // Phase 14 § 6.2 — multi-document store over the async StorageAdapter seam.
@@ -61,6 +66,15 @@ interface DocumentStoreState extends DocumentIndex {
   // Phase 9 § 1.8 — a sibling tab changed the index; re-read it into this
   // store WITHOUT writing back (avoids a broadcast/storage echo loop).
   reloadIndexFromStorage(): Promise<void>
+
+  // Phase 14 § 6.3 — version snapshots. No-ops / empty when the active
+  // adapter doesn't implement the optional version methods (localStorage).
+  versioningSupported(): boolean
+  // Save the document as the active doc AND write a labeled manual
+  // version (a "save point" exempt from ring-buffer eviction).
+  saveNamedVersion(doc: EditorDocument, label: string): Promise<void>
+  listVersions(): Promise<DocumentVersion[]>
+  readVersion(versionId: string): Promise<EditorDocument | null>
 }
 
 export const useDocumentStore = create<DocumentStoreState>((set, get) => {
@@ -172,10 +186,16 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => {
           d.id === activeId ? { ...d, updated: Date.now() } : d,
         )
       }
-      const writeRes = await getStorageAdapter().writeDocument(activeId, doc)
+      const adapter = getStorageAdapter()
+      const writeRes = await adapter.writeDocument(activeId, doc)
       handleWriteResult('writeDocument', writeRes, activeId)
       // Notify other tabs the active doc's blob changed (conflict check).
       postDocBroadcast({ type: 'doc-changed', docId: activeId })
+      // Phase 14 § 6.3 — auto-snapshot on every save (ring-buffered in the
+      // adapter). Fire-and-forget so the snapshot never blocks the save.
+      if (writeRes.ok && adapter.writeVersion) {
+        void adapter.writeVersion(activeId, doc, { kind: 'auto' })
+      }
       persistIndex({ documents, activeId })
       await refreshUsage()
     },
@@ -189,6 +209,39 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => {
     async reloadIndexFromStorage() {
       const next = await getStorageAdapter().readIndex()
       set({ documents: next.documents, activeId: next.activeId })
+    },
+
+    versioningSupported() {
+      return typeof getStorageAdapter().writeVersion === 'function'
+    },
+
+    async saveNamedVersion(doc, label) {
+      // Persist as the active document first (also fires an auto-snapshot),
+      // then add the labeled manual save point.
+      await get().saveActiveDocument(doc)
+      const activeId = get().activeId
+      const adapter = getStorageAdapter()
+      if (activeId && adapter.writeVersion) {
+        const res = await adapter.writeVersion(activeId, doc, {
+          kind: 'manual',
+          label,
+        })
+        handleWriteResult('writeDocument', res, activeId)
+      }
+    },
+
+    async listVersions() {
+      const activeId = get().activeId
+      const adapter = getStorageAdapter()
+      if (!activeId || !adapter.listVersions) return []
+      return adapter.listVersions(activeId)
+    },
+
+    async readVersion(versionId) {
+      const activeId = get().activeId
+      const adapter = getStorageAdapter()
+      if (!activeId || !adapter.readVersion) return null
+      return adapter.readVersion(activeId, versionId)
     },
   }
 })

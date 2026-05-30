@@ -1,6 +1,6 @@
 import { getComponent } from '@/registry/registry'
 import type { NodeStyle } from '@/registry/types'
-import type { EditorDocument } from '../schema'
+import { CURRENT_DOCUMENT_VERSION, type EditorDocument } from '../schema'
 
 // Phase 7 template builder. Converts a tree spec (NodeSpec) into a Craft.js
 // serialized node map + wraps it in an EditorDocument envelope. The spec is
@@ -119,7 +119,7 @@ export function buildTemplate(options: TemplateBuildOptions): EditorDocument {
   const ctx: BuilderContext = { nodes: {}, nextId: 0 }
   buildNode(options.root, ctx, null, 'ROOT')
   return {
-    version: 1,
+    version: CURRENT_DOCUMENT_VERSION,
     adapterId: options.adapterId ?? 'shadcn',
     themeId: options.themeId,
     craftJson: JSON.stringify(ctx.nodes),

@@ -3,11 +3,23 @@ import { documentSchema } from '../schema'
 import type { EditorDocument } from '../schema'
 import type {
   DocumentIndex,
+  DocumentVersion,
   StorageAdapter,
   StorageUsage,
   WriteResult,
 } from '../types'
 import { createLocalStorageAdapter } from './localStorageAdapter'
+
+// Keep at most this many auto-snapshots per document (ring buffer, oldest
+// evicted). Manual save points are exempt. IDB's quota affords this
+// comfortably; the localStorage adapter omits versioning entirely.
+const MAX_AUTO_VERSIONS = 20
+
+// Stored version record (value in the `versions` store).
+interface VersionRecord extends DocumentVersion {
+  docId: string
+  doc: EditorDocument
+}
 
 // Phase 14 § 6.1 — IndexedDB StorageAdapter, the default backend.
 //
@@ -198,11 +210,105 @@ export function createIndexedDBAdapter(): StorageAdapter {
       // Unknown quota — report a large ceiling at 0% so the banner stays quiet.
       return { usedBytes: 0, totalBytes: Number.POSITIVE_INFINITY, percent: 0 }
     },
-  }
 
-  // Expose the store name so Group D's version methods can be slotted onto
-  // this same adapter without re-declaring the schema.
-  void STORE_VERSIONS
+    // Phase 14 § 6.3 — version snapshots, stored in the `versions` store
+    // under composite keys `${docId}::${versionId}` so all of a document's
+    // versions form a contiguous key range (no secondary index needed).
+    async listVersions(id: string): Promise<DocumentVersion[]> {
+      try {
+        const range = IDBKeyRange.bound(`${id}::`, `${id}::￿`)
+        const records = await tx<VersionRecord[]>(STORE_VERSIONS, 'readonly', (s) =>
+          s.getAll(range),
+        )
+        // Newest first; strip the stored doc + docId from the public meta.
+        return records
+          .map(({ versionId, created, label, kind }) => ({
+            versionId,
+            created,
+            label,
+            kind,
+          }))
+          .sort((a, b) => b.created - a.created)
+      } catch (err) {
+        console.error('[indexedDBAdapter] listVersions', id, 'failed:', err)
+        return []
+      }
+    },
+
+    async readVersion(
+      id: string,
+      versionId: string,
+    ): Promise<EditorDocument | null> {
+      try {
+        const record = await tx<VersionRecord | undefined>(
+          STORE_VERSIONS,
+          'readonly',
+          (s) => s.get(`${id}::${versionId}`),
+        )
+        if (!record) return null
+        return migrateDocument(documentSchema.parse(record.doc))
+      } catch (err) {
+        console.error('[indexedDBAdapter] readVersion', id, versionId, ':', err)
+        return null
+      }
+    },
+
+    async writeVersion(
+      id: string,
+      doc: EditorDocument,
+      meta: { label?: string; kind: 'auto' | 'manual' },
+    ): Promise<WriteResult> {
+      let parsed: EditorDocument
+      try {
+        parsed = documentSchema.parse(doc)
+      } catch (err) {
+        return { ok: false, kind: 'schema', error: err }
+      }
+      const versionId = `v-${Date.now().toString(36)}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}`
+      const record: VersionRecord = {
+        versionId,
+        created: Date.now(),
+        label: meta.label,
+        kind: meta.kind,
+        docId: id,
+        doc: parsed,
+      }
+      try {
+        await tx(STORE_VERSIONS, 'readwrite', (s) =>
+          s.put(record, `${id}::${versionId}`),
+        )
+      } catch (err) {
+        if (isQuotaExceededError(err)) return { ok: false, kind: 'quota', error: err }
+        console.error('[indexedDBAdapter] writeVersion', id, ':', err)
+        return { ok: false, kind: 'unknown', error: err }
+      }
+      // Ring-buffer prune: keep only the newest MAX_AUTO_VERSIONS autos.
+      // Manual save points are exempt.
+      if (meta.kind === 'auto') {
+        try {
+          const range = IDBKeyRange.bound(`${id}::`, `${id}::￿`)
+          const all = await tx<VersionRecord[]>(STORE_VERSIONS, 'readonly', (s) =>
+            s.getAll(range),
+          )
+          const autos = all
+            .filter((r) => r.kind === 'auto')
+            .sort((a, b) => a.created - b.created)
+          const excess = autos.length - MAX_AUTO_VERSIONS
+          for (let i = 0; i < excess; i++) {
+            await tx(STORE_VERSIONS, 'readwrite', (s) =>
+              s.delete(`${id}::${autos[i].versionId}`),
+            )
+          }
+        } catch (err) {
+          // Pruning is best-effort — the snapshot already succeeded.
+          console.warn('[indexedDBAdapter] version prune failed:', err)
+        }
+      }
+      return { ok: true }
+    },
+  }
 
   return adapter
 }

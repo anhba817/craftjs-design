@@ -1,15 +1,21 @@
+import { CURRENT_DOCUMENT_VERSION } from './schema'
 import type { EditorDocument } from './schema'
 
-// Document migrations run on every load and produce a current-shape document.
-// They walk the opaque Craft JSON, mutate stale node shapes in place, and
-// re-stringify. Each migration step is idempotent: applying it to an already-
-// current document is a no-op.
+// Phase 14 § 6.4 — versioned schema-migration pipeline.
+//
+// Each step declares the version it upgrades a document TO and an `up`
+// that mutates the parsed Craft tree in place. `migrateDocument` runs
+// every step whose `version` is greater than the document's stamped
+// version, in order, then re-stamps to CURRENT_DOCUMENT_VERSION.
+//
+// One-way only: there are no `down` steps (newer canonicals can't
+// round-trip to an older schema; the policy is export-before-downgrade).
 //
 // Adding a migration:
-// 1. Bump some version field if the envelope itself changes (it hasn't yet).
-// 2. Add a new step function below that walks `craftJson` and converts any
-//    stale node shapes to the current shape.
-// 3. Call it from `migrateDocument` after the prior steps.
+// 1. Bump CURRENT_DOCUMENT_VERSION in schema.ts.
+// 2. Add a step `{ version: <new>, up }` to MIGRATION_STEPS below.
+// 3. Steps stay idempotent so a document that somehow re-runs one is
+//    unharmed.
 
 interface CraftNode {
   type?: unknown
@@ -109,6 +115,29 @@ function migrateTabsIdsV10(tree: CraftTree): void {
   }
 }
 
+interface MigrationStep {
+  // The version a document is AT after this step runs.
+  version: number
+  // Mutates the parsed Craft tree in place. Idempotent.
+  up: (tree: CraftTree) => void
+}
+
+// Ordered by `version` ascending. Version 2 folds in the three content
+// migrations that previously ran unconditionally on every load (Phase 6
+// Card, Phase 7 Tabs content, Phase 10 Tabs ids) — a document stamped at
+// version 1 (everything saved through 0.4.x) runs them once, then is
+// stamped 2.
+const MIGRATION_STEPS: MigrationStep[] = [
+  {
+    version: 2,
+    up: (tree) => {
+      migrateCardPropsV6(tree)
+      migrateTabsPropsV7(tree)
+      migrateTabsIdsV10(tree)
+    },
+  },
+]
+
 export function migrateDocument(doc: EditorDocument): EditorDocument {
   let tree: CraftTree
   try {
@@ -119,9 +148,15 @@ export function migrateDocument(doc: EditorDocument): EditorDocument {
     return doc
   }
 
-  migrateCardPropsV6(tree)
-  migrateTabsPropsV7(tree)
-  migrateTabsIdsV10(tree)
+  // Treat a missing / non-numeric version as 0 so every step runs.
+  const from = typeof doc.version === 'number' ? doc.version : 0
+  for (const step of MIGRATION_STEPS) {
+    if (step.version > from) step.up(tree)
+  }
 
-  return { ...doc, craftJson: JSON.stringify(tree) }
+  return {
+    ...doc,
+    version: CURRENT_DOCUMENT_VERSION,
+    craftJson: JSON.stringify(tree),
+  }
 }

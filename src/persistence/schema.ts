@@ -1,7 +1,18 @@
 import { z } from 'zod'
 
+// Phase 14 § 6.4 — the document envelope is versioned with a monotonic
+// integer. `migrateDocument` runs every pipeline step whose target
+// version is greater than the stamped one, then re-stamps to
+// CURRENT_DOCUMENT_VERSION. Legacy documents (stamped `1`, or somehow
+// missing the field) migrate forward; new writes stamp the current
+// version so they skip the pipeline.
+export const CURRENT_DOCUMENT_VERSION = 2
+
 export const documentSchema = z.object({
-  version: z.literal(1),
+  // Was z.literal(1) through 0.4.x. Widened to an integer so the
+  // migration pipeline can stamp newer versions; older documents (v1)
+  // still validate and migrate forward.
+  version: z.number().int(),
   adapterId: z.string(),
   // Optional — Phase 1 documents saved before themes existed parse fine without
   // it. Hydrator defaults to 'default' if missing.

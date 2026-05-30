@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { exportDocument } from './exportDocument'
 import { ImportError, importDocumentFromFile, parseDocumentJson } from './importDocument'
+import { CURRENT_DOCUMENT_VERSION } from './schema'
 import type { EditorDocument } from './schema'
 
+// CURRENT version so the parse→migrate round-trip is exact (parse runs
+// migrateDocument, which re-stamps older envelopes).
 const SAMPLE: EditorDocument = {
-  version: 1,
+  version: CURRENT_DOCUMENT_VERSION,
   adapterId: 'shadcn',
   themeId: 'rose',
   craftJson: JSON.stringify({

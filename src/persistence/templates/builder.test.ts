@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
+import { CURRENT_DOCUMENT_VERSION } from '../schema'
 import { buildTemplate } from './builder'
 
 // The builder needs the canonical registry populated. Register the canonicals
@@ -10,7 +11,7 @@ beforeAll(async () => {
 describe('buildTemplate', () => {
   it('wraps a single-canonical spec in a valid envelope', () => {
     const env = buildTemplate({ root: { canonical: 'box' } })
-    expect(env.version).toBe(1)
+    expect(env.version).toBe(CURRENT_DOCUMENT_VERSION)
     expect(env.adapterId).toBe('shadcn')
     const tree = JSON.parse(env.craftJson)
     expect(tree.ROOT).toBeDefined()

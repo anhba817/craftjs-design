@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest'
+import { CURRENT_DOCUMENT_VERSION } from '../schema'
 import type { EditorDocument } from '../schema'
 import type { StorageAdapter } from '../types'
 
@@ -15,7 +16,10 @@ export function makeContractEnvelope(
   overrides: Partial<EditorDocument> = {},
 ): EditorDocument {
   return {
-    version: 1,
+    // Default to the CURRENT version so round-trip assertions are exact
+    // (readDocument re-stamps anything older via migrateDocument). Tests
+    // exercising migration pass an explicit older `version`.
+    version: CURRENT_DOCUMENT_VERSION,
     adapterId: 'shadcn',
     themeId: 'default',
     craftJson: JSON.stringify({ ROOT: { displayName: 'Box', props: {} } }),
@@ -67,7 +71,11 @@ export function runStorageAdapterContract(
     }
     await a.writeDocument(
       'doc-old',
-      makeContractEnvelope({ craftJson: JSON.stringify(oldShapeTree) }),
+      // Stamp version 1 so the v2 migration step actually runs on read.
+      makeContractEnvelope({
+        version: 1,
+        craftJson: JSON.stringify(oldShapeTree),
+      }),
     )
     const out = await a.readDocument('doc-old')
     expect(out).not.toBeNull()
