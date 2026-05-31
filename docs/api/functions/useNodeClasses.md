@@ -8,7 +8,7 @@
 
 > **useNodeClasses**(`nodeId`, `slot?`): `object`
 
-Defined in: editor/inspector/shared/useNodeClasses.ts:49
+Defined in: editor/inspector/shared/useNodeClasses.ts:45
 
 The single I/O funnel for class-string + arbitrary-inline editing on
 a canvas node's style slot. Read the current class string + inline
@@ -45,8 +45,6 @@ Style slot. `'root'` for Pattern A canonicals; named
 
 ## Returns
 
-`object`
-
 `{ classString, inlineStyle, writeClasses, writeInline,
   activeBreakpoint }`. `writeClasses(next)` replaces the slot's class
   string; `writeInline(prop, value)` sets a single CSS property (or
@@ -54,7 +52,7 @@ Style slot. `'root'` for Pattern A canonicals; named
 
 ### activeBreakpoint
 
-> **activeBreakpoint**: [`Breakpoint`](../type-aliases/Breakpoint.md)
+> **activeBreakpoint**: [`Breakpoint`](../type-aliases/Breakpoint.md) = `m.activeBreakpoint`
 
 ### classString
 
@@ -80,7 +78,10 @@ Style slot. `'root'` for Pattern A canonicals; named
 
 ### writeInline
 
-> **writeInline**: (`cssProperty`, `value`) => `void`
+> **writeInline**: (`cssProperty`, `value`) => `void` = `m.writeInlineAll`
+
+Write the same inline value to every selected node's slot. Same
+throttle-coalescing as writeClassesAll → one undo step.
 
 #### Parameters
 

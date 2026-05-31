@@ -6,6 +6,6 @@
 
 # Type Alias: PanelId
 
-> **PanelId** = `"layout"` \| `"spacing"` \| `"size"` \| `"typography"` \| `"appearance"` \| `"effects"` \| `"componentProps"`
+> **PanelId** = `BuiltinPanelId` \| `string` & `object`
 
-Defined in: registry/types.ts:34
+Defined in: registry/types.ts:68

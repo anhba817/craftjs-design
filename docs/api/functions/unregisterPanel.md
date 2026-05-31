@@ -8,7 +8,7 @@
 
 > **unregisterPanel**(`id`): `boolean`
 
-Defined in: editor/inspector/panel-registry.ts:80
+Defined in: editor/inspector/panel-registry.ts:90
 
 Remove a panel by id. Returns true if a panel was removed.
 

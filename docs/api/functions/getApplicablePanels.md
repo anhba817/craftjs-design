@@ -8,7 +8,7 @@
 
 > **getApplicablePanels**(`c`): [`PanelId`](../type-aliases/PanelId.md)[]
 
-Defined in: registry/registry.ts:192
+Defined in: registry/registry.ts:195
 
 Resolve which inspector panels apply to a canonical. Honours an
 explicit `applicablePanels` field on the canonical if present;

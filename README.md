@@ -1,73 +1,80 @@
-# React + TypeScript + Vite
+# @crafted-design/editor
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A pluggable drag-and-drop website builder built on [Craft.js](https://craft.js.org/).
+Pick your design system — shadcn/ui or MUI (or write your own adapter) — drop
+the editor into a React app, and ship. Documents are plain JSON, rendered live
+by the active adapter.
 
-Currently, two official plugins are available:
+> **Preview.** Published under the `next` dist-tag while the API stabilizes
+> toward `1.0`. The SDK surface may evolve between `0.x` minors — see
+> [CHANGELOG](./CHANGELOG.md).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Highlights
 
-## React Compiler
+- **48 canonical components** — layout, content, data display, navigation,
+  overlays, feedback, time, media — each rendered by a chosen adapter.
+- **Two full adapters** (shadcn + MUI) behind one canonical model; the active
+  adapter is swappable at runtime, and you can register your own.
+- **Style depth** — a breakpoint × pseudo-state matrix, transforms, filters,
+  transitions, gradients, token-driven themes with light/dark.
+- **Multi-document persistence** on IndexedDB (with a localStorage fallback)
+  behind a host-replaceable `StorageAdapter`; versioned schema migrations and
+  document snapshots.
+- **SDK** for authoring canonicals, adapters, inspector panels, themes, and
+  templates without forking.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Install
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install @crafted-design/editor@next react@19 react-dom@19 @craftjs/core
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+React 19, React-DOM 19, and `@craftjs/core` are peer dependencies (the host
+provides them). The package is **ESM-only**.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Quickstart
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```tsx
+import { Editor } from '@crafted-design/editor'
+import '@crafted-design/editor/index.css'
+
+export function App() {
+  return <Editor />
+}
 ```
+
+That mounts the full editor with all built-in canonicals, the shadcn + MUI
+adapters, themes, and templates pre-registered. Customize **before** rendering
+`<Editor />` via the SDK:
+
+```tsx
+import { registerCanonical, registerAdapter, setStorageAdapter } from '@crafted-design/editor/sdk'
+```
+
+## Documentation
+
+| Guide | What it covers |
+|---|---|
+| [INTEGRATION_GUIDE](./docs/INTEGRATION_GUIDE.md) | Embedding the editor, customizing the registry, persistence backends, telemetry, CSP, bundle. |
+| [SDK_GUIDE](./docs/SDK_GUIDE.md) | The public `@crafted-design/editor/sdk` surface. |
+| [DEVELOPER_GUIDE](./docs/DEVELOPER_GUIDE.md) | In-tree contribution recipes (canonicals, adapters, panels, migrations, storage adapters). |
+| [ARCHITECTURE](./docs/ARCHITECTURE.md) | How the pieces fit (canonical model, adapters, Craft bridge). |
+| [TUTORIAL_ADAPTER / CANONICAL / PANEL](./docs/) | Step-by-step authoring walkthroughs. |
+| API reference | Generated from the SDK types — `npm run docs` (published to GitHub Pages). |
+| [SECURITY](./SECURITY.md) · [CONTRIBUTING](./CONTRIBUTING.md) | Security policy + threat model · how to contribute. |
+
+## Scripts
+
+```bash
+npm run dev          # run the dogfood editor app
+npm test             # vitest
+npm run lint         # eslint
+npm run build:dist   # build the publishable library (dist-lib/)
+npm run check:size   # bundle-size budget
+npm run analyze      # emit bundle-stats.html treemap
+npm run docs         # generate the API reference
+```
+
+## License
+
+MIT — see [LICENSE](./LICENSE).

@@ -8,7 +8,7 @@
 
 > **unregisterFontToken**(`id`): `boolean`
 
-Defined in: registry/fonts.ts:151
+Defined in: registry/fonts.ts:202
 
 Remove a font token by id. Returns `true` if a token was removed,
 `false` if the id wasn't registered.

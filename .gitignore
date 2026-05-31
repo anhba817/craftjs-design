@@ -28,3 +28,4 @@ src/style/safelist.generated.css
 *.sln
 *.sw?
 bundle-stats.html
+_site/

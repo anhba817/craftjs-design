@@ -8,7 +8,7 @@
 
 > **listFontTokens**(): [`FontToken`](../interfaces/FontToken.md)[]
 
-Defined in: registry/fonts.ts:166
+Defined in: registry/fonts.ts:217
 
 All registered font tokens, in registration order.
 

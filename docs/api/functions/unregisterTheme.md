@@ -8,7 +8,7 @@
 
 > **unregisterTheme**(`id`): `boolean`
 
-Defined in: themes/registry.ts:52
+Defined in: themes/registry.ts:112
 
 Remove a theme by id. Returns `true` if a theme was removed,
 `false` if the id wasn't registered.

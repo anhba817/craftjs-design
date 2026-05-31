@@ -8,7 +8,7 @@
 
 > **listThemes**(): [`Theme`](../interfaces/Theme.md)[]
 
-Defined in: themes/registry.ts:64
+Defined in: themes/registry.ts:128
 
 All registered themes, in registration order.
 

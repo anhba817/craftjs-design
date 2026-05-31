@@ -1,0 +1,29 @@
+name: Adapter request
+description: Request (or propose) support for a UI library adapter.
+labels: [adapter, enhancement]
+body:
+  - type: input
+    id: library
+    attributes:
+      label: UI library
+      placeholder: "Ant Design / Mantine / Bootstrap / Chakra / …"
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why this adapter
+      description: Who needs it, and which canonicals matter most.
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I'm willing to help author / maintain this adapter.
+  - type: markdown
+    attributes:
+      value: >
+        Adapters can be authored entirely against the public SDK
+        (`registerAdapter`) — see docs/TUTORIAL_ADAPTER.md and
+        docs/DEVELOPER_GUIDE.md. The shadcn + MUI adapters are the reference;
+        the Chakra adapter under `examples/` is a minimal demo.

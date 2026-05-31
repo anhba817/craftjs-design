@@ -8,7 +8,7 @@
 
 > **getPanelsFor**(`def`): [`PanelDefinition`](../interfaces/PanelDefinition.md)[]
 
-Defined in: editor/inspector/panel-registry.ts:98
+Defined in: editor/inspector/panel-registry.ts:108
 
 Returns the panels that should render for the given canonical.
 

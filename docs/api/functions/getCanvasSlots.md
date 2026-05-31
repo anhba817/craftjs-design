@@ -8,7 +8,7 @@
 
 > **getCanvasSlots**(`c`, `nodeProps?`): readonly `string`[]
 
-Defined in: registry/registry.ts:167
+Defined in: registry/registry.ts:170
 
 Resolve the canvas-slot list for a canonical. When `canvasSlots` is
 declared explicitly, it wins (multi-canvas Pattern B). Function form

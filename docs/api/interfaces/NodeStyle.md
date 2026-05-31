@@ -39,3 +39,35 @@ Defined in: registry/types.ts:16
 > `optional` **responsiveInline?**: `Record`\<`string`, `Record`\<`string`, `Record`\<`string`, `string`\>\>\>
 
 Defined in: registry/types.ts:30
+
+***
+
+### stateInline?
+
+> `optional` **stateInline?**: `Record`\<`string`, `Record`\<`string`, `Record`\<`string`, `string`\>\>\>
+
+Defined in: registry/types.ts:49
+
+***
+
+### stateResponsive?
+
+> `optional` **stateResponsive?**: `Record`\<`string`, `Record`\<`string`, `Record`\<`string`, `string`\>\>\>
+
+Defined in: registry/types.ts:43
+
+***
+
+### stateResponsiveInline?
+
+> `optional` **stateResponsiveInline?**: `Record`\<`string`, `Record`\<`string`, `Record`\<`string`, `Record`\<`string`, `string`\>\>\>\>
+
+Defined in: registry/types.ts:50
+
+***
+
+### states?
+
+> `optional` **states?**: `Record`\<`string`, `Record`\<`string`, `string`\>\>
+
+Defined in: registry/types.ts:42

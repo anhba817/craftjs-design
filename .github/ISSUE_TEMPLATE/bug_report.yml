@@ -1,0 +1,46 @@
+name: Bug report
+description: Something in the editor or SDK behaves incorrectly.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you saw vs. what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps. A failing test or a CodeSandbox helps a lot.
+      placeholder: |
+        1. Drop a …
+        2. Set …
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "@crafted-design/editor version (and React version)."
+      placeholder: "0.6.0 / React 19.2"
+    validations:
+      required: true
+  - type: dropdown
+    id: adapter
+    attributes:
+      label: Active adapter
+      options: [shadcn, MUI, custom, n/a]
+    validations:
+      required: false
+  - type: input
+    id: env
+    attributes:
+      label: Browser / OS
+      placeholder: "Chrome 130 / macOS 15"
+  - type: textarea
+    id: extra
+    attributes:
+      label: Console errors / screenshots

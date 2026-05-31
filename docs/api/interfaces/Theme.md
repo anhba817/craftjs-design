@@ -6,15 +6,23 @@
 
 # Interface: Theme
 
-Defined in: themes/types.ts:1
+Defined in: themes/types.ts:3
 
 ## Properties
+
+### darkTokens?
+
+> `optional` **darkTokens?**: [`ThemeTokens`](ThemeTokens.md)
+
+Defined in: themes/types.ts:19
+
+***
 
 ### dataThemeValue
 
 > **dataThemeValue**: `string`
 
-Defined in: themes/types.ts:8
+Defined in: themes/types.ts:10
 
 ***
 
@@ -22,7 +30,7 @@ Defined in: themes/types.ts:8
 
 > **displayName**: `string`
 
-Defined in: themes/types.ts:5
+Defined in: themes/types.ts:7
 
 ***
 
@@ -30,4 +38,12 @@ Defined in: themes/types.ts:5
 
 > **id**: `string`
 
-Defined in: themes/types.ts:3
+Defined in: themes/types.ts:5
+
+***
+
+### tokens?
+
+> `optional` **tokens?**: [`ThemeTokens`](ThemeTokens.md)
+
+Defined in: themes/types.ts:15

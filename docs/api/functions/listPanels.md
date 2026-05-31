@@ -8,7 +8,7 @@
 
 > **listPanels**(): [`PanelDefinition`](../interfaces/PanelDefinition.md)[]
 
-Defined in: editor/inspector/panel-registry.ts:85
+Defined in: editor/inspector/panel-registry.ts:95
 
 Every registered panel, sorted by `order` ascending.
 

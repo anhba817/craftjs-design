@@ -6,7 +6,7 @@
 
 # Interface: CanonicalComponent\<Props\>
 
-Defined in: registry/types.ts:43
+Defined in: registry/types.ts:70
 
 ## Type Parameters
 
@@ -20,7 +20,15 @@ Defined in: registry/types.ts:43
 
 > `optional` **applicablePanels?**: readonly [`PanelId`](../type-aliases/PanelId.md)[]
 
-Defined in: registry/types.ts:74
+Defined in: registry/types.ts:101
+
+***
+
+### canResize?
+
+> `optional` **canResize?**: `boolean`
+
+Defined in: registry/types.ts:121
 
 ***
 
@@ -28,7 +36,7 @@ Defined in: registry/types.ts:74
 
 > `optional` **canvasSlots?**: readonly `string`[] \| ((`props`) => readonly `string`[])
 
-Defined in: registry/types.ts:64
+Defined in: registry/types.ts:91
 
 ***
 
@@ -36,7 +44,7 @@ Defined in: registry/types.ts:64
 
 > **category**: [`CanonicalCategory`](../type-aliases/CanonicalCategory.md)
 
-Defined in: registry/types.ts:45
+Defined in: registry/types.ts:72
 
 ***
 
@@ -44,7 +52,7 @@ Defined in: registry/types.ts:45
 
 > **defaults**: `object`
 
-Defined in: registry/types.ts:66
+Defined in: registry/types.ts:93
 
 #### props
 
@@ -60,7 +68,23 @@ Defined in: registry/types.ts:66
 
 > **displayName**: `string`
 
-Defined in: registry/types.ts:46
+Defined in: registry/types.ts:73
+
+***
+
+### hidden?
+
+> `optional` **hidden?**: `boolean`
+
+Defined in: registry/types.ts:106
+
+***
+
+### hiddenPropFields?
+
+> `optional` **hiddenPropFields?**: readonly `string`[]
+
+Defined in: registry/types.ts:129
 
 ***
 
@@ -68,7 +92,7 @@ Defined in: registry/types.ts:46
 
 > **id**: `string`
 
-Defined in: registry/types.ts:44
+Defined in: registry/types.ts:71
 
 ***
 
@@ -76,7 +100,7 @@ Defined in: registry/types.ts:44
 
 > **isCanvas**: `boolean`
 
-Defined in: registry/types.ts:51
+Defined in: registry/types.ts:78
 
 ***
 
@@ -84,7 +108,15 @@ Defined in: registry/types.ts:51
 
 > **propsSchema**: `ZodType`\<`Props`\>
 
-Defined in: registry/types.ts:65
+Defined in: registry/types.ts:92
+
+***
+
+### slotComponent?
+
+> `optional` **slotComponent?**: `string`
+
+Defined in: registry/types.ts:115
 
 ***
 
@@ -92,7 +124,7 @@ Defined in: registry/types.ts:65
 
 > **styleSlots**: readonly `string`[]
 
-Defined in: registry/types.ts:52
+Defined in: registry/types.ts:79
 
 ***
 
@@ -100,4 +132,4 @@ Defined in: registry/types.ts:52
 
 > **tags**: readonly `string`[]
 
-Defined in: registry/types.ts:47
+Defined in: registry/types.ts:74

@@ -8,7 +8,7 @@
 
 > **registerPanel**(`panel`): `void`
 
-Defined in: editor/inspector/panel-registry.ts:75
+Defined in: editor/inspector/panel-registry.ts:85
 
 Register an inspector panel. Re-registering an existing id replaces
 the previous definition — used by SDK consumers overriding a built-in.

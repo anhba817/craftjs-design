@@ -8,7 +8,7 @@
 
 > **Breakpoint** = `"base"` \| `"sm"` \| `"md"` \| `"lg"` \| `"xl"` \| `"2xl"`
 
-Defined in: state/editorStore.ts:23
+Defined in: state/editorStore.ts:28
 
 Tailwind v4's responsive breakpoints. `'base'` is the no-prefix bucket
 (writes to `style.classes`); `'sm'` / `'md'` / `'lg'` / `'xl'` / `'2xl'`

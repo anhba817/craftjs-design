@@ -34,6 +34,10 @@ The actual document envelope inserted when the user picks this template.
 
 > **adapterId**: `string`
 
+#### colorMode?
+
+> `optional` **colorMode?**: `"light"` \| `"dark"` \| `"system"`
+
 #### craftJson
 
 > **craftJson**: `string`
@@ -44,7 +48,7 @@ The actual document envelope inserted when the user picks this template.
 
 #### version
 
-> **version**: `1`
+> **version**: `number`
 
 ***
 

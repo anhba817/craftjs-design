@@ -10,6 +10,10 @@ Defined in: registry/fonts.ts:18
 
 A font-family choice the designer can apply via the Typography panel.
 
+## Extended by
+
+- [`GoogleFont`](GoogleFont.md)
+
 ## Properties
 
 ### family
