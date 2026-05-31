@@ -733,6 +733,14 @@ A list of community-built adapters with install instructions.
 
 ## 8. Performance optimization (post-measurement)
 
+> **Phase 15 (`0.6.0`):** § 8.4 tree-shaking verified (the `/sdk` subpath
+> is a separate ~44 KB chunk with no editor/MUI leakage; the `sideEffects`
+> field was corrected — see § 12). § 8.3 lazy-adapter loading **deferred**:
+> `AdapterProvider` composes every adapter's `Wrapper` around `<Frame>`, so
+> post-mount registration would remount + wipe the canvas; the clean fix is
+> an opt-in adapter subpath entry, queued. § 8.5–8.7 micro-memoizations
+> remain measured-as-not-hot (Phase 9).
+
 These depend on the measurement pass (1.2) — fixes once we know what's hot.
 
 ### 8.1 Toolbox virtualization *(Stretch)*
@@ -775,6 +783,13 @@ the ref callback per canonical.
 ---
 
 ## 9. Developer experience — easing contribution + SDK authoring
+
+> **Phase 15 (`0.6.0`) shipped:** ✅ 9.1 CONTRIBUTING, ✅ 9.2 Code of
+> Conduct, ✅ 9.3 issue/PR templates, ✅ 9.4 CI pipeline (lint + type +
+> test + build + bundle/license gates), ✅ 9.5 pre-commit hooks (lefthook),
+> ✅ 9.6 release automation (Changesets). 9.10 (public repo / discussions /
+> roadmap) — repo files landed; making the repo public is a host action.
+> 9.7–9.9 (DevTools ext, scaffolding CLI, Storybook) remain Stretch.
 
 ### 9.1 CONTRIBUTING.md *(DevEx)*
 
@@ -837,6 +852,12 @@ This is a local repo today. To ship publicly:
 
 ## 10. Documentation completeness
 
+> **Phase 15 (`0.6.0`):** ✅ 10.1 — TypeDoc HTML build (`npm run docs:html`)
+> + a GitHub Pages deploy workflow; the in-repo `docs/api/` markdown
+> reference regenerated current with the full SDK. Enabling Pages is a host
+> action. 10.2–10.7 (sandboxes, videos, cookbook, SVG diagrams, migration
+> guides) remain DevEx polish / Stretch.
+
 ### 10.1 Live API reference site *(High / DevEx)*
 
 TypeDoc → static site. Hosted somewhere (GitHub Pages, Vercel).
@@ -879,6 +900,14 @@ dedicated FAQ as user reports accumulate.
 
 ## 11. Security + compliance
 
+> **Phase 15 (`0.6.0`) shipped:** ✅ 11.1 CSP (documented directives +
+> rationale in SECURITY.md — `style-src 'unsafe-inline'` is required by the
+> editor's inline style attributes, so a `<style>`-nonce can't unlock
+> strict CSP), ✅ 11.2 XSS (font-token + inline-CSS validation), ✅ 11.3
+> dependency audit (`npm audit` in CI), ✅ 11.4 license audit
+> (`check:licenses`). 11.5 GDPR is host-dependent (the editor collects
+> nothing).
+
 ### 11.1 CSP audit *(Production-blocker)*
 
 The editor injects inline styles + runtime `<style>` blocks. Some CSPs
@@ -915,6 +944,13 @@ embedding it in EU-targeted apps need to know.
 
 ## 12. Build / distribution
 
+> **Phase 15 (`0.6.0`):** ✅ 12.1 — ESM-only, documented decision (no
+> CJS/UMD; dual-package-hazard rationale). ✅ 12.2 subpath imports were
+> already shipped. ✅ 12.3 bundle budget (`check:size`) + analyzer
+> (`npm run analyze`). 12.5 — not-minified-by-design (host minifies),
+> documented. **Also fixed a `sideEffects` bug** that had tree-shaken the
+> built-in registrations out of the published bundle entirely.
+
 ### 12.1 Multiple bundle formats *(High / Production-blocker)*
 
 Today: ESM only. For broader compatibility:
@@ -948,6 +984,12 @@ Today: non-minified. Ship both via `index.js` + `index.min.js`.
 ---
 
 ## 13. Telemetry + observability
+
+> **Phase 15 (`0.6.0`) shipped:** ✅ 13.1 `TelemetryProvider` /
+> `setTelemetry` context the error boundaries feed; ✅ 13.2 opt-in perf
+> metrics (`document.bootstrap`, `document.apply`); ✅ 13.4 error-reporting
+> recipe in INTEGRATION_GUIDE. The editor collects nothing by default.
+> 13.3 usage telemetry remains Stretch.
 
 ### 13.1 Telemetry provider context *(High / DevEx)*
 

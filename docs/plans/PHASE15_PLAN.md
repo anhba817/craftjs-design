@@ -1,6 +1,6 @@
 # Phase 15 — Launch readiness (production hardening)
 
-**Status:** planned
+**Status:** ✅ complete — shipped as `0.6.0` (see close-out at bottom).
 **Cuts as:** `0.6.0`
 **Audience:** whoever turns a feature-complete editor into a credibly
 publishable package — CI, security, bundle, observability, contributor
@@ -323,3 +323,66 @@ infra actions + freezing the SDK surface.
 
 When the production-blocker items above are satisfied, Phase 15 is complete
 and `0.6.0` cuts at the close-out commit.
+
+---
+
+## Close-out (`0.6.0`, 2026-05-31)
+
+**Shipped.** The production-hardening items across §§ 8–13 that gate a
+credible release. Mostly build/CI/security/docs; runtime additions are
+additive (telemetry opt-in). The standout was a **packaging bug fix** — the
+published bundle had been shipping with no built-in adapters/canonicals
+registered.
+
+### Per-group result
+
+| Group | Result | Notes |
+|---|---|---|
+| A — CI + release automation | ✅ | CI workflow (lint/type/test/build/size/license/audit), Changesets release workflow, lefthook hooks, `check:size`. Also established a **green lint baseline** (was never run repo-wide; fixed a real `rules-of-hooks` bug in CanonicalNode, demoted react-hooks-v7's aggressive new rules to warnings). |
+| B — Security + compliance | ✅ | Font-URL/family + inline-CSS-declaration validation (closes `<style>` injection); `check:licenses`; SECURITY.md with the CSP reality (a `<style>`-nonce can't beat the inline-`style=`-attribute requirement, so it's documented, not shipped). |
+| C — Bundle + load cost | ✅ | **Fixed `sideEffects`** that tree-shook the registrations out of the published bundle (true size: ~414 KB gz, not the broken ~120 KB). Analyzer (`npm run analyze`); ESM-only documented; `/sdk` verified lean (~44 KB). Runtime lazy-MUI **deferred** (canvas-remount hazard). |
+| D — Observability | ✅ | `setTelemetry` / `TelemetryProvider` seam the boundaries + timed flows feed; `document.bootstrap` / `document.apply` metrics. Zero collection by default. |
+| E — Contributor + docs infra | ✅ | README, CONTRIBUTING, CoC, issue/PR templates; TypeDoc HTML + Pages workflow; regenerated `docs/api/` reference. |
+| F — Close-out | ✅ | This section + `0.6.0`. |
+
+### Key decisions / findings
+
+- **The published bundle was broken** (no adapters/canonicals registered)
+  due to an over-broad `sideEffects: ["**/*.css"]`. This was the single
+  most important fix of the phase — caught only because CI's bundle work
+  made us grep the artifact.
+- **CSP can't be strict** while the editor uses inline `style=` attributes
+  (~95 files), so the nonce was documented-away rather than shipped as
+  false assurance.
+- **Runtime lazy-adapter loading deferred**: `AdapterProvider` composes
+  every adapter's `Wrapper` around `<Frame>`; post-mount registration would
+  remount + wipe the canvas. The clean fix is an opt-in adapter subpath
+  entry — queued.
+- **Export-to-React-code stayed out of scope** (decided in Phase 14): a
+  source-code generator isn't part of a runtime editor + document model.
+
+### Bundle delta
+
+`npm run build:dist`:
+
+| Asset | `0.5.0` (broken) | `0.6.0` (correct) |
+|---|---|---|
+| `index.js` gz | ~187 KB* | 414 KB |
+| `index.css` gz | ~40 KB | 124 KB |
+| `/sdk` chunk gz | ~44 KB | 44 KB |
+
+\* the `0.5.0` `index.js` under-counted because the registrations were
+tree-shaken out — it wasn't a real, working editor bundle.
+
+### Tests
+
+615 passing (+telemetry, font/inline-CSS validation, license/bundle gates).
+
+### Remaining to `1.0` (host actions + a freeze)
+
+Not code: make the repo public; add the `NPM_TOKEN` secret + enable
+Actions; enable Pages (Source = GitHub Actions). Then freeze the SDK
+surface and promote from `next` to `latest`. The opt-in adapter-subpath
+split (§ 8.3) is the main queued engineering follow-up.
+
+**Phase 15 complete.**

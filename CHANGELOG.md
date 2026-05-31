@@ -124,6 +124,84 @@ App build (`npm run build`):
 
 (none yet)
 
+## [0.6.0] — 2026-05-31
+
+Phase 15 — Launch readiness (production hardening). CI + release
+automation, security/compliance gates, a corrected publishable bundle,
+an observability seam, and contributor + docs infrastructure. Mostly
+build/tooling/docs; the runtime additions are additive (telemetry is
+opt-in). **Fixes a packaging bug** where the published bundle shipped
+without its built-in adapters/canonicals registered.
+
+### Fixed
+
+- **Published bundle registered no built-ins.** `sideEffects:
+  ["**/*.css"]` told Rollup every JS module was side-effect-free, so the
+  dist build tree-shook away the registration side-effect imports
+  (`import './adapters/shadcn'`, the canonical barrel, themes, panels,
+  templates). The published `dist-lib` rendered an editor with **no
+  adapter renderers and few canonicals** registered. The registration
+  modules are now listed in `sideEffects`. (Restoring them is why
+  `index.js` grows from a broken ~120 KB gz to its true ~414 KB gz — it
+  now actually contains both adapter sets.)
+
+### Added
+
+- **CI + release automation** (§ 9.4–9.6, 12.3). GitHub Actions CI
+  (lint + type-check + test + `build:dist` + bundle-budget + license +
+  advisory `npm audit`); Changesets-driven release workflow (publishes to
+  `next`); lefthook pre-commit/-push hooks; `scripts/check-bundle-size.ts`
+  (`npm run check:size`).
+- **Security + compliance** (§ 11.1–11.4). Font-token URL/family
+  validation and responsive/state inline-style declaration sanitization
+  to close CSS-injection vectors in the runtime `<style>` blocks;
+  `scripts/check-licenses.ts` (`npm run check:licenses`); `SECURITY.md`
+  with the threat model + CSP guidance.
+- **Bundle visibility** (§ 8.4, 12.1, 12.3). `npm run analyze`
+  (rollup-plugin-visualizer treemap); documented ESM-only stance + the
+  two entries (full editor vs the ~44 KB `/sdk`, verified lean).
+- **Observability** (§ 13.1, 13.2, 13.4). A `TelemetryProvider` /
+  `setTelemetry` seam the error boundaries + timed flows feed (errors
+  labeled by boundary; `document.bootstrap` / `document.apply` metrics).
+  Zero collection by default.
+- **Contributor + docs infra** (§ 9.1–9.3, 9.10, 10.1). Real README,
+  CONTRIBUTING, Code of Conduct, issue/PR templates, and a TypeDoc HTML
+  API-reference build + GitHub Pages deploy workflow; the in-repo
+  `docs/api/` markdown reference regenerated current with the full SDK.
+
+### Changed
+
+- A latent `react-hooks/rules-of-hooks` bug in `CanonicalNode` (a
+  `useMemo` after the early missing-adapter return) was fixed by computing
+  the placeholder as a value and bailing after all Hooks. The lint
+  baseline is now green (0 errors); eslint-plugin-react-hooks v7's
+  aggressive new rules are demoted to warnings (tracked tech debt).
+- SDK surface gains `setStorageAdapter` / `getStorageAdapter`,
+  `setTelemetry` / `getTelemetry` / `TelemetryProvider`, and the matching
+  types.
+
+### Not supported (out of scope)
+
+- **Runtime lazy-adapter loading** (§ 8.3) is deferred, not shipped:
+  `AdapterProvider` composes every registered adapter's `Wrapper` around
+  `<Frame>`, so registering an adapter post-mount would reshape the tree
+  and remount (visually wipe) the canvas. The clean fix is an opt-in
+  adapter subpath entry so shadcn-only hosts don't bundle MUI — queued.
+
+### Bundle
+
+Measured at `0.6.0` (`npm run build:dist`, no minification, with sourcemap):
+
+| Asset | Raw | Gzipped |
+|---|---|---|
+| `dist-lib/index.js` | 1.97 MB | 414 KB |
+| `dist-lib/index.css` | 498 KB | 124 KB |
+| `dist-lib/sdk-*.js` (SDK subpath) | 196 KB | 44 KB |
+
+The `index.js` figure is the honest full editor (both adapter sets + MUI);
+the prior `0.5.0` "≈187 KB gz" number was the broken, under-registered
+bundle. SDK-only consumers (`/sdk`) pay ~44 KB, not the full editor.
+
 ## [0.5.0] — 2026-05-30
 
 Phase 14 — Persistence beyond localStorage. Documents now persist to
