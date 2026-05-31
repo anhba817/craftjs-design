@@ -142,7 +142,7 @@ export function Inspector() {
                 <CollapsibleSection key={panel.id} title={panel.displayName}>
                   {/* Phase 8 — each panel renders inside its own boundary so a
                       buggy custom panel doesn't drop the entire inspector. */}
-                  <ErrorBoundary fallback={PanelErrorFallback}>
+                  <ErrorBoundary fallback={PanelErrorFallback} boundary="panel">
                     {/* Phase 11 § 3.3 — pass the full selection so panels
                         opting into multi-mode can merge values across
                         nodes. The PropsPanel ignores the second arg and

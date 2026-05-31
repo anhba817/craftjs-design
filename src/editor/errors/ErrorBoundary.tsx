@@ -1,4 +1,5 @@
 import { Component, type ComponentType, type ErrorInfo, type ReactNode } from 'react'
+import { reportError } from '../telemetry/telemetry'
 
 // React's componentDidCatch boundary still requires a class component as of
 // React 18 / 19 — there's no hooks equivalent. We export a single base class
@@ -20,9 +21,12 @@ export interface ErrorFallbackProps {
 
 interface ErrorBoundaryProps {
   fallback: ComponentType<ErrorFallbackProps>
-  // Called once per caught error. Used by the embedded-editor host to ship
-  // failures to telemetry. Defaults to a console.error stub.
+  // Called once per caught error. An explicit prop takes precedence; when
+  // absent, the error is routed to the host's TelemetryProvider handler
+  // (Phase 15 § 13.1) if installed, else logged. `boundary` labels which
+  // layer caught it in the telemetry payload.
   onError?: (error: Error, info: ErrorInfo) => void
+  boundary?: string
   children: ReactNode
 }
 
@@ -41,12 +45,18 @@ export class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    const { onError } = this.props
+    const { onError, boundary } = this.props
     if (onError) {
       onError(error, info)
-    } else {
-      console.error('[ErrorBoundary]', error, info)
+      return
     }
+    // No explicit handler — route to host telemetry if installed.
+    reportError(error, {
+      componentStack: info.componentStack ?? undefined,
+      boundary,
+    })
+    // Always log too, so a missing telemetry handler isn't silent.
+    console.error(`[ErrorBoundary${boundary ? `:${boundary}` : ''}]`, error, info)
   }
 
   private handleReset = (): void => {

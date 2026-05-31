@@ -79,7 +79,7 @@ export function LeftAside() {
           aria-label="Components"
           className="flex min-h-0 flex-1 flex-col"
         >
-          <ErrorBoundary fallback={ToolboxErrorFallback}>
+          <ErrorBoundary fallback={ToolboxErrorFallback} boundary="toolbox">
             <Toolbox />
           </ErrorBoundary>
         </div>
@@ -90,7 +90,7 @@ export function LeftAside() {
           aria-label="Layers"
           className="flex min-h-0 flex-1 flex-col"
         >
-          <ErrorBoundary fallback={ToolboxErrorFallback}>
+          <ErrorBoundary fallback={ToolboxErrorFallback} boundary="layers">
             <LayerTree />
           </ErrorBoundary>
         </div>

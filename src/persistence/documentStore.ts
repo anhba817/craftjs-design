@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { useEditorStore } from '@/state/editorStore'
 import type { StorageSaveFailedInfo } from '@/state/editorStore'
+import { emitMetric } from '@/editor/telemetry/telemetry'
 import { postDocBroadcast } from './docBroadcast'
 import { newDocumentId } from './documentRegistry'
 import { getStorageAdapter } from './storageAdapter'
@@ -101,6 +102,7 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => {
 
     async bootstrap(): Promise<void> {
       const adapter = getStorageAdapter()
+      const start = Date.now()
       try {
         await adapter.init?.()
         const index = await adapter.readIndex()
@@ -108,6 +110,12 @@ export const useDocumentStore = create<DocumentStoreState>((set, get) => {
           documents: index.documents,
           activeId: index.activeId,
           ready: true,
+        })
+        // Phase 15 § 13.2 — opt-in perf metric (no-op without a handler).
+        emitMetric({
+          name: 'document.bootstrap',
+          durationMs: Date.now() - start,
+          documentCount: index.documents.length,
         })
       } catch (err) {
         console.error('[documentStore] bootstrap failed:', err)

@@ -322,6 +322,42 @@ function App() {
 The editor's internal boundaries already log to console.error by default;
 the top-shell `onError` is the integration point for app-level telemetry.
 
+### Telemetry (errors + metrics)
+
+Wrapping `onError` on the top-shell boundary only catches what bubbles all
+the way up. To receive errors from **every** boundary (canvas, toolbox,
+layers, each inspector panel) plus opt-in perf metrics, install a
+`TelemetryProvider` — one handler pair the whole editor feeds. The editor
+collects nothing by default; these handlers only fire if you install them.
+
+```tsx
+import { Editor } from '@crafted-design/editor'
+import { TelemetryProvider } from '@crafted-design/editor/sdk'
+
+function App() {
+  return (
+    <TelemetryProvider
+      onError={(err, info) =>
+        // info.boundary = 'canvas' | 'toolbox' | 'layers' | 'panel' | …
+        Sentry.captureException(err, { extra: info })
+      }
+      onMetric={(m) =>
+        // m.name e.g. 'document.apply' / 'document.bootstrap'; m.durationMs
+        posthog.capture(m.name, m)
+      }
+    >
+      <Editor />
+    </TelemetryProvider>
+  )
+}
+```
+
+An explicit `onError` prop on a specific `ErrorBoundary` still takes
+precedence over the provider for that boundary. Imperative hosts (no React
+wrapper) can call `setTelemetry({ onError, onMetric })` before mount.
+Emitted metrics today: `document.bootstrap` (first index read) and
+`document.apply` (deserialize on load / switch) — both carry `durationMs`.
+
 ## Theming the editor chrome
 
 The editor's UI chrome (toolbar, toolbox, inspector) inherits from your host

@@ -132,7 +132,7 @@ export function Editor() {
                 data-onboarding-target="canvas"
                 className="relative flex-1 overflow-auto bg-muted p-8"
               >
-                <ErrorBoundary fallback={CanvasErrorFallback}>
+                <ErrorBoundary fallback={CanvasErrorFallback} boundary="canvas">
                   {malformedDocument ? (
                     <MalformedDocumentBanner />
                   ) : (

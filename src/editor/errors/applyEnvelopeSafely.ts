@@ -1,6 +1,7 @@
 import type { useEditor } from '@craftjs/core'
 import { useEditorStore } from '@/state/editorStore'
 import type { EditorDocument } from '@/persistence/schema'
+import { emitMetric } from '../telemetry/telemetry'
 import { validateCraftJson } from './craftJsonIntegrity'
 
 // Phase 9 § 1.9 — shared "apply with malformed-recovery" path.
@@ -97,6 +98,7 @@ function runApply(
     setMalformedDocument({ docId, envelope, error: check.error })
     return { ok: false, error: check.error }
   }
+  const start = Date.now()
   try {
     actions.deserialize(envelope.craftJson)
   } catch (e) {
@@ -104,6 +106,8 @@ function runApply(
     setMalformedDocument({ docId, envelope, error })
     return { ok: false, error }
   }
+  // Phase 15 § 13.2 — opt-in perf metric (no-op without a handler).
+  emitMetric({ name: 'document.apply', durationMs: Date.now() - start, docId })
   // Success: clear any prior malformed state + apply theme/adapter.
   if (useEditorStore.getState().malformedDocument) {
     setMalformedDocument(null)
