@@ -31,6 +31,10 @@
       "types": "./dist-lib/adapters/mui/index.d.ts",
       "import": "./dist-lib/adapters/mui.js"
     },
+    "./adapters/html": {
+      "types": "./dist-lib/adapters/html/index.d.ts",
+      "import": "./dist-lib/adapters/html.js"
+    },
     "./sdk": {
       "types": "./dist-lib/sdk/index.d.ts",
       "import": "./dist-lib/sdk.js"

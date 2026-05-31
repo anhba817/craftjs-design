@@ -1,6 +1,7 @@
 import './registry/components'
 import './adapters/shadcn'
 import './adapters/mui'
+import './adapters/html'
 import '../examples/adapter-chakra'
 import './themes'
 import './editor/inspector/built-in-panels'

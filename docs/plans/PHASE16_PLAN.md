@@ -35,12 +35,20 @@ In-scope:
 | Group | Theme | PRODUCTION_READINESS |
 |---|---|---|
 | A | Adapter modularization | § 8.3 (deferred), § 12.2 |
-| B | Plain-HTML adapter | § 7.2 (the no-library entry) |
+| B | Plain-HTML adapter — **scaffold** (all 48 registered) | § 7.2 (the no-library entry) |
 | C | Compatibility matrix | § 7.3 |
 | D | Adapter versioning + peer deps | § 7.4 |
-| E | Close-out | `0.7.0` cut |
+| E | **Plain-HTML adapter — rendering correctness** (all 48 render right) | § 7.2 |
+| F | Close-out | `0.7.0` cut |
 
-Group A is the spine — B/C/D build on the modular structure.
+Group A is the spine — B/C/D build on the modular structure. **Group B
+ships the HTML adapter scaffold** (all 48 canonicals registered, structure
++ semantics in place) but its components don't yet render *correctly* —
+many canonicals' default styles assume the adapter supplies the look
+(shadcn's `cva` variants, MUI's components), so the minimal HTML impls
+look bare / wrong. Making all 48 render correctly is a focused styling +
+behavior pass deferred to **Group E**, near the end of the phase, once the
+structure (matrix, versioning) is settled.
 
 ---
 
@@ -156,20 +164,29 @@ the installed devDep.
 
 ---
 
-## Group B — Plain-HTML adapter (§ 7.2)
+## Group B — Plain-HTML adapter, scaffold (§ 7.2)
 
 **Land**
 
-1. **`html` adapter** — 48 canonical impls in semantic HTML (`<button>`,
-   `<table>`, `<nav>`, `<dialog>`-or-div overlays, native `<input
-   type=date>`, etc.), reusing the canonical's composed classes; no UI lib.
-2. Registered in `/core`; appears in the switcher; document it as the
-   no-framework option.
+1. **`html` adapter** — all 48 canonical impls registered in semantic HTML
+   (`<button>`, `<table>`, `<nav>`, `<dialog>`-or-div overlays, native
+   `<input type=date>`, etc.), reusing the canonical's composed classes; no
+   UI lib.
+2. Registered in `/core`; appears in the switcher; exposed as the
+   `@crafted-design/editor/adapters/html` subpath (build entry + `.d.ts`).
+3. 3-way coverage parity guard test (shadcn ≡ MUI ≡ html).
 
 **Output**
 
-- A third, dependency-free adapter; full SDK coverage proven; a clean test
-  of the modular structure.
+- A third, dependency-free adapter, structurally complete and proving the
+  modular structure / SDK end-to-end.
+
+**Known gap (deferred to Group E):** the components don't yet render
+*correctly*. Most canonicals' default `style.classes` are empty because
+the shadcn/MUI adapter components supply the look (cva variants, MUI
+component styles); the minimal HTML impls have no such baseline, so they
+render bare or wrong (unstyled buttons/badges/inputs, flat cards, etc.).
+Making all 48 look + behave right is a focused pass in Group E.
 
 ---
 
@@ -208,7 +225,38 @@ the installed devDep.
 
 ---
 
-## Group E — Verification + close-out
+## Group E — Plain-HTML adapter, rendering correctness (§ 7.2)
+
+The scaffold from Group B registers all 48 canonicals but renders them
+bare/wrong because the HTML impls carry no baseline look (unlike shadcn's
+cva variants / MUI's component styles). This group makes every canonical
+render + behave correctly under the `html` adapter.
+
+**Land**
+
+1. **Baseline styling** — give each HTML impl a sensible built-in look using
+   the editor's design-token Tailwind classes (the same tokens the theme
+   CSS defines: `bg-card`, `text-foreground`, `border-border`, ring/focus,
+   etc.), so a freshly-dropped component looks right with empty
+   `style.classes`, and author overrides still compose on top.
+2. **Per-canonical correctness pass**, grouped: leaves (button/badge/
+   avatar/input family/select/switch/checkbox/radio), feedback
+   (progress/spinner/skeleton), media (video/audio), navigation
+   (breadcrumb/pagination/nav), Pattern B (card slots, data-list, table +
+   merges, tabs, stepper, carousel), overlays (modal/drawer/toast/alert/
+   tooltip/popover — editor-inline + runtime gating). Verify each visually
+   and behaviorally against the shadcn adapter.
+3. **Snapshot / structure tests** where cheap; extend the parity guard if
+   useful.
+
+**Output**
+
+- The `html` adapter renders all 48 canonicals correctly and is a genuine
+  drop-in no-framework option, not just a registration stub.
+
+---
+
+## Group F — Verification + close-out
 
 **Land**
 

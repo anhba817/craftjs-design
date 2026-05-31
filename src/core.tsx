@@ -19,10 +19,10 @@
 // Tailwind CSS + theme + safelist — bundled into the entry's CSS.
 import './index.css'
 
-// Side-effect registrations (NO MUI / Chakra here). The plain-HTML
-// adapter (Phase 16 Group B) will register here too.
+// Side-effect registrations (NO MUI / Chakra here).
 import './registry/components'
 import './adapters/shadcn'
+import './adapters/html'
 import './themes'
 import './editor/inspector/built-in-panels'
 import './persistence/templates'

@@ -7,6 +7,7 @@ import { getAdapter } from '@/adapters/AdapterContext'
 // side-effect import out of the published bundle (the Phase 15 bug class).
 import '@/adapters/shadcn'
 import '@/adapters/mui'
+import '@/adapters/html'
 
 describe('built-in adapter entries register on import (Phase 16 § 8.3)', () => {
   it('shadcn registers', () => {
@@ -17,9 +18,15 @@ describe('built-in adapter entries register on import (Phase 16 § 8.3)', () => 
     expect(getAdapter('mui')?.id).toBe('mui')
   })
 
-  it('both cover the same canonical id set (no drift)', () => {
+  it('html (plain-HTML) registers', () => {
+    expect(getAdapter('html')?.id).toBe('html')
+  })
+
+  it('all built-in adapters cover the same canonical id set (no drift)', () => {
     const shadcn = Object.keys(getAdapter('shadcn')!.components).sort()
     const mui = Object.keys(getAdapter('mui')!.components).sort()
+    const html = Object.keys(getAdapter('html')!.components).sort()
     expect(mui).toEqual(shadcn)
+    expect(html).toEqual(shadcn)
   })
 })

@@ -88,6 +88,7 @@ export default defineConfig({
         // adapter registry singleton is shared across all entries.
         'adapters/shadcn': path.resolve(__dirname, 'src/adapters/shadcn/index.ts'),
         'adapters/mui': path.resolve(__dirname, 'src/adapters/mui/index.ts'),
+        'adapters/html': path.resolve(__dirname, 'src/adapters/html/index.ts'),
         sdk: path.resolve(__dirname, 'src/sdk/index.ts'),
         // Phase 12 § 4.1 — optional, node-only build-time safelist plugin.
         // Separate entry (not in the browser SDK) since it imports node:fs.

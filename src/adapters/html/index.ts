@@ -1,0 +1,122 @@
+import { registerAdapter } from '@design/sdk'
+import {
+  HtmlAlert,
+  HtmlAudio,
+  HtmlAvatar,
+  HtmlBadge,
+  HtmlBox,
+  HtmlBreadcrumb,
+  HtmlButton,
+  HtmlCard,
+  HtmlCarousel,
+  HtmlCheckbox,
+  HtmlCode,
+  HtmlContainer,
+  HtmlDataList,
+  HtmlDataListItem,
+  HtmlDatePicker,
+  HtmlDateRangePicker,
+  HtmlDivider,
+  HtmlDrawer,
+  HtmlGrid,
+  HtmlHeading,
+  HtmlIcon,
+  HtmlImage,
+  HtmlInput,
+  HtmlLink,
+  HtmlModal,
+  HtmlNavItem,
+  HtmlNavMenu,
+  HtmlPagination,
+  HtmlPopover,
+  HtmlProgress,
+  HtmlRadio,
+  HtmlSection,
+  HtmlSelect,
+  HtmlSkeleton,
+  HtmlSpacer,
+  HtmlSpinner,
+  HtmlStack,
+  HtmlStepper,
+  HtmlSwitch,
+  HtmlTable,
+  HtmlTableCell,
+  HtmlTabs,
+  HtmlText,
+  HtmlTextarea,
+  HtmlTimePicker,
+  HtmlToast,
+  HtmlTooltip,
+  HtmlVideo,
+} from './components'
+
+// Phase 16 § 7.2 — the plain-HTML adapter: a dependency-free, semantic-HTML
+// renderer for every canonical. Registered by `@crafted-design/editor/core`
+// and importable on its own as `@crafted-design/editor/adapters/html`.
+registerAdapter({
+  id: 'html',
+  displayName: 'Plain HTML',
+  components: {
+    // layout
+    box: HtmlBox,
+    stack: HtmlStack,
+    grid: HtmlGrid,
+    container: HtmlContainer,
+    section: HtmlSection,
+    spacer: HtmlSpacer,
+    divider: HtmlDivider,
+    // content
+    text: HtmlText,
+    heading: HtmlHeading,
+    code: HtmlCode,
+    link: HtmlLink,
+    image: HtmlImage,
+    icon: HtmlIcon,
+    badge: HtmlBadge,
+    avatar: HtmlAvatar,
+    button: HtmlButton,
+    // inputs
+    input: HtmlInput,
+    textarea: HtmlTextarea,
+    checkbox: HtmlCheckbox,
+    switch: HtmlSwitch,
+    radio: HtmlRadio,
+    select: HtmlSelect,
+    'date-picker': HtmlDatePicker,
+    'time-picker': HtmlTimePicker,
+    'date-range-picker': HtmlDateRangePicker,
+    // feedback
+    progress: HtmlProgress,
+    spinner: HtmlSpinner,
+    skeleton: HtmlSkeleton,
+    // media
+    video: HtmlVideo,
+    audio: HtmlAudio,
+    // navigation
+    breadcrumb: HtmlBreadcrumb,
+    pagination: HtmlPagination,
+    'nav-menu': HtmlNavMenu,
+    'nav-item': HtmlNavItem,
+    // data display
+    table: HtmlTable,
+    'table-cell': HtmlTableCell,
+    'data-list': HtmlDataList,
+    'data-list-item': HtmlDataListItem,
+    card: HtmlCard,
+    tabs: HtmlTabs,
+    stepper: HtmlStepper,
+    carousel: HtmlCarousel,
+    // overlays
+    modal: HtmlModal,
+    drawer: HtmlDrawer,
+    toast: HtmlToast,
+    tooltip: HtmlTooltip,
+    popover: HtmlPopover,
+    alert: HtmlAlert,
+  },
+})
+
+// Phase 16 § 8.3 — also the `@crafted-design/editor/adapters/html` opt-in
+// entry. Export gives vite-plugin-dts a `.d.ts` to emit; a bare
+// side-effect import still registers the adapter above.
+export const adapterId = 'html'
