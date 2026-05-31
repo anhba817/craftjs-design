@@ -79,6 +79,7 @@
     "prebuild:dist": "npm run gen-safelist",
     "docs": "typedoc",
     "docs:html": "typedoc --options typedoc.html.json",
+    "docs:matrix": "tsx scripts/adapter-matrix.ts",
     "check:size": "tsx scripts/check-bundle-size.ts",
     "check:licenses": "tsx scripts/check-licenses.ts",
     "analyze": "ANALYZE=1 vite build --config vite.config.dist.ts",

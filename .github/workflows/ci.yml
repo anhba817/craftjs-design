@@ -37,6 +37,9 @@ jobs:
       - name: Test
         run: npx vitest run
 
+      - name: Adapter matrix (built-in coverage)
+        run: npm run docs:matrix -- --check
+
       - name: Build (dist)
         run: npm run build:dist
 
