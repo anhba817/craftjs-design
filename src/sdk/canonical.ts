@@ -45,27 +45,21 @@ export {
   unregisterCanonical,
 } from '../registry/registry'
 
-// Phase 10 § 2.14 — Tabs adapter helpers. Adapter authors building a
-// custom Tabs impl need these to derive (a) canvas slot keys that match
-// what CanonicalNode allocates via the Tabs canonical's canvasSlots
-// function, and (b) Radix/MUI/Chakra `value`-prop strings that are
-// unique even when the user-authored `tab.value` is empty or duplicated.
-// Used by shadcn / mui / chakra Tabs impls in this repo; exposed here
-// for third-party adapters that want parity.
+// Phase 10 § 2.14 / Phase 13 § 5.7 — dynamic-canvas slot-key helpers for
+// adapter authors building custom Tabs / Carousel impls: they derive the
+// canvas slot keys that match what CanonicalNode allocates via each
+// canonical's `canvasSlots` function (and, for tabs, the unique `value`-prop
+// strings). Imported from the side-effect-free `dynamic-slots` module — NOT
+// from `tabs.ts` / `carousel.ts` — so re-exporting them here doesn't drag the
+// Tabs/Carousel canonical *registration* into the (tree-shakable) SDK
+// (Phase 17 § 8.4). The `*Props` types stay on the canonical modules: type
+// re-exports are erased, so they carry no registration side effect.
 export {
   TAB_SLOT_PREFIX,
   tabSlotKeys,
   uniqueTabValues,
-} from '../registry/components/tabs'
-export type { TabsProps } from '../registry/components/tabs'
-
-// Phase 13 § 5.7 — Carousel dynamic-canvas helper, same role as
-// tabSlotKeys: derive the per-slide canvas slot keys that match what
-// CanonicalNode allocates via the Carousel canonical's canvasSlots
-// function. Third-party adapters building a custom Carousel impl use
-// this to look up `slotChildren[key]` for each slide.
-export {
   SLIDE_SLOT_PREFIX,
   slideSlotKeys,
-} from '../registry/components/carousel'
+} from '../registry/components/dynamic-slots'
+export type { TabsProps } from '../registry/components/tabs'
 export type { CarouselProps } from '../registry/components/carousel'

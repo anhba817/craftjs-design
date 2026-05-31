@@ -62,6 +62,22 @@ resolve types without configuration. See
 [ADAPTER_VERSIONING.md](./ADAPTER_VERSIONING.md) for the peer-dependency
 policy and [ADAPTER_MATRIX.md](./ADAPTER_MATRIX.md) for per-adapter coverage.
 
+## Bundle format
+
+The package ships **ESM only**, **unminified, with source maps**. There is no
+CommonJS/UMD build and no separate `*.min.js` — both are deliberate:
+
+- **ESM-only** avoids the dual-package hazard; modern bundlers and Node ≥ 20
+  consume ESM directly.
+- **Unminified** because you consume the editor through your own bundler,
+  which minifies the final app. Shipping a parallel minified entry would
+  double the published surface and the `exports` map for no real benefit, and
+  the source maps give you readable stack traces in development.
+
+The SDK subpath (`/sdk`) is **side-effect-free**, so a bundler tree-shakes any
+authoring symbol you don't import. (Importing `/sdk` registers nothing beyond
+the editor's three baseline font tokens — `sans`/`heading`/`mono`.)
+
 ## Minimal embed
 
 ```tsx

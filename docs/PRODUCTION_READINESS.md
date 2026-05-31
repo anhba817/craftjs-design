@@ -785,11 +785,17 @@ runtime-`import()` route was rejected: `AdapterProvider` composes every
 registered adapter's `Wrapper` around `<Frame>`, so registering an adapter
 post-mount would reshape the tree and remount (visually wipe) the canvas.
 
-### 8.4 Tree-shakable SDK exports *(High / Bundle)*
+### 8.4 Tree-shakable SDK exports *(High / Bundle)* — ✅ shipped `0.8.0` (Phase 17)
 
-`@design/sdk` re-exports everything via `export *`. Hosts that use only
-a subset still get the full bundle. Restructure as named imports per
-feature.
+`/sdk` re-exports per feature via `export *`, and every `src/sdk/*` submodule
+is side-effect-free (verified by `src/sdk/side-effect-free.test.ts`), so a
+bundler drops the authoring symbols a host doesn't import. Phase 17 fixed the
+one real leak: `sdk/canonical.ts` re-exported the Tabs/Carousel slot-key
+helpers from the canonical modules, which `registerComponent` at load —
+importing the SDK registered 2 canonicals. The helpers moved to the
+side-effect-free `registry/components/dynamic-slots.ts`; importing `/sdk` now
+registers nothing but the editor's three baseline font tokens (a deliberate,
+test-locked carry).
 
 ### 8.5 Memoize PropField recursion *(Performance)*
 
@@ -1003,9 +1009,13 @@ shown in SDK_GUIDE.md but not actually shipped.
 
 Today: included.
 
-### 12.5 Minified + non-minified variants *(DevEx)*
+### 12.5 Minified + non-minified variants *(DevEx)* — ✅ decided `0.8.0` (Phase 17): ship unminified only
 
-Today: non-minified. Ship both via `index.js` + `index.min.js`.
+The published bundle is unminified-with-sourcemaps **by design** — consumers
+build the editor through their own bundler, which minifies the final app. A
+parallel `index.min.js` would double the published surface + `exports` map for
+no real consumer benefit, so it is intentionally not shipped. Documented in
+INTEGRATION_GUIDE.md "Bundle format".
 
 ---
 

@@ -24,20 +24,12 @@ export const carouselPropsSchema = z.object({
 })
 export type CarouselProps = z.infer<typeof carouselPropsSchema>
 
-export const SLIDE_SLOT_PREFIX = 'slide-'
-
-/**
- * Resolves the slot key for each slide. Same shape as `tabSlotKeys`.
- * Returns one key per slide, in index order; double-prefixed
- * (`slide-slide-${id}`) is intentional — `id` already starts with
- * `slide-` from genSlideId, and ALL slot keys share the SLIDE_SLOT_PREFIX
- * so the registry / serializer can recognise them.
- */
-export function slideSlotKeys(
-  slides: readonly { id: string }[],
-): string[] {
-  return slides.map((s) => `${SLIDE_SLOT_PREFIX}${s.id}`)
-}
+// Slot-key helpers live in the side-effect-free `dynamic-slots` module so the
+// SDK can re-export them without pulling in this canonical's registration
+// (Phase 17 § 8.4). Imported here for `canvasSlots` and re-exported for
+// back-compat — adapter impls import them from `@/registry/components/carousel`.
+import { SLIDE_SLOT_PREFIX, slideSlotKeys } from './dynamic-slots'
+export { SLIDE_SLOT_PREFIX, slideSlotKeys }
 
 registerComponent<CarouselProps>({
   id: 'carousel',
