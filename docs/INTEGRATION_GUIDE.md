@@ -25,16 +25,42 @@ omit the matching peer chain.
 
 ## Subpath exports
 
-Two entry points:
+Since `0.7.0` the package is modular — pick the entry that matches the
+adapters you want, so you don't bundle a UI library you never render:
 
-| Import path | What you get |
-|---|---|
-| `@crafted-design/editor` | Full `<Editor />` component + the editor's own dependencies. Pull this when you want to render the editor itself. |
-| `@crafted-design/editor/sdk` | SDK-only surface (`registerAdapter`, `registerCanonical`, `registerPanel`, `registerTheme`, `registerTemplate`, `registerFontToken`, `useNodeClasses`, all the matching types). No editor UI — use this when authoring a canonical / adapter / panel without pulling in `<Editor />`. |
-| `@crafted-design/editor/index.css` | Tailwind CSS bundle. Import once per page; no JS overhead. |
+| Import path | What you get | External peers |
+|---|---|---|
+| `@crafted-design/editor` | **Full** `<Editor />` — registers editor + shadcn + plain-HTML **+ MUI**. The batteries-included default. | requires `@mui/material`, `@emotion/react`, `@emotion/styled` |
+| `@crafted-design/editor/core` | **Lean** `<Editor />` — registers editor + shadcn + plain-HTML, **no MUI**. Same full export surface (Editor, SDK, stores, doc helpers). | none |
+| `@crafted-design/editor/adapters/shadcn` | Side-effect import that registers just the shadcn adapter. | none |
+| `@crafted-design/editor/adapters/html` | Registers just the plain-HTML adapter (no UI library). | none |
+| `@crafted-design/editor/adapters/mui` | Registers just the MUI adapter. | `@mui/material`, `@emotion/react`, `@emotion/styled` |
+| `@crafted-design/editor/sdk` | SDK-only surface (`registerAdapter`, `registerCanonical`, `registerPanel`, `registerTheme`, `registerTemplate`, `registerFontToken`, `useNodeClasses`, all the matching types). No editor UI — use when authoring a canonical / adapter / panel without pulling in `<Editor />`. | none |
+| `@crafted-design/editor/index.css` | Tailwind CSS bundle. Import once per page; no JS overhead. | none |
 
-`.d.ts` files ship alongside both JS entries so TypeScript hosts resolve
-types without configuration.
+Typical setups:
+
+```ts
+// shadcn-only host — no MUI in the bundle, nothing extra to install
+import { Editor } from '@crafted-design/editor/core'
+import '@crafted-design/editor/index.css'
+
+// want MUI too — install the peers, use the full entry
+//   npm install @mui/material @emotion/react @emotion/styled
+import { Editor } from '@crafted-design/editor'
+
+// lean core + opt into one extra adapter explicitly
+import { Editor } from '@crafted-design/editor/core'
+import '@crafted-design/editor/adapters/mui' // side-effect: registers MUI
+```
+
+Opt-in is at the **import boundary**, not at runtime: importing an adapter
+registers it before `<Editor />` mounts. (Registering an adapter after mount
+would reshape the provider tree and remount the canvas, so it isn't
+supported.) `.d.ts` files ship alongside every JS entry, so TypeScript hosts
+resolve types without configuration. See
+[ADAPTER_VERSIONING.md](./ADAPTER_VERSIONING.md) for the peer-dependency
+policy and [ADAPTER_MATRIX.md](./ADAPTER_MATRIX.md) for per-adapter coverage.
 
 ## Minimal embed
 

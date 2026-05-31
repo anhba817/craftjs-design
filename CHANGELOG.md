@@ -124,6 +124,87 @@ App build (`npm run build`):
 
 (none yet)
 
+## [0.7.0] — 2026-05-31
+
+Phase 16 — Adapter modularity + ecosystem. The package splits into a lean
+`/core` entry plus opt-in per-adapter subpaths, the heavy UI libraries
+become optional peer dependencies, a third built-in adapter (plain HTML, no
+UI library) ships, and the adapter compatibility + versioning story is
+documented and guarded in CI.
+
+### Added
+
+- **Lean `/core` entry + per-adapter subpaths** (§ 8.3, 12.2). New exports:
+  `@crafted-design/editor/core` (editor + shadcn + plain-HTML, no MUI) and
+  `@crafted-design/editor/adapters/{shadcn,mui,html}`. The default
+  `@crafted-design/editor` entry stays batteries-included (core + MUI).
+  Opt-in is at the **import boundary**, not runtime — runtime registration
+  would reshape the `AdapterProvider` wrapper tree and remount (visually
+  wipe) the canvas — so a shadcn-only host drops MUI from its bundle simply
+  by importing `/core`.
+- **Plain-HTML adapter** (`id: 'html'`, "Plain HTML") (§ 7.2). A
+  dependency-free, semantic-HTML renderer for all 48 canonicals: the
+  no-framework option, and the reference that proves the adapter SDK +
+  modular structure end to end. Layout primitives compose their props
+  (grid/flex/max-width); overlays portal to the editor's overlay stage and,
+  at runtime, to `<body>` with a backdrop (no Radix dependency).
+- **Adapter compatibility matrix** (§ 7.3). `scripts/adapter-matrix.ts`
+  (`npm run docs:matrix`) introspects every registered adapter × the
+  canonical registry and generates `docs/ADAPTER_MATRIX.md`; `--check` mode
+  (wired into CI) fails if a built-in adapter drops below full coverage.
+  Built-ins shadcn/MUI/html are 48/48; the Chakra example is intentionally
+  partial (gaps fall back to the missing-renderer placeholder).
+- **Adapter peer-dependency declaration** (§ 7.4). `peerDependencies`
+  (`{ package: testedRange }`) is now a validated field on the adapter
+  manifest, surfaced in the matrix and documented in
+  `docs/ADAPTER_VERSIONING.md` (install contract, the three ways an upstream
+  breaking change surfaces, the support policy). `src/adapters/peer-deps.test.ts`
+  guards drift between an adapter's declared ranges and `package.json`.
+
+### Changed
+
+> ⚠ **Breaking for default-entry consumers** — see migration below.
+
+- **`@mui/material`, `@emotion/react`, and `@emotion/styled` are now OPTIONAL
+  peer dependencies instead of direct dependencies.** They are no longer
+  bundled into the published editor (the dist build externalizes them).
+- The SDK gains `peerDependencies` on the `Adapter` type / manifest schema.
+
+#### Migration
+
+The default `@crafted-design/editor` entry bundles the MUI adapter, so
+consuming it now requires installing the three peers yourself:
+
+```bash
+npm install @mui/material @emotion/react @emotion/styled
+```
+
+If you don't use MUI, import the lean entry instead and install nothing
+extra (shadcn + plain-HTML need no external peers):
+
+```ts
+import '@crafted-design/editor/core'   // editor + shadcn + html, no MUI
+```
+
+### Bundle
+
+Measured at `0.7.0` (`npm run check:size` — transitive gzipped per entry,
+externalized peers excluded):
+
+| Entry | Gzipped | Note |
+|---|---|---|
+| `@crafted-design/editor` (`index.js`) | ~253 KB | + MUI/Emotion peers (installed separately) |
+| `@crafted-design/editor/core` (`core.js`) | ~245 KB | shadcn + html, no MUI |
+| `@crafted-design/editor/sdk` (`sdk.js`) | ~44 KB | SDK-only consumers |
+| `index.css` | ~124 KB | |
+
+The `0.6.0` "414 KB gz" `index.js` figure **bundled** MUI. Externalizing it
+moves that weight to a peer the host installs only when it uses the MUI
+adapter; the editor's own bundled code is ~253 KB gz, and `/core` consumers
+ship ~245 KB gz with no MUI at all. (Our two entries are close because MUI is
+now external for both; the real win is consumer-side — shadcn-only hosts no
+longer download MUI.)
+
 ## [0.6.0] — 2026-05-31
 
 Phase 15 — Launch readiness (production hardening). CI + release

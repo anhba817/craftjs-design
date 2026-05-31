@@ -20,6 +20,11 @@ Each item is tagged:
 > **Update (`0.4.0`, Phase 13):** the canonical count below is now **48**
 > — Section 5 (Component breadth) shipped every § 5.1–5.7 item in both
 > shadcn and MUI. See § 5 for the per-group status.
+>
+> **Update (`0.7.0`, Phase 16):** the package is now modular — a lean
+> `@crafted-design/editor/core` entry plus opt-in `/adapters/{shadcn,mui,html}`
+> subpaths, with MUI/Emotion as optional peers. A **third built-in adapter
+> (plain HTML, no UI library)** covers all 48 canonicals. See § 7.
 
 **What works:**
 - 48 canonical components, full coverage in shadcn + MUI adapters.
@@ -699,31 +704,46 @@ share/publish templates would be a real ecosystem boost.
 
 ## 7. Adapter ecosystem
 
-### 7.1 Real Chakra adapter as a separate package *(Ecosystem)*
+> **Status — shipped in `0.7.0` (Phase 16):** the package is now modular
+> (lean `/core` entry + opt-in `/adapters/{shadcn,mui,html}` subpaths, MUI/
+> Emotion as optional peers), a third built-in adapter (plain HTML) ships,
+> and the compatibility-matrix (§ 7.3) + versioning (§ 7.4) story is
+> documented and CI-guarded. Full third-party adapters (§ 7.1, most of § 7.2)
+> and a marketplace (§ 7.5) remain Stretch.
 
-`@design/adapter-chakra` — installed alongside the editor. Phase 6 has
-the mock; Phase 9+ ships the real one.
+### 7.1 Real Chakra adapter as a separate package *(Ecosystem)* — ◐ partial (Phase 10)
+
+A working Chakra adapter ships as an **example** under `examples/adapter-chakra`
+(20/48 canonicals — a reference for authoring your own). Publishing it as a
+standalone `@design/adapter-chakra` package is still Stretch; the modular
+subpath structure (§ 8.3) is the mechanism that would make that clean.
 
 ### 7.2 More adapters *(Ecosystem)*
-- Ant Design
-- Mantine
-- Bootstrap (React Bootstrap)
-- Plain HTML (no library — minimum-viable for hosts that don't want a UI framework)
-- Tailwind UI / Tailwind Plus (paid components)
+- **Plain HTML (no library) — ✅ shipped `0.7.0` (Phase 16).** Built-in
+  `html` adapter, all 48 canonicals, dependency-free.
+- Ant Design — Stretch
+- Mantine — Stretch
+- Bootstrap (React Bootstrap) — Stretch
+- Tailwind UI / Tailwind Plus (paid components) — Stretch
 
-### 7.3 Adapter compatibility matrix *(DevEx)*
+### 7.3 Adapter compatibility matrix *(DevEx)* — ✅ shipped `0.7.0` (Phase 16)
 
-Document which canonicals each adapter supports. Currently shadcn + MUI
-cover all 20; future adapters might cover subsets. The missing-impl
-placeholder is the runtime fallback; the matrix is the docs view.
+`scripts/adapter-matrix.ts` (`npm run docs:matrix`) introspects each
+registered adapter × the canonical registry and generates
+`docs/ADAPTER_MATRIX.md`. Built-ins shadcn/MUI/html cover all 48; the Chakra
+example is intentionally partial. The missing-renderer placeholder is the
+runtime fallback for gaps; `--check` mode (in CI) fails on built-in drift.
 
-### 7.4 Adapter versioning + breaking changes *(DevEx)*
+### 7.4 Adapter versioning + breaking changes *(DevEx)* — ✅ shipped `0.7.0` (Phase 16)
 
-If shadcn changes a primitive's API (which happens), our adapter breaks.
-Need:
-- Adapter peer-dependency on the underlying library.
-- Documented "tested against shadcn vX.Y" per adapter.
-- CI matrix that builds against multiple versions.
+- Adapter peer-dependency declaration — ✅ `peerDependencies` is a validated
+  adapter-manifest field (`{ package: testedRange }`), drift-guarded vs
+  `package.json`.
+- Documented "tested against vX.Y" per adapter — ✅ surfaced in the matrix
+  and `docs/ADAPTER_VERSIONING.md` (install contract, breaking-change
+  surfacing, support policy).
+- CI matrix that builds against multiple versions — Stretch (documented as a
+  follow-up; the peer-dep declaration + sync test ship instead).
 
 ### 7.5 Adapter marketplace / discovery *(Stretch)*
 
@@ -754,10 +774,16 @@ slice.
 Large documents (1000+ nodes) render every node every frame. Could
 viewport-cull off-screen nodes.
 
-### 8.3 Lazy adapter loading *(High / Performance)*
+### 8.3 Lazy adapter loading *(High / Performance)* — ✅ addressed `0.7.0` (Phase 16, via opt-in subpaths)
 
-Today all adapters preload. MUI brings ~50 KB; users who never switch
-adapters pay that cost. Code-split per-adapter; load on demand.
+The bundle goal — shadcn-only hosts not paying for MUI — is met by
+**import-boundary modularization**, not runtime lazy loading. New
+`@crafted-design/editor/core` entry registers editor + shadcn + plain-HTML
+(no MUI); per-adapter subpaths (`/adapters/{shadcn,mui,html}`) opt in
+explicitly; `@mui/material` + Emotion are externalized optional peers. The
+runtime-`import()` route was rejected: `AdapterProvider` composes every
+registered adapter's `Wrapper` around `<Frame>`, so registering an adapter
+post-mount would reshape the tree and remount (visually wipe) the canvas.
 
 ### 8.4 Tree-shakable SDK exports *(High / Bundle)*
 

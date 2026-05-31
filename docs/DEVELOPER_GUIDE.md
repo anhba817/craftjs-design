@@ -305,6 +305,10 @@ A new adapter wraps a UI library and provides impls for some or all canonicals. 
      displayName: 'My Library',
      components: { button: MyButton },
      // Optional: Wrapper, themeTokens, classMap, mount, unmount
+     // Declare any external npm packages this adapter needs, mapped to the
+     // tested range (Phase 16 § 7.4). Surfaced in the compatibility matrix;
+     // omit if the adapter uses no external library.
+     peerDependencies: { 'my-ui-lib': '^3' },
    })
    ```
 
@@ -317,6 +321,33 @@ A new adapter wraps a UI library and provides impls for some or all canonicals. 
    ```
 
    `AdapterSwitcher` picks the new adapter up automatically (iterates `listAdapters()`).
+
+#### Shipping an adapter as a subpath entry (Phase 16 § 8.3)
+
+The three built-in adapters double as opt-in package entries
+(`@crafted-design/editor/adapters/{shadcn,mui,html}`) so a host bundles only
+the UI libraries it renders. To add a built-in adapter the same way:
+
+1. **`vite.config.dist.ts`** — add the adapter index to `lib.entry` (e.g.
+   `'adapters/mylib': resolve(__dirname, 'src/adapters/mylib/index.ts')`).
+   Externalize any heavy peer library there too (so it isn't bundled).
+2. **`package.json` `exports`** — add the subpath, pointing `import` at
+   `./dist-lib/adapters/mylib.js` and `types` at the per-file
+   `./dist-lib/adapters/mylib/index.d.ts` (vite-plugin-dts emits a file tree,
+   not a single bundled `.d.ts`).
+3. **`package.json` `sideEffects`** — list `**/adapters/mylib/**`. This is
+   mandatory: the registration is a side-effect import, and an unlisted module
+   gets tree-shaken out of the published bundle (the bug that shipped an
+   adapter-less `dist-lib` before Phase 15). Add the same to `peerDependencies`
+   + `peerDependenciesMeta` (optional) if it needs an external library.
+4. **`src/core.tsx`** (and/or the full `src/main-app.tsx`) — add the
+   side-effect import so the chosen batteries-included entry registers it.
+5. Export a non-type value from the index (e.g. `export const adapterId = 'mylib'`)
+   so vite-plugin-dts emits a `.d.ts` for the subpath; a bare side-effect
+   import still registers the adapter.
+6. **`src/adapters/adapters-register.test.ts`** — extend the coverage-parity
+   guard. `npm run docs:matrix` regenerates the matrix; CI's `--check` fails if
+   a built-in adapter isn't 48/48.
 
 ### Adding an adapter impl for an existing canonical
 

@@ -1,6 +1,6 @@
 # Phase 16 — Adapter modularity + ecosystem (Section 7 + § 8.3)
 
-**Status:** planned
+**Status:** ✅ complete — cut `0.7.0` (see close-out at end)
 **Cuts as:** `0.7.0`
 **Audience:** whoever makes adapters opt-in + tree-shakable and grows the
 adapter set, so a shadcn-only host stops paying for MUI and new adapters
@@ -316,3 +316,67 @@ document the adapter set. The full entry stays batteries-included.
 
 When § 7 (less the Stretch full-adapter builds) and § 8.3 are satisfied,
 Phase 16 is complete and `0.7.0` cuts at the close-out commit.
+
+---
+
+## Close-out (`0.7.0`)
+
+Phase 16 complete. The package is modular, MUI is an optional peer, a third
+built-in adapter ships, and the ecosystem story is documented + CI-guarded.
+
+**Per-group:**
+
+- **A — Modularization.** Lean `src/core.tsx` entry (editor + shadcn + html,
+  no MUI) owning the full export surface; full `main-app.tsx` = core + MUI.
+  `vite.config.dist.ts` entries for `core` + `adapters/{shadcn,mui,html}`;
+  `@mui/*` + `@emotion/*` externalized + moved to optional peers; `exports`
+  subpaths + `sideEffects` registration modules.
+- **B — Plain-HTML adapter scaffold.** All 48 canonicals registered as
+  semantic HTML, `/adapters/html` subpath, 3-way coverage-parity guard.
+- **C — Compatibility matrix.** `scripts/adapter-matrix.ts` → `docs/ADAPTER_MATRIX.md`;
+  `--check` CI guard; `docs:matrix` script.
+- **D — Versioning + peer deps.** `peerDependencies` as a validated
+  adapter-manifest field; `docs/ADAPTER_VERSIONING.md`; `peer-deps.test.ts`
+  drift guard; matrix peer-deps section.
+- **E — Plain-HTML rendering correctness.** Token baselines mirroring shadcn +
+  prop-driven fixes. See decisions below.
+- **F — Close-out.** This section; CHANGELOG `0.7.0` + migration; PRODUCTION_READINESS
+  §§ 7 ✅ / 8.3 addressed; INTEGRATION_GUIDE entry-point matrix; DEVELOPER_GUIDE
+  subpath-adapter recipe; version → `0.7.0`.
+
+**Decisions / discoveries:**
+
+- **Opt-in at the import boundary, not runtime.** Runtime `import()` of an
+  adapter would re-register post-mount and reshape `AdapterProvider`'s wrapper
+  tree, remounting (wiping) the canvas. Subpath imports hit the same bundle
+  goal safely.
+- **Group B shipped a scaffold; correctness was deferred to Group E.** The
+  empty-default canonicals (button/input/badge/card/alert/tabs/select/…) get
+  their look from the shadcn/MUI *component*, not from default classes, so the
+  minimal HTML impls rendered bare until E gave each a design-token baseline.
+- **Group E caught a class of prop-driven bugs**, surfaced partly by dogfooding
+  (Grid rendered as a plain div): Stack/Grid/Container were aliased to Box and
+  ignored their layout props; Spinner rendered nothing (`iconElement` has no
+  loader glyph → CSS ring); Heading was always `<h2>` (matched `level` against
+  `'h1'` but the prop is `'1'..'6'`); Progress only drew the bar (added the
+  circular SVG); Pagination was bare numbers; overlays rendered inline in the
+  canvas instead of portaling to the right-side overlay stage. A proactive
+  audit of every shadcn component that derives render from props caught the
+  rest in one pass rather than one user round-trip at a time.
+- **Bundle delta is consumer-side.** Our two entries (`index.js` ~253 / `core.js`
+  ~245 KB gz) are close because MUI is now external for both; the real win is
+  shadcn-only hosts no longer downloading MUI (the `0.6.0` `index.js` bundled it
+  at 414 KB gz).
+- **Plain-HTML is dependency-free by design.** lucide-react is an icon set (not
+  a UI framework) so icon-bearing impls use it; overlays reimplement the
+  portal/backdrop themselves rather than pulling in Radix.
+
+**Verification:** lint 0 errors; tsc clean; 623 tests; app + dist builds; size
+gate green (full 253 / core 245 / sdk 44 / css 124 KB gz, all within budget);
+`docs:matrix --check` passes (built-ins 48/48). MUI/Emotion/Chakra remain
+devDeps so the app + tests still resolve them; consumers install the optional
+peers per the migration note.
+
+**Remaining (Stretch, post-0.7.0):** full production Chakra/Ant/Mantine/Bootstrap
+adapters (§ 7.1–7.2), adapter marketplace (§ 7.5), multi-version CI matrix
+(§ 7.4), runtime lazy loading (§ 8.3 alt — rejected).
