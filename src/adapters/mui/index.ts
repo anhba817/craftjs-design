@@ -114,3 +114,9 @@ registerAdapter({
     carousel: MaterialCarousel,
   },
 })
+
+// Phase 16 § 8.3 — this module doubles as the `@crafted-design/editor/
+// adapters/mui` opt-in entry (importing it registers the adapter above).
+// The export gives vite-plugin-dts something to emit a `.d.ts` for the
+// subpath; a bare side-effect import still works.
+export const adapterId = 'mui'

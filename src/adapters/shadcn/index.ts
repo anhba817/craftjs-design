@@ -112,3 +112,8 @@ registerAdapter({
     carousel: ShadcnCarousel,
   },
 })
+
+// Phase 16 § 8.3 — also the `@crafted-design/editor/adapters/shadcn`
+// opt-in entry. Export gives vite-plugin-dts a `.d.ts` to emit; a bare
+// side-effect import still registers the adapter above.
+export const adapterId = 'shadcn'

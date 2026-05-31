@@ -1,92 +1,129 @@
 import { gzipSync } from 'node:zlib'
-import { readdirSync, readFileSync, existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { dirname, join, relative } from 'node:path'
 
-// Phase 15 § 12.3 — bundle-size budget gate.
+// Phase 15 § 12.3 / Phase 16 § 8.3 — bundle-size budget gate.
 //
-// Reads the published library output (`dist-lib/`, produced by
-// `npm run build:dist`) and fails if any tracked artifact's GZIPPED size
-// exceeds its budget. Gzip is the number that matters for delivery; raw
-// bytes vary too much with comments/whitespace. Budgets are seeded from
-// the `0.5.0` baseline with ~20% headroom — bump them deliberately (in a
-// PR, with a reason) when a feature legitimately grows the bundle, so an
-// accidental regression can't slip through.
+// The published library (`dist-lib/`) is code-split: each entry is a thin
+// wrapper that imports shared chunks. So a per-FILE size check is
+// meaningless — what matters is the TRANSITIVE reachable size of each
+// entry point (the entry + every chunk it imports, deduped). This walks
+// the relative-import graph from each entry and sums the gzipped bytes,
+// then fails if an entry exceeds its budget. Gzip is the delivery number.
+//
+// Bump a budget deliberately (in the PR that grows it, with a reason) so
+// an accidental regression can't slip through.
 //
 // Run after a dist build:  npm run build:dist && npm run check:size
-// CI wires both steps together.
 
 const DIST_DIR = 'dist-lib'
 
 interface Budget {
   label: string
-  // Matches a filename in DIST_DIR (hashes allowed via the regex).
-  match: RegExp
+  entry: string // file under dist-lib
   maxGzipKB: number
 }
 
-// Budgets are gzipped KB, seeded from the corrected `0.6.0` baseline with
-// ~10% headroom. The editor JS bundles BOTH adapter sets (shadcn + MUI)
-// eagerly — MUI is ~290 KB gz of `index.js`. Splitting the heavy adapter
-// onto its own subpath entry so consumers opt in (§ 8.3) is a queued
-// optimization; until then this budget reflects the honest full size.
-// (The pre-0.6.0 ~120 KB figure was a BROKEN bundle: a too-aggressive
-// `sideEffects` field had tree-shaken the adapter/canonical registrations
-// out entirely — fixed in Phase 15 Group C.)
+// Budgets are the gzipped TRANSITIVE size of each JS entry (sum of the
+// entry + all chunks it imports). MUI/Chakra/Emotion are externalized
+// (Phase 16 § 8.3) so they're NOT counted here — they're the consumer's
+// peer deps. That's also why `core` and `index` are close in OUR bundle
+// (~8 KB apart, the MUI adapter glue): the big MUI weight (~290 KB) is
+// external in both. The real /core win is consumer-side — a /core app
+// never imports @mui, so MUI never enters the consumer's bundle and
+// needn't be installed; the full entry's external @mui import does pull it.
 const BUDGETS: Budget[] = [
-  { label: 'editor JS (index.js)', match: /^index\.js$/, maxGzipKB: 460 },
-  { label: 'editor CSS (index.css)', match: /^index\.css$/, maxGzipKB: 150 },
-  { label: 'SDK chunk (sdk-*.js)', match: /^sdk-.*\.js$/, maxGzipKB: 60 },
-  { label: 'vite-plugin', match: /^vite-plugin\.js$/, maxGzipKB: 5 },
+  { label: 'full editor (index.js)', entry: 'index.js', maxGzipKB: 275 },
+  { label: 'lean core (core.js)', entry: 'core.js', maxGzipKB: 265 },
+  { label: 'SDK (sdk.js)', entry: 'sdk.js', maxGzipKB: 60 },
+  { label: 'vite-plugin', entry: 'vite-plugin.js', maxGzipKB: 5 },
 ]
+
+// CSS is a single emitted file (not code-split), checked directly.
+const CSS_BUDGET = { label: 'editor CSS (index.css)', file: 'index.css', maxGzipKB: 150 }
 
 function gzipKB(path: string): number {
   return gzipSync(readFileSync(path)).length / 1024
 }
 
+// Collect every relatively-imported file reachable from `entry` (deduped).
+function reachableFiles(entryRel: string): Set<string> {
+  const seen = new Set<string>()
+  const stack = [entryRel]
+  // Matches `from"./x.js"`, `import"./x.js"`, `import(..."./x.js")`.
+  const importRe = /(?:from|import)\s*\(?\s*["']([^"']+)["']/g
+  while (stack.length) {
+    const rel = stack.pop()!
+    if (seen.has(rel)) continue
+    seen.add(rel)
+    const abs = join(DIST_DIR, rel)
+    if (!existsSync(abs)) continue
+    const src = readFileSync(abs, 'utf8')
+    const dir = dirname(rel)
+    let m: RegExpExecArray | null
+    while ((m = importRe.exec(src))) {
+      const spec = m[1]
+      if (!spec.startsWith('.')) continue // external/bare — not our bundle
+      // Resolve relative to the importing file, normalize to a dist-rel path.
+      stack.push(relative(DIST_DIR, join(DIST_DIR, dir, spec)))
+    }
+  }
+  return seen
+}
+
+function transitiveGzipKB(entryRel: string): number {
+  let total = 0
+  for (const rel of reachableFiles(entryRel)) {
+    const abs = join(DIST_DIR, rel)
+    if (existsSync(abs)) total += gzipKB(abs)
+  }
+  return total
+}
+
 function main(): void {
   if (!existsSync(DIST_DIR)) {
-    console.error(
-      `[check:size] ${DIST_DIR}/ not found — run "npm run build:dist" first.`,
-    )
+    console.error(`[check:size] ${DIST_DIR}/ not found — run "npm run build:dist" first.`)
     process.exit(1)
   }
 
-  const files = readdirSync(DIST_DIR)
   const rows: Array<{ label: string; sizeKB: number; maxKB: number; ok: boolean }> = []
   let failed = false
 
-  for (const budget of BUDGETS) {
-    const match = files.find((f) => budget.match.test(f))
-    if (!match) {
-      console.error(
-        `[check:size] no file matched ${budget.match} for "${budget.label}" — did the build output change?`,
-      )
+  for (const b of BUDGETS) {
+    if (!existsSync(join(DIST_DIR, b.entry))) {
+      console.error(`[check:size] entry ${b.entry} not found for "${b.label}".`)
       failed = true
       continue
     }
-    const sizeKB = gzipKB(join(DIST_DIR, match))
-    const ok = sizeKB <= budget.maxGzipKB
+    const sizeKB = transitiveGzipKB(b.entry)
+    const ok = sizeKB <= b.maxGzipKB
     if (!ok) failed = true
-    rows.push({ label: budget.label, sizeKB, maxKB: budget.maxGzipKB, ok })
+    rows.push({ label: b.label, sizeKB, maxKB: b.maxGzipKB, ok })
   }
 
-  // Human-readable report.
-  console.log('Bundle size (gzipped):')
+  // CSS (single file).
+  if (existsSync(join(DIST_DIR, CSS_BUDGET.file))) {
+    const sizeKB = gzipKB(join(DIST_DIR, CSS_BUDGET.file))
+    const ok = sizeKB <= CSS_BUDGET.maxGzipKB
+    if (!ok) failed = true
+    rows.push({ label: CSS_BUDGET.label, sizeKB, maxKB: CSS_BUDGET.maxGzipKB, ok })
+  }
+
+  console.log('Bundle size (gzipped, transitive per entry; externals excluded):')
   for (const r of rows) {
-    const flag = r.ok ? 'ok  ' : 'OVER'
     console.log(
-      `  [${flag}] ${r.label.padEnd(26)} ${r.sizeKB.toFixed(1).padStart(7)} KB / ${r.maxKB} KB`,
+      `  [${r.ok ? 'ok  ' : 'OVER'}] ${r.label.padEnd(24)} ${r.sizeKB.toFixed(1).padStart(7)} KB / ${r.maxKB} KB`,
     )
   }
 
   if (failed) {
     console.error(
-      '\n[check:size] FAILED — an artifact is over budget (or a tracked file went missing).\n' +
+      '\n[check:size] FAILED — an entry is over budget (or a tracked entry went missing).\n' +
         'If the growth is intended, raise the budget in scripts/check-bundle-size.ts in the same PR.',
     )
     process.exit(1)
   }
-  console.log('\n[check:size] all artifacts within budget.')
+  console.log('\n[check:size] all entries within budget.')
 }
 
 main()

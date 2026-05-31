@@ -19,6 +19,18 @@
       "types": "./dist-lib/main-app.d.ts",
       "import": "./dist-lib/index.js"
     },
+    "./core": {
+      "types": "./dist-lib/core.d.ts",
+      "import": "./dist-lib/core.js"
+    },
+    "./adapters/shadcn": {
+      "types": "./dist-lib/adapters/shadcn/index.d.ts",
+      "import": "./dist-lib/adapters/shadcn.js"
+    },
+    "./adapters/mui": {
+      "types": "./dist-lib/adapters/mui/index.d.ts",
+      "import": "./dist-lib/adapters/mui.js"
+    },
     "./sdk": {
       "types": "./dist-lib/sdk/index.d.ts",
       "import": "./dist-lib/sdk.js"
@@ -33,10 +45,12 @@
   "sideEffects": [
     "**/*.css",
     "**/main-app.tsx",
+    "**/core.tsx",
     "**/registry/components/**",
     "**/registry/fonts.ts",
     "**/adapters/shadcn/**",
     "**/adapters/mui/**",
+    "**/adapters/html/**",
     "**/themes/**",
     "**/editor/inspector/built-in-panels.ts",
     "**/persistence/templates/**"
@@ -72,15 +86,19 @@
   },
   "peerDependencies": {
     "@craftjs/core": "^0.2.12",
+    "@emotion/react": "^11",
+    "@emotion/styled": "^11",
+    "@mui/material": "^9",
     "react": "^19",
     "react-dom": "^19"
   },
+  "peerDependenciesMeta": {
+    "@mui/material": { "optional": true },
+    "@emotion/react": { "optional": true },
+    "@emotion/styled": { "optional": true }
+  },
   "dependencies": {
-    "@chakra-ui/react": "^3.35.0",
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
     "@fontsource-variable/geist": "^5.2.9",
-    "@mui/material": "^9.0.1",
     "@tanstack/react-virtual": "^3.13.26",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -96,9 +114,13 @@
   },
   "devDependencies": {
     "@axe-core/react": "^4.11.3",
+    "@chakra-ui/react": "^3.35.0",
     "@changesets/cli": "^2.31.0",
     "@craftjs/core": "^0.2.12",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@eslint/js": "^10.0.1",
+    "@mui/material": "^9.0.1",
     "@tailwindcss/vite": "^4.3.0",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.15",
