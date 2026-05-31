@@ -1,4 +1,5 @@
 import { useEditor } from '@craftjs/core'
+import { useCallback, useMemo } from 'react'
 import { z } from 'zod'
 import { getComponentByDisplayName } from '@/registry/registry'
 import { ImagePicker } from '../assets/ImagePicker'
@@ -45,12 +46,47 @@ export function PropsPanel({ nodeId }: { nodeId: string }) {
   })
 
   const def = getComponentByDisplayName(displayName)
-  if (!def) return null
-
   // propsSchema is typed as z.ZodType<Props>; at runtime it's a ZodObject for
   // every canonical we author. Guard against schemas that aren't objects.
-  const schema = def.propsSchema as unknown
-  if (!(schema instanceof z.ZodObject)) {
+  const objectSchema =
+    def?.propsSchema instanceof z.ZodObject ? def.propsSchema : null
+  const shape = objectSchema
+    ? (objectSchema.shape as Record<string, z.ZodType>)
+    : null
+
+  // Writing one prop only depends on the (stable) Craft actions + nodeId —
+  // the value flows through the setProp updater, which always sees the latest
+  // props. Memoize so the per-key handlers below stay referentially stable.
+  const set = useCallback(
+    (key: string, value: unknown) => {
+      actions.setProp(nodeId, (props: NodeProps) => {
+        if (value === undefined) {
+          delete props.nodeProps[key]
+        } else {
+          props.nodeProps[key] = value
+        }
+      })
+    },
+    [actions, nodeId],
+  )
+
+  // Phase 17 § 8.5 — one stable `onChange` per field key. Keyed on the schema
+  // key list (a stable string for a given canonical) + the stable `set`, so a
+  // memoized PropField for an untouched field keeps the same `onChange`
+  // identity across renders and skips its re-render + schema re-walk when a
+  // sibling field changes.
+  const fieldKeys = shape ? Object.keys(shape) : []
+  const keySignature = fieldKeys.join('|')
+  const handlers = useMemo(() => {
+    const m: Record<string, (v: unknown) => void> = {}
+    for (const key of keySignature ? keySignature.split('|') : []) {
+      m[key] = (v) => set(key, v)
+    }
+    return m
+  }, [keySignature, set])
+
+  if (!def) return null
+  if (!shape) {
     return (
       <section className="space-y-2">
         <div className="text-xs text-gray-400">
@@ -60,22 +96,11 @@ export function PropsPanel({ nodeId }: { nodeId: string }) {
     )
   }
 
-  const shape = schema.shape as Record<string, z.ZodType>
   // Phase 13 § 5.2 — canonicals can opt fields out of the auto-generated
   // form when a dedicated inspector panel owns the field's UX (Stepper →
   // currentStep). The field stays in propsSchema and is still readable
   // / writable via setProp.
   const hiddenFields = new Set(def.hiddenPropFields ?? [])
-
-  const set = (key: string, value: unknown) => {
-    actions.setProp(nodeId, (props: NodeProps) => {
-      if (value === undefined) {
-        delete props.nodeProps[key]
-      } else {
-        props.nodeProps[key] = value
-      }
-    })
-  }
 
   return (
     <section className="space-y-2">
@@ -86,13 +111,13 @@ export function PropsPanel({ nodeId }: { nodeId: string }) {
           {isImageField(def.id, key) ? (
             <ImagePicker
               value={(nodeProps[key] as string | undefined) ?? ''}
-              onChange={(v) => set(key, v)}
+              onChange={handlers[key]}
             />
           ) : (
             <PropField
               schema={fieldSchema}
               value={nodeProps[key]}
-              onChange={(v) => set(key, v)}
+              onChange={handlers[key]}
             />
           )}
         </PanelRow>

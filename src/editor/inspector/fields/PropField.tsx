@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { z } from 'zod'
 import { ValueSelect } from '../shared/ValueSelect'
 import { ArrayField } from './ArrayField'
@@ -9,7 +10,13 @@ import { ObjectField } from './ObjectField'
 //
 // Each branch handles one Zod kind. Unsupported kinds render a labeled badge
 // so gaps are visible.
-export function PropField({
+//
+// Phase 17 § 8.5 — memoized. The dispatch re-walks the Zod schema on every
+// render; with stable `onChange` identities (PropsPanel hands each field a
+// memoized handler) and an unchanged `value`, an untouched field skips the
+// re-walk + re-render entirely. Editing one field no longer re-renders its
+// siblings or their nested Array/Object sub-forms.
+function PropFieldImpl({
   schema,
   value,
   onChange,
@@ -98,3 +105,5 @@ export function PropField({
     </span>
   )
 }
+
+export const PropField = memo(PropFieldImpl)

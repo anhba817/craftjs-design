@@ -185,6 +185,14 @@ export function Toolbox() {
   // Refs indexed by orderedDefs position so a favorited def's two visual
   // slots get distinct refs.
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([])
+  // Phase 17 § 8.7 — `connectors.create(el, …)` attaches the Craft drag
+  // source and is moderately expensive. The button ref callback is recreated
+  // every render, so React detaches/reattaches it and `create` re-ran for all
+  // ~48 buttons on every Toolbox render (each search keystroke, focus move,
+  // favorite toggle). Guard by DOM element: each node is keyed by `def.id`
+  // (so a node is bound to exactly one canonical for its lifetime) and gets
+  // connected once. The WeakSet drops entries when nodes unmount.
+  const connectedEls = useRef<WeakSet<HTMLButtonElement>>(new WeakSet())
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const toolbarRef = useRef<HTMLDivElement | null>(null)
   const [focusedIndex, setFocusedIndex] = useState(0)
@@ -266,7 +274,7 @@ export function Toolbox() {
           <button
             ref={(el) => {
               buttonRefs.current[rovingIdx] = el
-              if (el) {
+              if (el && !connectedEls.current.has(el)) {
                 connectors.create(
                   el,
                   <Element
@@ -276,6 +284,7 @@ export function Toolbox() {
                     style={def.defaults.style}
                   />,
                 )
+                connectedEls.current.add(el)
               }
             }}
             onMouseDown={() => recordUse(def.id)}

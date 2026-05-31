@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { z } from 'zod'
 import { PropField } from './PropField'
 
@@ -16,7 +17,7 @@ function isInternalIdField(key: string, schema: z.ZodType): boolean {
 // element is an object (Select/Radio/Tabs options) or when a canonical has a
 // nested object prop. Renders each sub-field as a labeled row with the same
 // dispatch logic as the top-level PropsPanel.
-export function ObjectField({
+function ObjectFieldImpl({
   schema,
   value,
   onChange,
@@ -61,3 +62,8 @@ export function ObjectField({
     </div>
   )
 }
+
+// Phase 17 § 8.5 — memoized so an untouched object field skips re-render
+// when a sibling prop changes (stable `onChange` from the parent + unchanged
+// `value`).
+export const ObjectField = memo(ObjectFieldImpl)

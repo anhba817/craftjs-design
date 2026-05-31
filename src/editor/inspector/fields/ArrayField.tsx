@@ -5,7 +5,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react'
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { z } from 'zod'
 import { cn } from '@/lib/utils'
 import { defaultValueFor } from './defaults'
@@ -23,7 +23,7 @@ import { removeAt, reorder, setAt, swap } from './arrayOps'
 //
 // Nested arrays (z.array(z.array(...))) render an unsupported-nesting badge —
 // the recursion would work but the resulting UI is unreadable.
-export function ArrayField({
+function ArrayFieldImpl({
   schema,
   value,
   onChange,
@@ -204,3 +204,7 @@ export function ArrayField({
     </div>
   )
 }
+
+// Phase 17 § 8.5 — memoized so an untouched array field skips re-render
+// (and the per-item schema re-walk) when a sibling prop changes.
+export const ArrayField = memo(ArrayFieldImpl)
