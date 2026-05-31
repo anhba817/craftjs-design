@@ -38,7 +38,7 @@ Stretch), and §§ 8.3, 12.1–12.4 done in Phases 15–16. The genuine remainde
 | § 8.6 Throttle ColorPicker drag commits | Performance | Group A |
 | § 8.7 Memoize Toolbox connector callbacks | Performance | Group A |
 | SDK surface freeze (the 1.0 gate) | Production-blocker (implied) | Group C |
-| § 10.6 Migration guides between majors | Production-blocker | Group D |
+| § 10.6 Migration guides between majors | Production-blocker | Group D — template only (no published version to migrate from) |
 | § 10.2 Interactive examples / sandbox | High / DevEx | Group D |
 | § 10.4 Cookbook / patterns | DevEx | Group D |
 | § 10.7 FAQ / Troubleshooting | DevEx | Group D |
@@ -170,11 +170,12 @@ doesn't move a measurable number, it's dropped, not merged "to be safe."
 
 **Land**
 
-1. **§ 10.6 Migration framework + the 0.x → 1.0 guide** *(blocker)*. A
-   `docs/MIGRATION.md` template (what changed / how to update integration code
-   / document-envelope migrations) and the concrete `0.7.0 → 1.0.0` entry:
-   the MUI-peer change carried since 0.7.0, the frozen import surface, any
-   renamed/removed exports from Group C.
+1. **§ 10.6 Migration guides** — *no 0.x → 1.0 guide needed.* Nothing has been
+   published to a stable tag and there are no real consumers (the editor only
+   ever lived behind `next`), so there is no migration to write. We ship only
+   the lightweight `docs/MIGRATION.md` **template** (what-changed / how-to-update
+   / document-envelope sections) for the *first real* major bump down the road;
+   no concrete entry. Not a blocker for this release.
 2. **§ 10.2 Runnable example.** A minimal, copy-pasteable host app (under
    `examples/` or a documented StackBlitz/CodeSandbox link) showing install →
    `<Editor />` → save/load, on the lean `/core` entry.

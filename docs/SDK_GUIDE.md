@@ -480,3 +480,53 @@ The following are internal and may change without notice:
 
 If you find yourself reaching for one of these, open a discussion — the SDK
 likely needs a new export.
+
+---
+
+## Public API stability (toward 1.0)
+
+The public runtime surface is **frozen and enforced**. `src/sdk/surface.test.ts`
+holds the exact list of exported names for both entry points and fails CI if
+any export is added, removed, or renamed — so the surface can't drift silently.
+Treat that test as the authoritative inventory.
+
+- **`@crafted-design/editor/sdk`** — the authoring surface (register* /
+  unregister* / list* / get* functions, author hooks, the slot-key helpers,
+  provider components, and their types).
+- **`@crafted-design/editor`** (and `/core`) — re-exports the entire SDK
+  surface **plus** the editor-only runtime: `Editor`, `ErrorBoundary` /
+  `TopShellErrorFallback`, the host stores (`useEditorStore`,
+  `useDocumentStore`), and the document import/export helpers.
+
+### What the SemVer promise covers (at 1.0)
+
+- The **existence and call signatures** of every exported name in the frozen
+  list. Removing or renaming one, or making a breaking signature change, is a
+  **major** bump with a CHANGELOG entry.
+- The **document envelope** (`EditorDocument`) shape — changed only with a
+  migration shipped in `src/persistence/migrations.ts`.
+- The **canonical ids** of built-in components (saved documents reference them).
+
+### What it does NOT cover
+
+- **Rendered HTML / CSS classes / visual output.** Adapters and styling evolve;
+  don't assert on the editor's DOM structure or class strings.
+- **Internal modules** under `src/` that aren't re-exported here (see *What's
+  NOT exported* above) — reaching past the entry points is unsupported.
+- **Bundle size / file layout / chunk names** — `check:size` budgets these but
+  they aren't an API.
+- **Craft.js bridge types** beyond the ones explicitly re-exported.
+
+### Deprecation path
+
+To remove or rename a public export after 1.0: ship the replacement first, mark
+the old one `@deprecated` (with the JSDoc pointer to the replacement) for at
+least one minor, then remove it in the next major — updating the frozen list +
+CHANGELOG in that commit.
+
+### Pre-1.0 caveat
+
+While the package is still `0.x` (behind the `next` dist-tag), the surface may
+still evolve between minors — but only deliberately: the frozen-surface test
+forces every change to be intentional and noted in the CHANGELOG. `1.0.0`
+freezes it under the full SemVer promise above.
