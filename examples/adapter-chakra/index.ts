@@ -37,6 +37,10 @@ import { ChakraTextareaImpl } from './components/Textarea'
 registerAdapter({
   id: 'chakra-example',
   displayName: 'Chakra (example)',
+  // Phase 16 § 7.4 — this example adapter needs Chakra installed by the host.
+  peerDependencies: {
+    '@chakra-ui/react': '^3',
+  },
   Wrapper: ChakraWrapper,
   components: {
     alert: ChakraAlertImpl,

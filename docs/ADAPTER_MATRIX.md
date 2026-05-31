@@ -62,5 +62,20 @@ a complete one.
 | `video` |  | ✅ | ✅ | ✅ | — |
 | **Coverage** |  | 48 / 48 | 48 / 48 | 48 / 48 | 20 / 48 |
 
+## Peer dependencies
+
+The npm packages each adapter needs the host to install, mapped to the semver
+range it's tested against. These are **optional** peers — a host installs only
+the peers for the adapters it imports (see `package.json`
+`peerDependenciesMeta`). `shadcn` and `html` need none (they use the package's
+own deps). See [ADAPTER_VERSIONING.md](./ADAPTER_VERSIONING.md) for the policy.
+
+| Adapter | id | Peer dependencies (tested range) |
+| --- | --- | --- |
+| shadcn | `shadcn` | none |
+| MUI | `mui` | `@mui/material` ^9<br>`@emotion/react` ^11<br>`@emotion/styled` ^11 |
+| Plain HTML | `html` | none |
+| Chakra (example) | `chakra-example` | `@chakra-ui/react` ^3 |
+
 Regenerate with `npm run docs:matrix`. CI runs `npm run docs:matrix -- --check`,
 which fails if a built-in adapter ever drops below full coverage.

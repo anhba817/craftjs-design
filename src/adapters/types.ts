@@ -82,4 +82,15 @@ export interface Adapter {
   // library's global init function).
   mount?: () => void;
   unmount?: () => void;
+
+  // ----- Phase 16 § 7.4 — peer-dependency declaration. -----
+
+  // npm packages this adapter needs the host to install, mapped to the semver
+  // range it's been tested against. These map 1:1 to the package's OPTIONAL
+  // `peerDependencies` (a host only needs the peers for the adapters it
+  // imports). The bundled adapters that lean only on the package's own deps
+  // (shadcn → radix-ui + Tailwind, html → nothing) omit this. Informational:
+  // surfaced in the compatibility matrix + versioning docs, not enforced at
+  // runtime — a missing peer fails at import, a too-old one renders wrong.
+  peerDependencies?: Record<string, string>;
 }

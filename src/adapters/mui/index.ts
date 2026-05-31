@@ -52,6 +52,15 @@ import { MaterialTooltip } from './components/Tooltip'
 registerAdapter({
   id: 'mui',
   displayName: 'MUI',
+  // Phase 16 § 7.4 — MUI + Emotion are OPTIONAL peers (see package.json
+  // peerDependenciesMeta). Hosts that import this adapter must install them;
+  // these ranges are what the adapter is tested against. Keep in sync with
+  // package.json `peerDependencies` — peer-deps.test.ts guards the drift.
+  peerDependencies: {
+    '@mui/material': '^9',
+    '@emotion/react': '^11',
+    '@emotion/styled': '^11',
+  },
   Wrapper: MuiWrapper,
   components: {
     box: MaterialBox,

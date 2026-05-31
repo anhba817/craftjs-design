@@ -15,4 +15,7 @@ export const adapterManifestSchema = z.object({
   classMap: z.unknown().optional(),
   mount: z.unknown().optional(),
   unmount: z.unknown().optional(),
+  // Phase 16 § 7.4 — peer packages → tested semver range. Optional; bundled
+  // adapters that need no external peer omit it.
+  peerDependencies: z.record(z.string(), z.string()).optional(),
 })
