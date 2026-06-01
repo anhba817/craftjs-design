@@ -8,6 +8,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react'
+import { cn } from '@/lib/utils'
 import { getResolver } from '../craft/resolver'
 import {
   getRegistryVersion,
@@ -15,6 +16,7 @@ import {
   subscribeRegistry,
 } from '../registry/registry'
 import type { CanonicalComponent } from '../registry/types'
+import { toolboxIcon } from './toolboxIcons'
 
 const CATEGORY_ORDER: string[] = [
   'layout',
@@ -258,18 +260,23 @@ export function Toolbox() {
     [resolver, editorQuery, actions, recordUse],
   )
 
-  const renderButton = useCallback(
+  // Each component renders as a thumbnail tile — a representative icon over
+  // its label (Unlayer-style visual palette) — instead of a full-width text
+  // button. The drag source, recent-use tracking, roving tabindex, and the
+  // favorite star are unchanged; only the visual shape + grid layout differ.
+  const renderTile = useCallback(
     (def: CanonicalComponent, rovingIdx: number, sectionKey: string) => {
       const Bound = resolver[def.displayName]
       if (!Bound) return null
       const isFavorite = state.favorites.includes(def.id)
       const isRovingFocused = rovingIdx === focusedIndex
+      const Icon = toolboxIcon(def)
       return (
         <div
           // section prefix keeps the React key unique when a favorited def
           // appears in both the Favorites section and its category section.
           key={`${sectionKey}-${def.id}`}
-          className="group flex items-center gap-1.5 rounded border border-gray-200 bg-white hover:bg-gray-50"
+          className="group relative"
         >
           <button
             ref={(el) => {
@@ -290,22 +297,29 @@ export function Toolbox() {
             onMouseDown={() => recordUse(def.id)}
             onFocus={() => setFocusedIndex(rovingIdx)}
             tabIndex={isRovingFocused ? 0 : -1}
-            className="flex-1 cursor-grab px-2 py-1.5 text-left text-sm text-gray-700 active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            title={def.displayName}
+            className="flex w-full cursor-grab flex-col items-center justify-center gap-1.5 rounded-md border border-gray-200 bg-white px-1 py-3 transition-colors hover:border-gray-300 hover:bg-gray-50 active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            {def.displayName}
+            <Icon size={22} strokeWidth={1.75} className="text-gray-500" aria-hidden />
+            <span className="w-full truncate text-center text-[11px] leading-tight text-gray-600">
+              {def.displayName}
+            </span>
           </button>
           <button
             type="button"
             onClick={() => toggleFavorite(def.id)}
             aria-label={isFavorite ? 'Unfavorite' : 'Favorite'}
-            // Star button stays out of the roving rotation — keyboard users
-            // reach it via `F` while focused on the row (see handleKeyDown).
-            // Mouse users click directly.
+            // Star stays out of the roving rotation — keyboard users reach it
+            // via `F` while focused on the tile (see handleKeyDown). Hidden
+            // until hover / focus-within unless the tile is already favorited.
             tabIndex={-1}
-            className="px-1.5 py-1.5 text-gray-300 hover:text-yellow-500"
+            className={cn(
+              'absolute right-1 top-1 rounded p-0.5 text-gray-300 opacity-0 transition-opacity hover:text-yellow-500 group-hover:opacity-100 group-focus-within:opacity-100',
+              isFavorite && 'opacity-100',
+            )}
           >
             <Star
-              size={14}
+              size={12}
               fill={isFavorite ? 'currentColor' : 'none'}
               className={isFavorite ? 'text-yellow-500' : ''}
             />
@@ -332,14 +346,18 @@ export function Toolbox() {
       return
     }
     switch (e.key) {
-      case 'ArrowDown': {
+      // Grid layout — both axes step linearly through DOM order (tiles flow
+      // left-to-right, top-to-bottom), so all four arrows just move ±1.
+      case 'ArrowDown':
+      case 'ArrowRight': {
         e.preventDefault()
         const next = Math.min(focusedIndex + 1, orderedDefs.length - 1)
         setFocusedIndex(next)
         focusButtonAt(next)
         break
       }
-      case 'ArrowUp': {
+      case 'ArrowUp':
+      case 'ArrowLeft': {
         e.preventDefault()
         const next = Math.max(focusedIndex - 1, 0)
         setFocusedIndex(next)
@@ -439,7 +457,6 @@ export function Toolbox() {
         ref={toolbarRef}
         role="toolbar"
         aria-label="Components"
-        aria-orientation="vertical"
         onKeyDown={handleToolbarKeyDown}
         className="flex-1 space-y-4 overflow-y-auto p-3 focus:outline-none"
       >
@@ -452,9 +469,9 @@ export function Toolbox() {
             <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-500">
               Favorites
             </div>
-            <div className="space-y-1">
+            <div className="grid grid-cols-2 gap-1.5">
               {favoriteDefs.map((def, i) =>
-                renderButton(def, i, 'fav'),
+                renderTile(def, i, 'fav'),
               )}
             </div>
           </div>
@@ -465,9 +482,9 @@ export function Toolbox() {
             <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-500">
               Recently used
             </div>
-            <div className="space-y-1">
+            <div className="grid grid-cols-2 gap-1.5">
               {recentDefs.map((def, i) =>
-                renderButton(def, favoriteDefs.length + i, 'rec'),
+                renderTile(def, favoriteDefs.length + i, 'rec'),
               )}
             </div>
           </div>
@@ -486,9 +503,9 @@ export function Toolbox() {
                 <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-500">
                   {CATEGORY_LABEL[category] ?? category}
                 </div>
-                <div className="space-y-1">
+                <div className="grid grid-cols-2 gap-1.5">
                   {defs.map((def, i) =>
-                    renderButton(def, sectionStart + i, `cat-${category}`),
+                    renderTile(def, sectionStart + i, `cat-${category}`),
                   )}
                 </div>
               </div>

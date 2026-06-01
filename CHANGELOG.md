@@ -124,6 +124,12 @@ App build (`npm run build`):
 
 ### Changed
 
+- **Toolbox is now a visual icon-thumbnail grid** (Unlayer-style) instead of a
+  vertical list of text buttons. Each component shows a representative icon over
+  its label in a 2-column grid per section; the favorite ★ reveals on
+  hover/focus. Drag, recent-use, search, favorites, and roving-tabindex
+  keyboard nav are unchanged (arrow keys now step in any direction). Custom
+  canonicals with no mapped icon fall back to a category icon.
 - **Built-in adapter impls are lint-enforced to consume the SDK** (Phase 18
   follow-up). A `no-restricted-imports` rule on `src/adapters/{shadcn,mui,html}/**`
   blocks reaching the `@/editor` · `@/state` · `@/lib` internals — those must
