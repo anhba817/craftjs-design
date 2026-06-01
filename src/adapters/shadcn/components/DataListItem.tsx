@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { DataListItemProps } from '@/registry/components/data-list-item'
 import type { AdapterRenderProps } from '../../types'
 

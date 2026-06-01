@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { PaginationProps } from '@/registry/components/pagination'
 import type { AdapterRenderProps } from '../../types'
 

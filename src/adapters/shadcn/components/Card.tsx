@@ -4,7 +4,7 @@ import {
   CardFooter,
   CardHeader,
 } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { CardProps } from '@/registry/components/card'
 import { useShadcnTriggers } from '../triggers'
 import type { AdapterRenderProps } from '../../types'

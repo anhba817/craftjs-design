@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { CodeProps } from '@/registry/components/code'
 import type { AdapterRenderProps } from '../../types'
 

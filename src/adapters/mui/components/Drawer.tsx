@@ -2,15 +2,15 @@ import MuiDrawer from '@mui/material/Drawer'
 import IconButton from '@mui/material/IconButton'
 import { X } from 'lucide-react'
 import { createPortal } from 'react-dom'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { DrawerProps } from '@/registry/components/drawer'
 import {
   readOverlayOpen,
   useOverlayRuntime,
-} from '@/state/overlayRuntimeStore'
-import { useIsEditing } from '../../../editor/canvas/useIsEditing'
-import { useOverlayStageTarget } from '../../../editor/canvas/useOverlayStageTarget'
-import { OverlayCard } from '../../../editor/overlay-stage/OverlayCard'
+} from '@design/sdk'
+import { useIsEditing } from '@design/sdk'
+import { useOverlayStageTarget } from '@design/sdk'
+import { OverlayCard } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 const SIZE_DIM: Record<DrawerProps['size'], string> = {

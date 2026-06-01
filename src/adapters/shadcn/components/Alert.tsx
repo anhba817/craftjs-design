@@ -1,13 +1,13 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Info, AlertTriangle, CircleAlert, CircleCheck, X } from 'lucide-react'
 import type { ComponentType } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { AlertProps } from '@/registry/components/alert'
 import {
   readOverlayOpen,
   useOverlayRuntime,
-} from '@/state/overlayRuntimeStore'
-import { useIsEditing } from '../../../editor/canvas/useIsEditing'
+} from '@design/sdk'
+import { useIsEditing } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 const INTENT_TO_VARIANT: Record<string, 'default' | 'destructive'> = {

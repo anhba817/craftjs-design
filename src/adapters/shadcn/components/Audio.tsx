@@ -1,6 +1,6 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { AudioProps } from '@/registry/components/audio'
-import { useIsEditing } from '../../../editor/canvas/useIsEditing'
+import { useIsEditing } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 // Native `<audio>` with the browser's player. Autoplay is suppressed in

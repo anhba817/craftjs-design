@@ -17,7 +17,7 @@ import {
   X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { IconProps } from '@/registry/components/icon'
 import { useShadcnTriggers } from '../triggers'
 import type { AdapterRenderProps } from '../../types'

@@ -1,8 +1,7 @@
-import { useNode } from '@craftjs/core'
 import { createElement } from 'react'
-import { cn } from '@/lib/utils'
-import { EditableText } from '@/editor/text-edit/EditableText'
-import { useEditorStore } from '@/state/editorStore'
+import { cn } from '@design/sdk'
+import { EditableText } from '@design/sdk'
+import { useStartTextEdit } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 export function ShadcnHeading({
@@ -12,8 +11,7 @@ export function ShadcnHeading({
   inlineStyle,
 }: AdapterRenderProps) {
   const { level, content } = props as { level: string; content: string }
-  const { id } = useNode()
-  const setEditingTextNode = useEditorStore((s) => s.setEditingTextNode)
+  const startEdit = useStartTextEdit()
 
   // Dynamic `h${level}` via createElement — keeps the impl single-file without
   // a six-way if/else. Single-line edit (Enter commits, no newline).
@@ -25,7 +23,7 @@ export function ShadcnHeading({
       style: inlineStyle,
       onDoubleClick: (e: React.MouseEvent) => {
         e.stopPropagation()
-        setEditingTextNode(id)
+        startEdit()
       },
     },
     <EditableText text={content} propPath="content" />,

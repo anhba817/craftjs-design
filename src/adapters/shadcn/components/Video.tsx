@@ -1,6 +1,6 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { VideoProps } from '@/registry/components/video'
-import { useIsEditing } from '../../../editor/canvas/useIsEditing'
+import { useIsEditing } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 // Native `<video>` — same primitive across both adapters. Autoplay is

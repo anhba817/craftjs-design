@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { SectionProps } from '@/registry/components/section'
 import type { AdapterRenderProps } from '../../types'
 

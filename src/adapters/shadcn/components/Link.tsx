@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { LinkProps } from '@/registry/components/link'
 import { useShadcnTriggers } from '../triggers'
 import type { AdapterRenderProps } from '../../types'

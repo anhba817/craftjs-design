@@ -1,15 +1,15 @@
 import { useEffect, useState, type ComponentType, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { AlertTriangle, CircleAlert, CircleCheck, Info, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import { iconElement } from '../_shared/lucide-icons'
-import { useIsEditing } from '../../editor/canvas/useIsEditing'
-import { useOverlayStageTarget } from '../../editor/canvas/useOverlayStageTarget'
-import { OverlayCard } from '../../editor/overlay-stage/OverlayCard'
+import { useIsEditing } from '@design/sdk'
+import { useOverlayStageTarget } from '@design/sdk'
+import { OverlayCard } from '@design/sdk'
 import {
   readOverlayOpen,
   useOverlayRuntime,
-} from '@/state/overlayRuntimeStore'
+} from '@design/sdk'
 import { containerMaxWidth, type ContainerProps } from '@/registry/components/container'
 import { slideSlotKeys, type CarouselProps } from '@/registry/components/carousel'
 import {

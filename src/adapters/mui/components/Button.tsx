@@ -1,9 +1,8 @@
-import { useNode } from '@craftjs/core'
 import MuiButton from '@mui/material/Button'
 import { useRef } from 'react'
-import { EditableText } from '@/editor/text-edit/EditableText'
+import { EditableText } from '@design/sdk'
 import type { ButtonProps } from '@/registry/components/button'
-import { useEditorStore } from '@/state/editorStore'
+import { useStartTextEdit } from '@design/sdk'
 import { useMuiTriggers } from '../triggers'
 import type { AdapterRenderProps } from '../../types'
 
@@ -22,8 +21,7 @@ export function MaterialButton({
   inlineStyle,
 }: AdapterRenderProps) {
   const { label, intent, disabled, triggers } = props as ButtonProps
-  const { id } = useNode()
-  const setEditingTextNode = useEditorStore((s) => s.setEditingTextNode)
+  const startEdit = useStartTextEdit()
   const anchorRef = useRef<HTMLButtonElement | null>(null)
   const { onClick, wrap } = useMuiTriggers(triggers, anchorRef)
 
@@ -44,7 +42,7 @@ export function MaterialButton({
       onClick={onClick}
       onDoubleClick={(e: React.MouseEvent) => {
         e.stopPropagation()
-        setEditingTextNode(id)
+        startEdit()
       }}
     >
       <EditableText text={label} propPath="label" />

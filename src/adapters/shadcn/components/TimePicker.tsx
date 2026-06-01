@@ -1,6 +1,6 @@
 import { Input as ShadcnInputImpl } from '@/components/ui/input'
 import type { TimePickerProps } from '@/registry/components/time-picker'
-import { useIsEditing } from '../../../editor/canvas/useIsEditing'
+import { useIsEditing } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 const NOOP = () => {}

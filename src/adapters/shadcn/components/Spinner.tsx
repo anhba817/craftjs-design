@@ -1,5 +1,5 @@
 import { Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { SpinnerProps } from '@/registry/components/spinner'
 import type { AdapterRenderProps } from '../../types'
 

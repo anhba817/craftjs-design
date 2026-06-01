@@ -5,7 +5,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 // Editor mode: render the select as visually present but functionally inert.

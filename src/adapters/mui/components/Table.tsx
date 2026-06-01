@@ -1,5 +1,5 @@
 import { useEditor, useNode } from '@craftjs/core'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import {
   containingMerge,
   isCellCovered,

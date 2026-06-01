@@ -407,6 +407,41 @@ contract that custom overlay canonicals should mirror:
 The top-bar **Preview** toggle flips `state.options.enabled`, so a designer
 can switch between the two branches without leaving the editor.
 
+### Overlay authoring seam (Phase 18, 0.9.0)
+
+The pieces the built-in overlay impls use are public, so a custom overlay
+canonical gets the same editor-stage + runtime behavior:
+
+```ts
+import {
+  useOverlayRuntime,   // the zustand open/close store (toggle/set/state/…)
+  readOverlayOpen,     // resolve a named overlay's open state from store state
+  useOverlayStageTarget, // the #craftjs-overlay-stage portal target (or null)
+  OverlayCard,         // labeled wrapper for the editor-mode preview
+} from '@crafted-design/editor/sdk'
+import { createPortal } from 'react-dom'
+
+function MyOverlay({ props }: AdapterRenderProps) {
+  const editing = useIsEditing()
+  const stage = useOverlayStageTarget()
+  if (editing && stage) {
+    return createPortal(<OverlayCard label="My overlay" name={props.name}>…</OverlayCard>, stage)
+  }
+  // runtime: gate on the store
+  const open = readOverlayOpen(useOverlayRuntime((s) => s.state), props.name, props.defaultOpen)
+  return open ? <RealDialog>…</RealDialog> : null
+}
+```
+
+### Class-merge util + per-canonical prop types
+
+- **`cn`** — clsx + tailwind-merge, the helper the built-in adapters use to
+  compose a canonical's `className` with their own (later classes win).
+  `import { cn } from '@crafted-design/editor/sdk'`.
+- **Per-canonical prop types** — every canonical's props type
+  (`ButtonProps`, `ModalProps`, `TableProps`, …) is exported from the SDK so
+  an adapter impl can narrow its `props`: `props as ButtonProps`. Type-only.
+
 ### Carousel / dynamic-canvas slot helper
 
 ```ts

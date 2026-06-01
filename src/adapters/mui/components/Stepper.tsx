@@ -1,7 +1,7 @@
 import MuiStep from '@mui/material/Step'
 import MuiStepLabel from '@mui/material/StepLabel'
 import MuiStepper from '@mui/material/Stepper'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import {
   stepperSlotKey,
   type StepperProps,

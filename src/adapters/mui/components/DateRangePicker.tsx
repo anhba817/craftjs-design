@@ -1,7 +1,7 @@
 import TextField from '@mui/material/TextField'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { DateRangePickerProps } from '@/registry/components/date-range-picker'
-import { useIsEditing } from '../../../editor/canvas/useIsEditing'
+import { useIsEditing } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 const NOOP = () => {}

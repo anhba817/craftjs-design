@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import { tabSlotKeys, uniqueTabValues } from '@/registry/components/tabs'
 import type { AdapterRenderProps } from '../../types'
 

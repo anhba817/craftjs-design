@@ -33,8 +33,11 @@
 
 export * from './adapter'
 export * from './canonical'
+export * from './canonical-props'
 export * from './style'
+export * from './util'
 export * from './hooks'
+export * from './overlays'
 export * from './panel'
 export * from './fonts'
 export * from './themes'

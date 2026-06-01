@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { BreadcrumbProps } from '@/registry/components/breadcrumb'
 import type { AdapterRenderProps } from '../../types'
 

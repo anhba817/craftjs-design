@@ -1,7 +1,6 @@
-import { useNode } from '@craftjs/core'
 import Typography from '@mui/material/Typography'
-import { EditableText } from '@/editor/text-edit/EditableText'
-import { useEditorStore } from '@/state/editorStore'
+import { EditableText } from '@design/sdk'
+import { useStartTextEdit } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 export function MaterialHeading({
@@ -11,8 +10,7 @@ export function MaterialHeading({
   inlineStyle,
 }: AdapterRenderProps) {
   const { level, content } = props as { level: '1' | '2' | '3' | '4' | '5' | '6'; content: string }
-  const { id } = useNode()
-  const setEditingTextNode = useEditorStore((s) => s.setEditingTextNode)
+  const startEdit = useStartTextEdit()
   return (
     <Typography
       ref={rootRef as never}
@@ -22,7 +20,7 @@ export function MaterialHeading({
       style={inlineStyle}
       onDoubleClick={(e: React.MouseEvent) => {
         e.stopPropagation()
-        setEditingTextNode(id)
+        startEdit()
       }}
     >
       <EditableText text={content} propPath="content" />

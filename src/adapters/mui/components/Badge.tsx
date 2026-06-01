@@ -1,6 +1,6 @@
 import Chip from '@mui/material/Chip'
 import { useRef } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { BadgeProps } from '@/registry/components/badge'
 import { useMuiTriggers } from '../triggers'
 import type { AdapterRenderProps } from '../../types'

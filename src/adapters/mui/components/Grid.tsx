@@ -1,5 +1,5 @@
 import MuiBox from '@mui/material/Box'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 // Grid (Phase 13 § 5.5). Layout primitives are intentionally near-identical

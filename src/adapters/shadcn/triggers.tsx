@@ -10,8 +10,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { useOverlayRuntime } from '@/state/overlayRuntimeStore'
-import { useIsEditing } from '../../editor/canvas/useIsEditing'
+import { useOverlayRuntime } from '@design/sdk'
+import { useIsEditing } from '@design/sdk'
 
 // Phase 13 § 5.3 — shared trigger semantics for shadcn adapters.
 //

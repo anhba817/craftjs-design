@@ -61,5 +61,5 @@ export {
   SLIDE_SLOT_PREFIX,
   slideSlotKeys,
 } from '../registry/components/dynamic-slots'
-export type { TabsProps } from '../registry/components/tabs'
-export type { CarouselProps } from '../registry/components/carousel'
+// `TabsProps` / `CarouselProps` (and every other canonical's prop type) are
+// re-exported from ./canonical-props.

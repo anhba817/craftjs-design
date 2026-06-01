@@ -1,5 +1,5 @@
 import MuiBox from '@mui/material/Box'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import {
   containerMaxWidth,
   type ContainerProps,

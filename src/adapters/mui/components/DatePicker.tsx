@@ -1,6 +1,6 @@
 import TextField from '@mui/material/TextField'
 import type { DatePickerProps } from '@/registry/components/date-picker'
-import { useIsEditing } from '../../../editor/canvas/useIsEditing'
+import { useIsEditing } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 const NOOP = () => {}

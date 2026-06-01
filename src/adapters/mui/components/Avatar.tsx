@@ -1,6 +1,6 @@
 import MuiAvatar from '@mui/material/Avatar'
 import { useRef } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { AvatarProps } from '@/registry/components/avatar'
 import { useMuiTriggers } from '../triggers'
 import type { AdapterRenderProps } from '../../types'

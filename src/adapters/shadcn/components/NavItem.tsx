@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { NavItemProps } from '@/registry/components/nav-item'
 import { iconElement } from '../../_shared/lucide-icons'
 import { useShadcnTriggers } from '../triggers'

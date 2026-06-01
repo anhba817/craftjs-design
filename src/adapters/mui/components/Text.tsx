@@ -1,7 +1,6 @@
-import { useNode } from '@craftjs/core'
 import Typography from '@mui/material/Typography'
-import { EditableText } from '@/editor/text-edit/EditableText'
-import { useEditorStore } from '@/state/editorStore'
+import { EditableText } from '@design/sdk'
+import { useStartTextEdit } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 // MUI's <Typography> wraps text in a semantic element with Material design
@@ -20,8 +19,7 @@ export function MaterialText({
   inlineStyle,
 }: AdapterRenderProps) {
   const { content } = props as { content: string }
-  const { id } = useNode()
-  const setEditingTextNode = useEditorStore((s) => s.setEditingTextNode)
+  const startEdit = useStartTextEdit()
   return (
     <Typography
       ref={rootRef as never}
@@ -29,7 +27,7 @@ export function MaterialText({
       style={inlineStyle}
       onDoubleClick={(e: React.MouseEvent) => {
         e.stopPropagation()
-        setEditingTextNode(id)
+        startEdit()
       }}
     >
       <EditableText text={content} propPath="content" multiline />

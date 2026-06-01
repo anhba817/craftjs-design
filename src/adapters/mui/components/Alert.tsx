@@ -4,8 +4,8 @@ import type { AlertProps } from '@/registry/components/alert'
 import {
   readOverlayOpen,
   useOverlayRuntime,
-} from '@/state/overlayRuntimeStore'
-import { useIsEditing } from '../../../editor/canvas/useIsEditing'
+} from '@design/sdk'
+import { useIsEditing } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 // MUI's Alert ships with the four severities our canonical exposes —

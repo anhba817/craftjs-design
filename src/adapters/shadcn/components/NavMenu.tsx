@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 // NavMenu — Pattern A canvas. Renders a <nav> with stacked children

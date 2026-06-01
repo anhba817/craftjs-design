@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { SkeletonProps } from '@/registry/components/skeleton'
 import type { AdapterRenderProps } from '../../types'
 

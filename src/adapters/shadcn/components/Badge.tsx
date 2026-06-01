@@ -1,5 +1,5 @@
 import { Badge as ShadcnBadgeImpl } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { BadgeProps } from '@/registry/components/badge'
 import { useShadcnTriggers } from '../triggers'
 import type { AdapterRenderProps } from '../../types'

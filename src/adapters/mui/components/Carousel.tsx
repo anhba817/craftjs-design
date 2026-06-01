@@ -1,11 +1,11 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import {
   slideSlotKeys,
   type CarouselProps,
 } from '@/registry/components/carousel'
-import { useIsEditing } from '../../../editor/canvas/useIsEditing'
+import { useIsEditing } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 // MUI Carousel — same shape as the shadcn adapter. Chevrons use plain

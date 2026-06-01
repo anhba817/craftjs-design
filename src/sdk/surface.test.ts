@@ -23,12 +23,17 @@ const SDK_SURFACE = [
   'EditorColorVariablesProvider',
   'EditorImageProvider',
   'GOOGLE_FONTS',
+  'OverlayCard', // Phase 18 § 5 — overlay authoring seam
   'SLIDE_SLOT_PREFIX',
   'SYSTEM_FONTS',
   'TAB_SLOT_PREFIX',
   'TelemetryProvider',
+  'cn', // Phase 18 § 5 — class-merge util
   'defaultImageProvider',
   'deriveTokens',
+  'readOverlayOpen', // Phase 18 § 5 — overlay runtime
+  'useOverlayRuntime', // Phase 18 § 5 — overlay runtime
+  'useOverlayStageTarget', // Phase 18 § 5 — overlay-stage portal target
   'getApplicablePanels',
   'getCanvasSlots',
   'getComponent',

@@ -1,5 +1,5 @@
 import { Switch } from '@/components/ui/switch'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 export function ShadcnSwitch({

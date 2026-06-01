@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { AvatarProps } from '@/registry/components/avatar'
 import { useShadcnTriggers } from '../triggers'
 import type { AdapterRenderProps } from '../../types'

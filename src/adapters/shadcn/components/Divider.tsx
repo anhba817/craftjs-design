@@ -1,5 +1,5 @@
 import { Separator } from '@/components/ui/separator'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 export function ShadcnDivider({

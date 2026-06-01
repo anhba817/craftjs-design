@@ -2,8 +2,8 @@ import MuiPopover from '@mui/material/Popover'
 import MuiTooltip from '@mui/material/Tooltip'
 import type { ReactElement, RefObject } from 'react'
 import { useState } from 'react'
-import { useOverlayRuntime } from '@/state/overlayRuntimeStore'
-import { useIsEditing } from '../../editor/canvas/useIsEditing'
+import { useOverlayRuntime } from '@design/sdk'
+import { useIsEditing } from '@design/sdk'
 
 // Phase 13 § 5.3 — shared trigger semantics for MUI adapters.
 //

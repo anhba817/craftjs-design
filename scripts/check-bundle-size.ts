@@ -35,7 +35,12 @@ interface Budget {
 const BUDGETS: Budget[] = [
   { label: 'full editor (index.js)', entry: 'index.js', maxGzipKB: 275 },
   { label: 'lean core (core.js)', entry: 'core.js', maxGzipKB: 265 },
-  { label: 'SDK (sdk.js)', entry: 'sdk.js', maxGzipKB: 60 },
+  // Phase 18 § 5 — bumped 60 → 70: the SDK gained the overlay-authoring seam
+  // (useOverlayRuntime / readOverlayOpen / useOverlayStageTarget / OverlayCard)
+  // + the `cn` class-merge util (pulls tailwind-merge). This is the FULL-surface
+  // number; /sdk is side-effect-free, so a consumer importing one symbol
+  // tree-shakes the rest (guarded by side-effect-free.test.ts).
+  { label: 'SDK (sdk.js)', entry: 'sdk.js', maxGzipKB: 70 },
   { label: 'vite-plugin', entry: 'vite-plugin.js', maxGzipKB: 5 },
 ]
 

@@ -1,5 +1,5 @@
 import { Progress as RadixProgress } from 'radix-ui'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { ProgressProps } from '@/registry/components/progress'
 import type { AdapterRenderProps } from '../../types'
 

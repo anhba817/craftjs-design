@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { cn } from '@/lib/utils'
+import { cn } from '@design/sdk'
 import type { PopoverProps } from '@/registry/components/popover'
-import { useOverlayRuntime } from '@/state/overlayRuntimeStore'
-import { useIsEditing } from '../../../editor/canvas/useIsEditing'
-import { useOverlayStageTarget } from '../../../editor/canvas/useOverlayStageTarget'
-import { OverlayCard } from '../../../editor/overlay-stage/OverlayCard'
+import { useOverlayRuntime } from '@design/sdk'
+import { useIsEditing } from '@design/sdk'
+import { useOverlayStageTarget } from '@design/sdk'
+import { OverlayCard } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 // MUI Popover — designer-only. Pattern A canvas: `children` is the

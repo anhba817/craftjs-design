@@ -1,6 +1,6 @@
 import { Input as ShadcnInputImpl } from '@/components/ui/input'
 import type { DatePickerProps } from '@/registry/components/date-picker'
-import { useIsEditing } from '../../../editor/canvas/useIsEditing'
+import { useIsEditing } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 // No-op so React stops warning about a value prop without onChange.
