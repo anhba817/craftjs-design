@@ -1,6 +1,6 @@
 {
   "name": "@crafted-design/editor",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "A pluggable drag-and-drop website builder built on Craft.js — pick your design system (shadcn, MUI, Chakra…), drop the editor in, ship.",
   "license": "MIT",
   "type": "module",

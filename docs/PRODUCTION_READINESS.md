@@ -25,6 +25,13 @@ Each item is tagged:
 > `@crafted-design/editor/core` entry plus opt-in `/adapters/{shadcn,mui,html}`
 > subpaths, with MUI/Emotion as optional peers. A **third built-in adapter
 > (plain HTML, no UI library)** covers all 48 canonicals. See § 7.
+>
+> **Road to 1.0 (`0.8.0`, Phase 17):** every non-Stretch item across §§ 8, 10,
+> 12 is now shipped and the **public SDK surface is frozen** (enforced by
+> `src/sdk/surface.test.ts`). `0.8.0` is the **1.0 release candidate**. The
+> remaining work to `1.0.0` is host/ops + a soak, tracked by the go/no-go
+> checklist in [RELEASE.md](./RELEASE.md). Stretch items (charts, i18n, RTL,
+> collaboration, marketplaces, DevTools, videos, SVG diagrams) stay Stretch.
 
 **What works:**
 - 48 canonical components, full coverage in shadcn + MUI adapters.
@@ -797,20 +804,25 @@ side-effect-free `registry/components/dynamic-slots.ts`; importing `/sdk` now
 registers nothing but the editor's three baseline font tokens (a deliberate,
 test-locked carry).
 
-### 8.5 Memoize PropField recursion *(Performance)*
+### 8.5 Memoize PropField recursion *(Performance)* — ✅ shipped `0.8.0` (Phase 17)
 
-PropField walks the Zod schema on every render. `useMemo` on the
-schema-dispatch path.
+PropField/ObjectField/ArrayField are `React.memo`, and PropsPanel hands each
+field a stable per-key `onChange` (memoized handler map + `useCallback`
+setter). Editing one prop no longer re-renders/re-walks sibling fields or
+their nested array/object sub-forms.
 
-### 8.6 Throttle ColorPicker drag commits *(Performance)*
+### 8.6 Throttle ColorPicker drag commits *(Performance)* — ✅ already optimal (Phase 8)
 
-HexColorPicker fires onChange per drag tick. Throttle to ~16ms or
-defer to mouseup commit for slow devices.
+The picker defers **all** state updates + the parent commit to `pointerup`
+(`isDraggingRef`/`pendingDragHexRef`) — better than throttling, it's a single
+commit per drag. No per-tick dispatch. (Verified in Phase 17 Group A.)
 
-### 8.7 Memoize Toolbox connector callbacks *(Performance)*
+### 8.7 Memoize Toolbox connector callbacks *(Performance)* — ✅ shipped `0.8.0` (Phase 17)
 
-`connectors.create(el, ...)` re-runs on every Toolbox render. `useCallback`
-the ref callback per canonical.
+`connectors.create(el, …)` re-ran for every (~48) button on every Toolbox
+render (search keystroke, focus move, favorite toggle) because the inline ref
+callback was recreated each render. A per-element `WeakSet` guard now connects
+each DOM node (keyed to one canonical via `def.id`) exactly once.
 
 ---
 
@@ -887,28 +899,33 @@ This is a local repo today. To ship publicly:
 > **Phase 15 (`0.6.0`):** ✅ 10.1 — TypeDoc HTML build (`npm run docs:html`)
 > + a GitHub Pages deploy workflow; the in-repo `docs/api/` markdown
 > reference regenerated current with the full SDK. Enabling Pages is a host
-> action. 10.2–10.7 (sandboxes, videos, cookbook, SVG diagrams, migration
-> guides) remain DevEx polish / Stretch.
+> action.
+>
+> **Phase 17 (`0.8.0`):** ✅ 10.2 (runnable `examples/minimal-host`), ✅ 10.4
+> (`docs/COOKBOOK.md`), ✅ 10.6 (`docs/MIGRATION.md` template — no 0.x→1.0
+> entry, nothing published), ✅ 10.7 (`docs/FAQ.md`). 10.3 (videos) + 10.5
+> (SVG diagrams) remain Stretch/UX polish — not 1.0 blockers.
 
 ### 10.1 Live API reference site *(High / DevEx)*
 
 TypeDoc → static site. Hosted somewhere (GitHub Pages, Vercel).
 Versioned (v0.1 / v0.2 / etc.).
 
-### 10.2 Interactive examples / sandboxes *(High / DevEx)*
+### 10.2 Interactive examples / sandboxes *(High / DevEx)* — ✅ shipped `0.8.0` (Phase 17)
 
-CodeSandbox / StackBlitz templates per tutorial. Click a button, get a
-running editor with the recipe applied. Beats reading markdown.
+[`examples/minimal-host`](../examples/minimal-host/README.md) — a
+copy-pasteable install → `<Editor />` host app on the lean `/core` entry.
+(Hosted StackBlitz/CodeSandbox templates per tutorial remain a Stretch nicety.)
 
 ### 10.3 Video walkthroughs / screencasts *(UX)*
 
 5-minute video per tutorial. Captioned. Hosted on YouTube + embedded.
 
-### 10.4 Cookbook / patterns library *(DevEx)*
+### 10.4 Cookbook / patterns library *(DevEx)* — ✅ shipped `0.8.0` (Phase 17)
 
-Beyond the three tutorial files. Real-world patterns: form validation
-in a custom panel, server-side persistence integration, custom theme
-generation, etc.
+[`docs/COOKBOOK.md`](./COOKBOOK.md) — a task→recipe table routing to the
+authoritative reference for each job (embed, entry choice, server storage,
+custom canonical/adapter/panel, themes/fonts, remove canonical, telemetry).
 
 ### 10.5 Architecture diagrams (real, not ASCII) *(DevEx)*
 
@@ -916,17 +933,19 @@ The Four-Layer Model is an ASCII box diagram. Real SVG diagrams (made
 in Excalidraw or Figma) would communicate the architecture more
 clearly. Especially the data flow walkthroughs.
 
-### 10.6 Migration guides between major versions *(Production-blocker)*
+### 10.6 Migration guides between major versions *(Production-blocker)* — ✅ template shipped `0.8.0` (Phase 17)
 
-When we bump major versions (e.g., v1 → v2), a migration guide:
-- What changed
-- How to update integration code
-- Document migrations (if envelope changed)
+[`docs/MIGRATION.md`](./MIGRATION.md) is the major-version migration template
+(what-changed / how-to-update / document-envelope + deprecation policy). **No
+concrete `0.x → 1.0` entry** — nothing has been published, so there's nothing
+to migrate from; the first real entry lands with the first breaking bump.
 
-### 10.7 FAQ / Troubleshooting *(DevEx)*
+### 10.7 FAQ / Troubleshooting *(DevEx)* — ✅ shipped `0.8.0` (Phase 17)
 
-INTEGRATION_GUIDE.md has a troubleshooting section. Could grow into a
-dedicated FAQ as user reports accumulate.
+[`docs/FAQ.md`](./FAQ.md) — the questions hosts hit first (entry choice, MUI
+peers, ESM-only/unminified, no export-to-React, persistence, SDK
+tree-shaking, the missing-renderer placeholder, API stability, safelist).
+Complements the INTEGRATION_GUIDE troubleshooting section.
 
 ---
 

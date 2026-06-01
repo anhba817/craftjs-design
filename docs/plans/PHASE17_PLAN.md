@@ -1,6 +1,6 @@
 # Phase 17 — Production-readiness completion → 1.0 release candidate (Sections 8, 10, 12 + the SDK freeze)
 
-**Status:** planned
+**Status:** ✅ complete — cut `0.8.0` (1.0 RC; see close-out at end)
 **Cuts as:** `0.8.0` (the 1.0 **release candidate** — every non-Stretch
 production-readiness item done + the SDK surface frozen). The actual `1.0.0`
 cut is the deliberate promotion that follows (host/ops runbook + a soak
@@ -261,3 +261,57 @@ and FAQ are published; a release runbook + explicit 1.0 go/no-go criteria
 exist. `0.8.0` (the 1.0 release candidate) cuts at the close-out commit, and
 the only remaining work to `1.0.0` is the documented host/ops promotion plus
 an RC soak.
+
+---
+
+## Close-out (`0.8.0` — 1.0 RC)
+
+Phase 17 complete. Every non-Stretch item in §§ 8, 10, 12 is shipped and the
+public surface is frozen. `0.8.0` is the 1.0 release candidate.
+
+**Per-group:**
+
+- **A — Performance polish.** §8.5 memoized PropField/ObjectField/ArrayField +
+  stable per-key handlers; §8.7 Toolbox `connectors.create` now runs once per
+  element (WeakSet guard); §8.6 found already-optimal (commit-on-pointerup).
+- **B — SDK tree-shaking + distribution.** Fixed the canonical leak (importing
+  `/sdk` registered carousel + tabs) via the side-effect-free
+  `registry/components/dynamic-slots.ts`; `side-effect-free.test.ts` locks it.
+  §12.5 decided: ESM-only, unminified, no `index.min.js`.
+- **C — SDK surface freeze (the 1.0 gate).** Audited both entries (no internal
+  leaks); `surface.test.ts` golden-locks the full surface; SDK_GUIDE stability
+  section. Removed the subsumed `boundary.test.ts`.
+- **D — Docs.** `MIGRATION.md` (template), `examples/minimal-host`,
+  `COOKBOOK.md`, `FAQ.md`.
+- **E — Runbook + close-out.** `RELEASE.md` (host setup + Changesets flow +
+  next→latest promotion + 1.0 go/no-go checklist); final PRODUCTION_READINESS
+  pass (§§ 8.5/8.6/8.7, 10.2/10.4/10.6/10.7 marked; "Road to 1.0" banner);
+  CHANGELOG `0.8.0`; version → `0.8.0`.
+
+**Decisions / discoveries:**
+
+- **`0.8.0` is the RC, not `1.0.0`.** The 1.0 cut is a deliberate promotion
+  after host/ops actions (public repo, `NPM_TOKEN`, Actions + Pages) and an RC
+  soak — see the go/no-go checklist in `RELEASE.md`. Stamping 1.0 at a phase
+  close-out would freeze the API the hour it's finalized.
+- **No `0.x → 1.0` migration guide** (per maintainer): nothing has been
+  published, so there's nothing to migrate from — `MIGRATION.md` ships as a
+  template only.
+- **§8.4 found two real leaks, not just an `export *` worry.** Importing the
+  SDK registered 2 canonicals (slot-key helper re-exports) + 3 built-in font
+  tokens. The canonical leak is fixed; the font tokens are a deliberate,
+  test-locked carry (`registry/fonts.ts` is in the `sideEffects` allowlist).
+- **§8.6 needed no work** — the ColorPicker already commits once on pointerup,
+  better than the planned throttle.
+- **The freeze is enforcement, not prose.** `surface.test.ts` is the
+  source-of-truth inventory; the surface can't drift without a deliberate
+  snapshot edit + CHANGELOG note.
+
+**Verification:** lint 0 errors; tsc clean; 616 tests; app + dist builds; size
+gate green (full 253 / core 245 / sdk 44 / css 124 KB gz); `docs:matrix
+--check` passes; the frozen-surface + side-effect-free tests green.
+
+**Remaining to `1.0.0`:** host/ops (public repo, `NPM_TOKEN`, enable Actions +
+Pages), publish `0.8.0` to `next`, RC soak, then promote `next → latest` per
+`RELEASE.md`. Stretch ecosystem/docs items (charts, i18n, RTL, collaboration,
+marketplaces, DevTools, videos, SVG diagrams) remain out of scope.

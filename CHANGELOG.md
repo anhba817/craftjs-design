@@ -124,6 +124,58 @@ App build (`npm run build`):
 
 (none yet)
 
+## [0.8.0] — 2026-06-01
+
+Phase 17 — production-readiness completion. The **1.0 release candidate**:
+every non-Stretch item across PRODUCTION_READINESS §§ 8 (perf + bundle), 10
+(docs), and 12 (distribution) is shipped, and the **public SDK surface is
+frozen and enforced**. No breaking changes — additive + internal.
+
+### Added
+
+- **Frozen public API surface** (the 1.0 gate). `src/sdk/surface.test.ts`
+  locks the exact exported-name list for both `@crafted-design/editor` /
+  `/core` and `/sdk`, asserts the editor entry is a strict superset of the
+  SDK, and that internals (`CanonicalNode`, the resolver builder) never leak.
+  Any export change now fails CI until done deliberately. SDK_GUIDE gains a
+  "Public API stability (toward 1.0)" section (SemVer promise + deprecation
+  policy).
+- **SDK tree-shaking guard** (§ 8.4). `src/sdk/side-effect-free.test.ts`
+  verifies importing the SDK registers nothing but the three baseline font
+  tokens — so consumers tree-shake unused authoring symbols.
+- **Docs** — `docs/COOKBOOK.md` (task→recipe index), `docs/FAQ.md`,
+  `docs/MIGRATION.md` (major-version template), `docs/RELEASE.md` (release
+  runbook + 1.0 go/no-go criteria), and a copy-pasteable
+  `examples/minimal-host` host app on `/core`. (§ 10.2, 10.4, 10.6, 10.7)
+
+### Fixed
+
+- **SDK tree-shaking leak** (§ 8.4). Importing `@crafted-design/editor/sdk`
+  registered 2 canonicals (carousel + tabs): `sdk/canonical.ts` re-exported
+  their slot-key value helpers from the canonical modules, which
+  `registerComponent` at load. Helpers moved to the side-effect-free
+  `registry/components/dynamic-slots.ts`; the SDK now registers 0 canonicals.
+- **Inspector re-render** (§ 8.5). PropField/ObjectField/ArrayField are
+  memoized with stable per-field `onChange` handlers — editing one prop no
+  longer re-renders/re-walks sibling fields or nested sub-forms.
+- **Toolbox connector churn** (§ 8.7). `connectors.create` re-ran for every
+  palette button on every Toolbox render; a per-element guard connects each
+  once.
+
+### Changed
+
+- **Distribution decision** (§ 12.5): the package stays **ESM-only,
+  unminified with source maps** — no CJS/UMD, no separate `index.min.js`
+  (consumers' bundlers minify). Documented in INTEGRATION_GUIDE "Bundle
+  format".
+
+### Notes
+
+This is a release candidate on the `next` dist-tag. `1.0.0` (promotion to
+`latest` + the full SemVer freeze) follows once the go/no-go checklist in
+[`docs/RELEASE.md`](docs/RELEASE.md) is met — chiefly host/ops actions
+(public repo, `NPM_TOKEN`, Actions + Pages) and an RC soak.
+
 ## [0.7.0] — 2026-05-31
 
 Phase 16 — Adapter modularity + ecosystem. The package splits into a lean
