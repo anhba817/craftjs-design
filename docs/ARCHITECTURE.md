@@ -94,24 +94,44 @@ Registration is **side-effect based**: each component file imports `registerComp
 
 A canonical may declare an explicit `applicablePanels: readonly PanelId[]` to opt into a specific subset of inspector panels. When omitted, `getApplicablePanels(c)` derives a sensible default from `category` + `isCanvas`.
 
-**Twenty canonicals ship today**, grouped by `category`:
+**48 canonicals ship today**, grouped by `category`. (This list is the live
+registry — regenerate it from `listComponents()` / `npm run docs:matrix`
+rather than hand-editing; the matrix's left column is the authoritative set.)
 
 | Category | Canonicals |
 |---|---|
-| `layout` | Box, Stack, Divider, Card |
-| `content` | Text, Heading |
-| `navigation` | Link, Tabs |
-| `media` | Image |
-| `display` | Icon, Badge, Avatar |
-| `input` | Button, Input, Select, Checkbox, Radio, Switch, Textarea |
-| `feedback` | Alert |
+| `layout` (8) | Box, Card, Container, Divider, Grid, Section, Spacer, Stack |
+| `content` (2) | Heading, Text |
+| `input` (10) | Button, Checkbox, Date Picker, Date Range, Input, Radio, Select, Switch, Textarea, Time Picker |
+| `display` (9) | Avatar, Badge, Code, Data List, Data List Item, Icon, Skeleton, Table, Table Cell |
+| `navigation` (7) | Breadcrumb, Link, Nav Item, Nav Menu, Pagination, Stepper, Tabs |
+| `feedback` (8) | Alert, Drawer, Modal, Popover, Progress, Spinner, Toast, Tooltip |
+| `media` (4) | Audio, Carousel, Image, Video |
 
-Most are **Pattern A** (one slot, named `'root'`). Two are **Pattern B** with named sub-slots:
+A canonical's render shape is one of:
 
-- **Card** — `styleSlots: ['root', 'header', 'body', 'footer']`, `canvasSlots: ['header', 'body', 'footer']`. Outer Card is NOT a canvas; each named sub-slot is an independently droppable region. Phase 6 ships this multi-canvas model; old documents are migrated on load.
-- **Tabs** — `styleSlots: ['root', 'tabs', 'content']`, `canvasSlots: (props) => props.tabs.map(t => `tab-${t.value}`)`. Phase 7 — dynamic canvas count via the function form of `canvasSlots`. Each tab has its own linked Craft canvas keyed by tab value; adapter impls render `slotChildren[`tab-${t.value}`]` per tab. Caveat: renaming a tab's `value` orphans its previous canvas (stable per-tab ids are a Phase 8 polish item).
+- **Pattern A — leaf** (no drop zone): `isCanvas: false`, no `canvasSlots`.
+  Buttons, inputs, text, badges, etc.
+- **Pattern A — single canvas** (one `'root'` drop zone): `isCanvas: true`,
+  no `canvasSlots`. Children arrive through Craft's `children` prop. Box,
+  Stack, Grid, Container, Section, Data List, Nav Menu/Item, and the overlay
+  bodies (Modal, Drawer, Popover) + Table Cell.
+- **Pattern B — multi-canvas** (named sub-slots, each its own drop zone):
+  `canvasSlots` is set (a static list or a `(props) => string[]` function).
+  `CanonicalNode` generates one `<Element canvas id={slot}>` per slot and
+  hands the adapter impl `slotChildren[slot]` to place each region. Five
+  canonicals: **Card** (`header`/`body`/`footer`, static), **Table**
+  (per-cell, dynamic from `rows×cols`), **Tabs** (per-tab), **Stepper**
+  (per-step), **Carousel** (per-slide). The dynamic ones derive their slot
+  ids from props via the function form — add a tab/slide in the inspector and
+  a new drop zone appears immediately. Slot ids are stable per entry (`tab.id`
+  / slide id), so renaming a tab's `value` no longer orphans its canvas.
 
-The Inspector's `SlotPicker` exposes the named slots as pills above the class-editing panels; the `activeSlot` mode routes every panel write into `style.classes[slot]` (or `style.responsive[bp][slot]`).
+`styleSlots` (which the inspector can style independently) is a separate axis:
+a Pattern-A canonical can still expose multiple `styleSlots` without multiple
+canvases. The Inspector's `SlotPicker` exposes the named slots as pills above
+the class-editing panels; the `activeSlot` mode routes every panel write into
+`style.classes[slot]` (or `style.responsive[bp][slot]`).
 
 | File | Role |
 |---|---|
@@ -396,30 +416,25 @@ craftjs-design/
       registry.ts
       components/
         index.ts                # barrel of side-effect registrations
-        box.ts, text.ts, button.ts, input.ts          # Phase 3
-        heading.ts, link.ts, image.ts, stack.ts,
-        divider.ts, icon.ts, badge.ts, avatar.ts,
-        alert.ts                                       # Phase 5 — Pattern A breadth
-        select.ts, checkbox.ts, radio.ts,
-        switch.ts, textarea.ts                         # Phase 5 — form canonicals
-        card.ts, tabs.ts                               # Phase 5 — Pattern B composites
+        *.ts                    # 48 canonical defs across Phases 3–13
+                                #   (layout/content/input/display/navigation/
+                                #    feedback/media). dynamic-slots.ts holds the
+                                #   pure Tabs/Carousel slot-key helpers.
     adapters/
       types.ts
       AdapterContext.tsx
       AdapterManifestSchema.ts
-      shadcn/
-        index.ts                # registerAdapter for all 20 canonicals
-        components/
-          Box.tsx, Text.tsx, Button.tsx, Input.tsx,
-          Heading.tsx, Link.tsx, Image.tsx, Stack.tsx,
-          Divider.tsx, Icon.tsx, Badge.tsx, Avatar.tsx, Alert.tsx,
-          Select.tsx, Checkbox.tsx, Radio.tsx, Switch.tsx, Textarea.tsx,
-          Card.tsx, Tabs.tsx
-      mui/
-        index.ts                # registerAdapter for all 20 canonicals
+      shadcn/                   # default adapter — bundled, no external peer
+        index.ts                # registerAdapter for all 48 canonicals
+        components/             # one .tsx per canonical
+      mui/                      # opt-in — optional @mui/material + emotion peers
+        index.ts                # registerAdapter for all 48 canonicals
         theme.ts
         Wrapper.tsx
         components/             # one .tsx per canonical (parity with shadcn)
+      html/                     # Phase 16 — dependency-free, semantic HTML
+        index.ts                # registerAdapter for all 48 canonicals
+        components.tsx          # all 48 impls in one file, no UI library
     themes/
       types.ts
       registry.ts
@@ -713,14 +728,17 @@ Craft.js offers two patterns for containers:
 
 **B.** The component has *named* sub-canvas slots inside it: `<div className="card"><Element id="header" canvas>…</Element><Element id="body" canvas>…</Element></div>`. Multiple drop zones per node.
 
-This codebase uses Pattern A for single-slot containers. An earlier draft tried to *combine* both ("the component is a canvas AND has a nested canvas slot") and discovered the hard way that competing drop targets break hit-testing.
+This codebase uses Pattern A for single-slot containers. An earlier draft tried to *combine* both ("the component is a canvas AND has a nested canvas slot") and discovered the hard way that competing drop targets break hit-testing — so a Pattern-B node's *outer* element is NOT a canvas; only its named sub-slots are.
 
-**Pattern B is live for Card and Tabs** with a deliberately narrow Phase 5 scope: only `styleSlots` are multi-slot — that's enough to let the inspector style each region independently. The actual *Craft canvas* is still single per node:
+**True multi-canvas Pattern B is live** (shipped Phase 6, extended through Phase 13). A canonical declares `canvasSlots` — a static `string[]` or a `(props) => string[]` function — and `CanonicalNode` generates one `<Element canvas id={slot}>` per slot, handing the adapter impl `slotChildren[slot]` to place each independently-droppable region. Five canonicals use it:
 
-- **Card** has four `styleSlots` (`root`, `header`, `body`, `footer`) — the inspector can style each — but only one drop zone (the body). Header/footer text comes from props.
-- **Tabs** has three `styleSlots` (`root`, `tabs`, `content`) — the inspector can style each — but no drop zone; tab content is from the `tabs` prop array.
+- **Card** — static `canvasSlots: ['header', 'body', 'footer']`. Three real drop zones; the inspector also styles each via `styleSlots`.
+- **Table** — dynamic, one cell slot per `rows × cols` (with merge handling).
+- **Tabs** — dynamic, one slot per tab (keyed by the stable `tab.id`, so renaming a tab's `value` no longer orphans its canvas).
+- **Stepper** — dynamic, one slot per step.
+- **Carousel** — dynamic, one slot per slide.
 
-True multi-canvas Pattern B (where each named slot accepts independent dropped children) is a Phase 6 item — see [`./plans/PHASE6_PLAN.md`](./plans/PHASE6_PLAN.md). The current architecture is set up to support it: extending the canonical contract with a `canvasSlots: string[]` field and teaching `CanonicalNode` to wrap each canvas slot in its own `<Element>` is additive.
+`styleSlots` (independently *styleable* regions) is a separate axis from `canvasSlots` (independently *droppable* regions): a Pattern-A canonical can expose several `styleSlots` without any sub-canvas.
 
 ### <a id="pattern-b-slot-routing"></a>Pattern B slot routing — `composedClasses` + `composedInlineStyles`
 
