@@ -122,7 +122,27 @@ App build (`npm run build`):
 
 ## [Unreleased]
 
-(none yet)
+### Added
+
+- **Stepper + Table dynamic-canvas slot helpers promoted to the SDK** (Phase 18
+  follow-up). `stepperSlotKey` / `stepperSlotKeys`, `tableCellSlotKey` /
+  `tableCellSlotKeys`, the table merge-geometry helpers `containingMerge` /
+  `isCellCovered`, their `STEP_SLOT_PREFIX` / `CELL_PREFIX`, and the
+  `TableMerge` type are now exported from `@crafted-design/editor/sdk` — the
+  Stepper/Table analog of the already-public Tabs/Carousel helpers, so a
+  third-party Stepper/Table adapter has the full authoring surface. The pure
+  helpers moved into the side-effect-free `dynamic-slots` module (the canonical
+  modules re-export them for back-compat), so importing the SDK still registers
+  no canonicals (`side-effect-free.test.ts` holds). Built-in adapters now
+  import them from the SDK. Additive; recorded in `surface.test.ts`.
+
+### Fixed
+
+- **Plain-HTML adapter: collapsed table cells.** `HtmlTableCell` used
+  `h-full w-full`, which resolves to 0 height in an empty cell — a dropped
+  Table rendered ~8px tall. It now uses the `canvas-slot` class (min-height +
+  "Drop here" hint + `height:100%` fill) and the `<td>` carries the `height:1px`
+  row-fill hack, matching the shadcn / MUI tables.
 
 ## [0.9.0] — 2026-06-01
 

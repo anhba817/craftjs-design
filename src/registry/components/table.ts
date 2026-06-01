@@ -1,5 +1,25 @@
 import { z } from 'zod'
 import { registerComponent } from '../registry'
+// Phase 18 — the pure cell/merge helpers live in the side-effect-free
+// `dynamic-slots` module so the SDK can re-export them without pulling this
+// canonical's registration. Imported here for `canvasSlots` + re-exported for
+// back-compat (TableMergePanel + adapter impls import them from here).
+import {
+  CELL_PREFIX,
+  cellsToRect,
+  containingMerge,
+  isCellCovered,
+  tableCellSlotKey,
+  tableCellSlotKeys,
+} from './dynamic-slots'
+export {
+  CELL_PREFIX,
+  cellsToRect,
+  containingMerge,
+  isCellCovered,
+  tableCellSlotKey,
+  tableCellSlotKeys,
+}
 
 // Phase 13 § 5.1 — Table is a single composite canonical. The designer
 // drops one Table, then sets `rows` × `cols` on it; each cell is a Craft
@@ -44,93 +64,6 @@ export const tablePropsSchema = z.object({
   merges: z.array(mergeSchema),
 })
 export type TableProps = z.infer<typeof tablePropsSchema>
-
-// Slot key for the (r, c) cell. 0-indexed.
-const CELL_PREFIX = 'cell-'
-export function tableCellSlotKey(row: number, col: number): string {
-  return `${CELL_PREFIX}r${row}-c${col}`
-}
-
-// Returns the merge that contains (r, c), ignoring out-of-bounds merges.
-// Used by both the canvasSlots generator and the adapter render — keeping
-// the logic in one place means slot ids and DOM cells can't disagree.
-export function containingMerge(
-  r: number,
-  c: number,
-  merges: readonly TableMerge[],
-  rows: number,
-  cols: number,
-): TableMerge | null {
-  for (const m of merges) {
-    // Skip merges that fall outside the current grid (e.g. after the user
-    // shrinks rows/cols). They're stored but not applied.
-    if (m.row + m.rowSpan > rows) continue
-    if (m.col + m.colSpan > cols) continue
-    if (r >= m.row && r < m.row + m.rowSpan && c >= m.col && c < m.col + m.colSpan) {
-      return m
-    }
-  }
-  return null
-}
-
-// True when (r, c) sits inside a merge but isn't the merge's top-left.
-// The covered cells are dropped from canvasSlots + skipped by the adapter.
-export function isCellCovered(
-  r: number,
-  c: number,
-  merges: readonly TableMerge[],
-  rows: number,
-  cols: number,
-): boolean {
-  const m = containingMerge(r, c, merges, rows, cols)
-  return m !== null && (m.row !== r || m.col !== c)
-}
-
-// Generate the slot list in row-major order, omitting cells covered by a
-// merge (those have no slot — the merge's top-left owns the content).
-export function tableCellSlotKeys(
-  rows: number,
-  cols: number,
-  merges: readonly TableMerge[] = [],
-): string[] {
-  const out: string[] = []
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (isCellCovered(r, c, merges, rows, cols)) continue
-      out.push(tableCellSlotKey(r, c))
-    }
-  }
-  return out
-}
-
-// Take a list of (r, c) cells and return the rectangular merge that covers
-// them iff they form a complete contiguous rectangle. null otherwise — the
-// merge UI uses this to gate the "Apply" button.
-export function cellsToRect(
-  cells: readonly { r: number; c: number }[],
-): TableMerge | null {
-  if (cells.length === 0) return null
-  let minR = Infinity
-  let maxR = -Infinity
-  let minC = Infinity
-  let maxC = -Infinity
-  for (const { r, c } of cells) {
-    if (r < minR) minR = r
-    if (r > maxR) maxR = r
-    if (c < minC) minC = c
-    if (c > maxC) maxC = c
-  }
-  const rowSpan = maxR - minR + 1
-  const colSpan = maxC - minC + 1
-  if (cells.length !== rowSpan * colSpan) return null
-  const present = new Set(cells.map(({ r, c }) => `${r},${c}`))
-  for (let r = minR; r <= maxR; r++) {
-    for (let c = minC; c <= maxC; c++) {
-      if (!present.has(`${r},${c}`)) return null
-    }
-  }
-  return { row: minR, col: minC, rowSpan, colSpan }
-}
 
 registerComponent<TableProps>({
   id: 'table',

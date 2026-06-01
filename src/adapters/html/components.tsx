@@ -17,13 +17,13 @@ import {
   uniqueTabValues,
   type TabsProps,
 } from '@/registry/components/tabs'
-import { stepperSlotKey, type StepperProps } from '@/registry/components/stepper'
+import { stepperSlotKey, type StepperProps } from '@design/sdk'
 import {
   containingMerge,
   isCellCovered,
   tableCellSlotKey,
   type TableProps,
-} from '@/registry/components/table'
+} from '@design/sdk'
 import type { AdapterRenderProps } from '../types'
 
 // Phase 16 § 7.2 — the plain-HTML adapter: every canonical rendered with
@@ -623,7 +623,11 @@ export function HtmlDataListItem({ props, rootRef, className, inlineStyle }: Ren
 }
 
 export function HtmlTableCell({ children, rootRef, className, inlineStyle }: Render) {
-  return <div ref={rootRef} className={cn('h-full w-full', className)} style={inlineStyle}>{children}</div>
+  // `canvas-slot` (global CSS) gives an empty cell a min-height + "Drop here"
+  // hint and, via `table td > .canvas-slot { height: 100% }` + the `<td>`
+  // height:1px hack below, fills the cell. A plain `h-full` collapses to 0
+  // when the row has no intrinsic height (the bug: 8px-tall table).
+  return <div ref={rootRef} className={cn('canvas-slot', className)} style={inlineStyle}>{children}</div>
 }
 
 export function HtmlTable({ props, rootRef, className, composedClasses = {}, composedInlineStyles = {}, slotChildren = {} }: Render) {
@@ -640,7 +644,16 @@ export function HtmlTable({ props, rootRef, className, composedClasses = {}, com
               const merge = containingMerge(r, c, merges, rows, cols)
               const slot = tableCellSlotKey(r, c)
               return (
-                <td key={slot} colSpan={merge?.colSpan} rowSpan={merge?.rowSpan} className="border align-top p-0">
+                <td
+                  key={slot}
+                  colSpan={merge?.colSpan}
+                  rowSpan={merge?.rowSpan}
+                  // Structural only — the cell's visible border lives on the
+                  // table-cell NodeStyle. height:1px is the hack that lets the
+                  // inner canvas-slot's height:100% resolve to the row height.
+                  className="relative align-top p-0"
+                  style={{ height: 1 }}
+                >
                   {slotChildren[slot]}
                 </td>
               )

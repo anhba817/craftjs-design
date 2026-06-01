@@ -1,5 +1,10 @@
 import { z } from 'zod'
 import { registerComponent } from '../registry'
+// Phase 18 — slot-key helpers live in the side-effect-free `dynamic-slots`
+// module so the SDK can re-export them without pulling this canonical's
+// registration. Imported here for `canvasSlots` + re-exported for back-compat.
+import { stepperSlotKey, stepperSlotKeys } from './dynamic-slots'
+export { stepperSlotKey, stepperSlotKeys }
 
 // Phase 13 § 5.2 — Stepper. Pattern B composite: one canvas slot per step
 // so each step can hold its own form / page content (the same model as
@@ -16,16 +21,6 @@ export const stepperPropsSchema = z.object({
   currentStep: z.number().int().min(0).max(99),
 })
 export type StepperProps = z.infer<typeof stepperPropsSchema>
-
-const STEP_SLOT_PREFIX = 'step-'
-export function stepperSlotKey(i: number): string {
-  return `${STEP_SLOT_PREFIX}${i}`
-}
-export function stepperSlotKeys(count: number): readonly string[] {
-  const out: string[] = []
-  for (let i = 0; i < count; i++) out.push(stepperSlotKey(i))
-  return out
-}
 
 registerComponent<StepperProps>({
   id: 'stepper',

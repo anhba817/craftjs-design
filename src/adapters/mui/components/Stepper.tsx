@@ -5,7 +5,7 @@ import { cn } from '@design/sdk'
 import {
   stepperSlotKey,
   type StepperProps,
-} from '@/registry/components/stepper'
+} from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 // MUI Stepper — Pattern B. Header is MUI's <Stepper>; below it, the

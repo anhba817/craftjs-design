@@ -60,6 +60,19 @@ export {
   uniqueTabValues,
   SLIDE_SLOT_PREFIX,
   slideSlotKeys,
+  // Phase 18 — Stepper + Table dynamic-canvas helpers, same role: a custom
+  // Stepper/Table adapter derives the per-step / per-cell canvas slot keys
+  // that CanonicalNode allocates, and (Table) resolves merged-cell geometry.
+  STEP_SLOT_PREFIX,
+  stepperSlotKey,
+  stepperSlotKeys,
+  CELL_PREFIX,
+  tableCellSlotKey,
+  tableCellSlotKeys,
+  containingMerge,
+  isCellCovered,
 } from '../registry/components/dynamic-slots'
+// `TableMerge` (the per-merge rectangle type the Table helpers operate on).
+export type { TableMerge } from '../registry/components/table'
 // `TabsProps` / `CarouselProps` (and every other canonical's prop type) are
 // re-exported from ./canonical-props.

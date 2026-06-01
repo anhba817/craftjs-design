@@ -28,6 +28,15 @@ const SDK_SURFACE = [
   'SYSTEM_FONTS',
   'TAB_SLOT_PREFIX',
   'TelemetryProvider',
+  // Phase 18 follow-up — Stepper + Table dynamic-canvas slot/geometry helpers
+  'CELL_PREFIX',
+  'STEP_SLOT_PREFIX',
+  'containingMerge',
+  'isCellCovered',
+  'stepperSlotKey',
+  'stepperSlotKeys',
+  'tableCellSlotKey',
+  'tableCellSlotKeys',
   'cn', // Phase 18 § 5 — class-merge util
   'defaultImageProvider',
   'deriveTokens',

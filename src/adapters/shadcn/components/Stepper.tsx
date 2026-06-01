@@ -3,7 +3,7 @@ import { cn } from '@design/sdk'
 import {
   stepperSlotKey,
   type StepperProps,
-} from '@/registry/components/stepper'
+} from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
 // Stepper — Pattern B. Renders the progress header on top + the current

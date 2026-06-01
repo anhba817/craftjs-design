@@ -460,6 +460,14 @@ the right entries out of `slotChildren`. Both helpers are the pattern for
 **any** dynamic-canvas canonical — a canonical whose `canvasSlots` is a
 `(props) => readonly string[]` function rather than a static list.
 
+The other two dynamic-canvas built-ins export the same kind of helpers:
+
+- **Stepper** — `stepperSlotKey(i)` / `stepperSlotKeys(count)`.
+- **Table** — `tableCellSlotKey(r, c)` / `tableCellSlotKeys(rows, cols, merges)`,
+  plus the merge-geometry helpers `containingMerge` / `isCellCovered` and the
+  `TableMerge` type, so a custom Table adapter can render merged cells the way
+  the built-ins do.
+
 ---
 
 ## Persistence backend + code export (Phase 14, 0.5.0)

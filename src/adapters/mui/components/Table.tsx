@@ -5,7 +5,7 @@ import {
   isCellCovered,
   tableCellSlotKey,
   type TableProps,
-} from '@/registry/components/table'
+} from '@design/sdk'
 import { CellResizeHandles } from '../../_shared/CellResizeHandles'
 import type { AdapterRenderProps } from '../../types'
 
