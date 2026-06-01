@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Fragment } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { __setEditorMountedForTest } from '@/registry/registry'
 import {
   getAdapterRegistryVersion,
   listAdapters,
@@ -14,6 +16,10 @@ function fixture(id: string): Adapter {
     displayName: `Adapter ${id}`,
     components: {},
   }
+}
+
+function wrapperFixture(id: string): Adapter {
+  return { ...fixture(id), Wrapper: Fragment }
 }
 
 // The adapter registry is module-scoped. Snapshot the baseline state set by
@@ -77,5 +83,39 @@ describe('adapter registry — subscription (Phase 10 § 2.8)', () => {
 
   it('version is monotonic across the suite', () => {
     expect(getAdapterRegistryVersion()).toBeGreaterThanOrEqual(baselineVersion)
+  })
+})
+
+describe('wrapper-stability contract (Phase 18 § 2)', () => {
+  let warn: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    __setEditorMountedForTest(false)
+    warn.mockRestore()
+  })
+
+  it('warns when a Wrapper-bearing adapter registers AFTER editor mount', () => {
+    __setEditorMountedForTest(true)
+    registerAdapter(wrapperFixture('late-wrapper'))
+    expect(warn).toHaveBeenCalledOnce()
+    expect(warn.mock.calls[0][0]).toContain('late-wrapper')
+    unregisterAdapter('late-wrapper')
+  })
+
+  it('does NOT warn for a Wrapper adapter registered BEFORE mount', () => {
+    __setEditorMountedForTest(false)
+    registerAdapter(wrapperFixture('early-wrapper'))
+    expect(warn).not.toHaveBeenCalled()
+    unregisterAdapter('early-wrapper')
+  })
+
+  it('does NOT warn for a Wrapper-less adapter after mount (hot-reload path)', () => {
+    __setEditorMountedForTest(true)
+    registerAdapter(fixture('late-plain'))
+    expect(warn).not.toHaveBeenCalled()
+    unregisterAdapter('late-plain')
   })
 })

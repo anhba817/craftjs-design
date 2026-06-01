@@ -314,6 +314,16 @@ A new adapter wraps a UI library and provides impls for some or all canonicals. 
 
    `registerAdapter` validates the manifest via Zod (`AdapterManifestSchema.ts`). Missing required fields throw at boot with a readable error.
 
+   > **Wrapper adapters must register before `<Editor />` mounts.** If your
+   > adapter declares a `Wrapper` (a global provider like MUI's
+   > `ThemeProvider`), register it via a side-effect import in your entry
+   > module — never lazily after the editor is on screen. `AdapterProvider`
+   > composes every adapter's Wrapper to keep the React tree stable across
+   > adapter swaps; a Wrapper added post-mount reshapes that tree and remounts
+   > Craft's `<Frame>`, wiping the canvas. `registerAdapter` emits a dev
+   > warning if you break this. Adapters *without* a Wrapper can register any
+   > time (e.g. hot reload).
+
 4. Add a side-effect import to `src/App.tsx`:
 
    ```ts

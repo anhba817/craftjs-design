@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect } from "react";
 import type { ReactNode } from "react";
 import { useEditorStore } from "@/state/editorStore";
+import { _isEditorMounted } from "@/registry/registry";
 import { adapterManifestSchema } from "./AdapterManifestSchema";
 import type { Adapter } from "./types";
 
@@ -92,6 +93,23 @@ export function registerAdapter(adapter: Adapter): void {
   if (adapters.has(adapter.id)) {
     throw new Error(`duplicate adapter id: ${adapter.id}`);
   }
+  // Phase 18 § 2 — wrapper-stability contract. `AdapterProvider` composes
+  // EVERY registered adapter's `Wrapper` (folded outside-in) to keep the tree
+  // shape stable across adapter swaps — that only holds if the set of Wrappers
+  // is fixed before `<Editor />` mounts. A Wrapper-bearing adapter that
+  // registers AFTER mount would add a node to that fold on the next render,
+  // reshaping the tree and remounting Craft's `<Frame>` (wiping the canvas).
+  // Non-Wrapper adapters are safe to register late (the hot-reload path), so
+  // only warn for the hazardous case.
+  if (adapter.Wrapper && _isEditorMounted()) {
+    console.warn(
+      `[Adapter:${adapter.id}] registered after <Editor /> mounted, but it ` +
+        `declares a Wrapper. Adapters with a Wrapper must register BEFORE the ` +
+        `editor mounts (a side-effect import in your entry module) — a late ` +
+        `Wrapper reshapes the composed wrapper tree and can remount the canvas. ` +
+        `See docs/DEVELOPER_GUIDE.md "Adding an adapter".`,
+    );
+  }
   adapters.set(adapter.id, adapter);
   bumpAdapterRegistry();
 }
@@ -165,10 +183,13 @@ export function AdapterProvider({ children }: { children: ReactNode }) {
 }
 
 function composeAllWrappers(all: Adapter[], children: ReactNode): ReactNode {
-  // Fold Wrappers from outside in. Order is the registration order from
-  // listAdapters(), which is stable across renders (adapters register at
-  // module load and never change at runtime), so React's reconciler keeps
-  // every Wrapper mounted across adapter swaps.
+  // Fold Wrappers from outside in, in `listAdapters()` registration order.
+  // This keeps the wrapper tree shape stable across adapter swaps so React's
+  // reconciler never unmounts a Wrapper (which would remount `<Frame>`). The
+  // invariant it relies on — that the set of Wrappers is fixed before the
+  // editor mounts — is enforced by `registerAdapter`, which warns if a
+  // Wrapper-bearing adapter registers post-mount (Phase 18 § 2). Non-Wrapper
+  // adapters may still register late (hot reload) without reshaping the fold.
   let wrapped = children;
   for (const adapter of all) {
     if (adapter.Wrapper) {

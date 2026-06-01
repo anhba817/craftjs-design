@@ -22,6 +22,15 @@ export function _markEditorMounted(): void {
   editorMounted = true;
 }
 
+/**
+ * @internal True once `<Editor />` has mounted. `registerAdapter` reads this to
+ * warn when a Wrapper-bearing adapter registers post-mount (Phase 18 § 2 — a
+ * late Wrapper reshapes the composed wrapper tree and can remount `<Frame>`).
+ */
+export function _isEditorMounted(): boolean {
+  return editorMounted;
+}
+
 /** @internal Test-only — resets the flag between cases. */
 export function __setEditorMountedForTest(v: boolean): void {
   editorMounted = v;

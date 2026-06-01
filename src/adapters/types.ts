@@ -64,6 +64,14 @@ export interface Adapter {
   // Declarative wrapper rendered around the entire canvas when this adapter is
   // active. Use for libraries that need a global React provider (MUI's
   // ThemeProvider, Chakra's CSSReset, etc.). Defaults to a Fragment passthrough.
+  //
+  // CONTRACT (Phase 18 § 2): an adapter that declares a `Wrapper` MUST be
+  // registered BEFORE `<Editor />` mounts (a side-effect import in your entry
+  // module). The provider composes every registered adapter's Wrapper to keep
+  // the tree shape stable across adapter swaps; a Wrapper added post-mount
+  // reshapes that tree and remounts Craft's `<Frame>` (wiping the canvas).
+  // `registerAdapter` warns if you break this. Adapters WITHOUT a Wrapper may
+  // register at any time (the hot-reload path).
   Wrapper?: ComponentType<{ children: ReactNode }>;
 
   // CSS variables this adapter wants injected when active. Phase 3 ships the
