@@ -122,6 +122,17 @@ App build (`npm run build`):
 
 ## [Unreleased]
 
+### Changed
+
+- **Built-in adapter impls are lint-enforced to consume the SDK** (Phase 18
+  follow-up). A `no-restricted-imports` rule on `src/adapters/{shadcn,mui,html}/**`
+  blocks reaching the `@/editor` · `@/state` · `@/lib` internals — those must
+  come through `@design/sdk` (the same boundary third-party adapters hit). The
+  canonical contract (`@/registry/components`) + the shadcn adapter's own
+  primitives (`@/components/ui`) stay allowed; the adapter infrastructure at
+  `src/adapters/` root is out of scope. Also migrated a straggler (`Box.tsx`'s
+  `cn`) the earlier codemod missed.
+
 ### Added
 
 - **Stepper + Table dynamic-canvas slot helpers promoted to the SDK** (Phase 18

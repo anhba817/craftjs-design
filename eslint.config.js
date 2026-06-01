@@ -73,4 +73,43 @@ export default defineConfig([
       ],
     },
   },
+
+  // Phase 18 § 5 — dogfood the SDK in the built-in adapter IMPLEMENTATIONS.
+  // Adapter component impls must reach the editor runtime / global state /
+  // shared utils through "@design/sdk", not the "@/editor" · "@/state" ·
+  // "@/lib" internals — the same boundary third-party adapters hit. If
+  // something an adapter needs isn't exported, add a seam to src/sdk/ rather
+  // than reaching past it. (Allowed: "@/components/ui" — the shadcn adapter's
+  // own design-system primitives — and "@/registry/components" — the canonical
+  // contract.) Scoped to the impl dirs only; the adapter infrastructure at
+  // src/adapters/ root — AdapterContext / types / manifest — legitimately
+  // owns editor-state wiring and is excluded.
+  {
+    files: [
+      'src/adapters/shadcn/**/*.{ts,tsx}',
+      'src/adapters/mui/**/*.{ts,tsx}',
+      'src/adapters/html/**/*.{ts,tsx}',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@/editor',
+                '@/editor/**',
+                '@/state',
+                '@/state/**',
+                '@/lib',
+                '@/lib/**',
+              ],
+              message:
+                'Built-in adapter impls must reach editor/state/util internals through "@design/sdk", not "@/...". If the symbol you need isn\'t exported, add a seam to src/sdk/ — see docs/SDK_GUIDE.md ("Public API stability").',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ])

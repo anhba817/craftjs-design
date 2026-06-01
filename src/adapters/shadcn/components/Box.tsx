@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@design/sdk";
 import type { AdapterRenderProps } from "../../types";
 
 // `className` is the composed responsive class string; `inlineStyle` holds
