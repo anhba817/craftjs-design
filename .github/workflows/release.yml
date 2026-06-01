@@ -1,14 +1,22 @@
 name: Release
 
-# Phase 15 § 9.6 — Changesets-driven release. On merge to main:
-#   - if pending changesets exist, opens/updates a "Version Packages" PR
-#     (bumps package.json + folds changesets into CHANGELOG);
-#   - when that PR merges (no pending changesets), publishes to npm via
-#     `npm run release` (build:dist && changeset publish).
+# Phase 15 § 9.6 / Phase 18 — Changesets-driven release, publishing to npm via
+# OIDC TRUSTED PUBLISHING (no long-lived NPM_TOKEN). On push to main:
+#   - pending changesets → changesets/action opens/updates a "Version Packages"
+#     PR (bumps package.json + folds changesets into CHANGELOG);
+#   - that PR merged (no pending changesets) → publish the new version to npm
+#     with `npm publish`, authenticated by the GitHub OIDC token.
 #
-# Host actions required before this works:
-#   - add the NPM_TOKEN repository secret (npm automation token);
-#   - GITHUB_TOKEN is provided automatically by Actions.
+# We deliberately do NOT use changesets/action's `publish:` input: its
+# `changeset publish` currently trips an E404 with OIDC + SCOPED packages
+# (npm/cli#8976) — and `@crafted-design/editor` is scoped. Publishing with
+# `npm publish` directly is npm's documented OIDC path and avoids that bug.
+#
+# One-time host setup (see docs/RELEASE.md):
+#   - configure a Trusted Publisher for `@crafted-design/editor` on npmjs.com
+#     (Package → Settings → Publishing access) pointing at THIS repo + THIS
+#     workflow file (.github/workflows/release.yml);
+#   - no NPM_TOKEN secret. GITHUB_TOKEN is provided by Actions automatically.
 
 on:
   push:
@@ -21,6 +29,7 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write # required for npm OIDC trusted publishing
 
 jobs:
   release:
@@ -34,15 +43,39 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
 
+      # npm OIDC trusted publishing requires npm >= 11.5.1; Node 22 ships an
+      # older npm, so upgrade before any publish step.
+      - name: Upgrade npm (OIDC support)
+        run: npm install -g npm@latest
+
       - name: Install
         run: npm ci
 
-      - name: Create release PR or publish
+      # Versioning only — opens/updates the "Version Packages" PR when there
+      # are pending changesets. No `publish:` input (see header).
+      - name: Version (Changesets)
+        id: changesets
         uses: changesets/action@v1
         with:
           version: npm run version-packages
-          publish: npm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: 'true'
+
+      # When no changesets remain (the Version Packages PR was just merged, or
+      # there's nothing to release) AND package.json's version isn't on the
+      # registry yet, publish it to the `next` tag via OIDC. `npm publish`
+      # auto-detects the GitHub OIDC token — no NODE_AUTH_TOKEN needed;
+      # `--provenance` attaches the build attestation (not emitted otherwise).
+      # `prepublishOnly` (package.json) rebuilds dist-lib + runs the tests
+      # before the tarball is created.
+      - name: Publish to npm (OIDC trusted publishing)
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "$NAME@$VERSION" version > /dev/null 2>&1; then
+            echo "$NAME@$VERSION is already published — nothing to do."
+          else
+            echo "Publishing $NAME@$VERSION to the 'next' dist-tag…"
+            npm publish --provenance --tag next
+          fi

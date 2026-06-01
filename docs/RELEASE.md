@@ -11,16 +11,30 @@ actions** that can't happen inside the repo — they're called out as such.
 These are prerequisites for the automated release + docs workflows. Done once
 by a repo admin:
 
-1. **Make the GitHub repo public.** Required for npm provenance
-   (`NPM_CONFIG_PROVENANCE`) and for GitHub Pages docs hosting. (§ 9.10)
-2. **Add the `NPM_TOKEN` secret.** An npm automation token with publish rights
-   to the `@crafted-design` scope, as a repository secret. `GITHUB_TOKEN` is
-   provided by Actions automatically.
-3. **Enable GitHub Actions** for the repo (CI + Release workflows).
-4. **Enable GitHub Pages** with **Source = GitHub Actions** so the TypeDoc
+1. **Make the GitHub repo public.** Required for npm provenance + GitHub Pages
+   docs hosting. (§ 9.10)
+2. **Enable GitHub Actions** for the repo (CI + Release workflows).
+3. **Enable GitHub Pages** with **Source = GitHub Actions** so the TypeDoc
    site (`docs.yml`) deploys.
+4. **Configure npm Trusted Publishing** for the package. npm no longer accepts
+   long-lived automation tokens for CI publishes — CI authenticates via OIDC,
+   so there is **no `NPM_TOKEN` secret**. On npmjs.com → the package →
+   **Settings → Publishing access → Add trusted publisher**, set:
+   - Provider: **GitHub Actions**
+   - Repository: `anhba817/craftjs-design` (owner/repo)
+   - Workflow filename: **`release.yml`**
+   - Environment: *(leave blank — the workflow uses none)*
 
-Until #1–#3 are done, releases run locally (see "Manual release" below).
+   The Release workflow already has `permissions: id-token: write` and upgrades
+   npm to ≥ 11.5.1, which is what OIDC requires.
+
+> **First-publish chicken-and-egg.** A trusted publisher is configured *on an
+> existing package*, so the package must exist on the registry before you can
+> add one. For the **very first** publish of `@crafted-design/editor`, publish
+> once manually to create it (see *Manual / first release* below), then add the
+> trusted publisher per step 4 — every CI publish after that is tokenless OIDC.
+
+Until #1–#2 are done, releases run locally (see *Manual / first release*).
 
 ---
 
@@ -33,25 +47,37 @@ CHANGELOG:
    the bump level, commit the generated `.changeset/*.md`. (Doc/internal-only
    PRs don't need one.) See [CONTRIBUTING.md](../CONTRIBUTING.md).
 2. **On merge to `main`**, the Release workflow (`.github/workflows/release.yml`)
-   opens/updates a **"Version Packages" PR** that bumps `package.json` and
-   folds pending changesets into `CHANGELOG.md`.
-3. **Merging that PR** (when no changesets remain) triggers
-   `npm run release` → `build:dist && changeset publish --tag next`, publishing
-   to the **`next`** dist-tag.
+   opens/updates a **"Version Packages" PR** (via `changesets/action`) that
+   bumps `package.json` and folds pending changesets into `CHANGELOG.md`.
+3. **Merging that PR** (when no changesets remain) triggers the workflow's
+   publish step: `npm publish --provenance --tag next`, authenticated by the
+   **GitHub OIDC token** (trusted publishing — no `NPM_TOKEN`). The step
+   guards on `npm view` so it only publishes a version not already on the
+   registry. Publishes to the **`next`** dist-tag.
+
+> The workflow does NOT use `changeset publish` — that path currently fails
+> with an E404 for OIDC + scoped packages (npm/cli#8976), and our package is
+> scoped. `npm publish` directly is npm's documented OIDC path.
 
 > The phase close-outs in this repo bumped the version + CHANGELOG by hand
-> because nothing was published yet and the automation never ran. Once #1–#3
-> above are in place, switch to the Changesets flow — don't keep hand-editing.
+> because nothing was published yet and the automation never ran. Once the host
+> setup is in place, switch to the Changesets flow — don't keep hand-editing.
 
-### Manual release (fallback / pre-automation)
+### Manual / first release (token-based)
 
-From a clean `main` with the version + CHANGELOG already set:
+OIDC trusted publishing only works **inside the CI workflow** (it needs the
+GitHub OIDC token) and only **after** the package exists + a trusted publisher
+is configured. For the **first** publish, or any local/manual publish, use a
+classic auth path from a clean `main` with the version + CHANGELOG set:
 
 ```bash
-npm run release   # build:dist && changeset publish --tag next
+npm login                 # or set an automation token in ~/.npmrc
+npm run build:dist
+npm publish --tag next    # creates / publishes @crafted-design/editor
 ```
 
-Requires being logged in to npm with publish rights (`npm whoami`).
+After this first publish, configure the trusted publisher (host setup step 4)
+so subsequent releases go through tokenless CI OIDC.
 
 ---
 
@@ -83,8 +109,9 @@ exists to soak against these.
       `check:size`, `check:licenses`, `docs:matrix --check`.
 - [ ] **Docs complete.** INTEGRATION_GUIDE, SDK_GUIDE (incl. stability),
       COOKBOOK, FAQ, ADAPTER_MATRIX/VERSIONING current. (✅ in `0.8.0`.)
-- [ ] **Host actions done.** Repo public, `NPM_TOKEN` set, Actions + Pages
-      enabled. (Ops — see "One-time host setup".)
+- [ ] **Host actions done.** Repo public, Actions + Pages enabled, npm Trusted
+      Publisher configured (after the first manual publish). (Ops — see
+      "One-time host setup".)
 - [ ] **RC soak elapsed.** `0.9.0` published to `next` and exercised by at
       least one real integration with no surface change required.
 
