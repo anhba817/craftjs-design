@@ -1,6 +1,6 @@
 # Phase 18 — Architecture hygiene + SDK dogfooding (review follow-ups)
 
-**Status:** planned
+**Status:** ✅ complete — cut `0.9.0` (1.0 RC; see close-out at end)
 **Cuts as:** `0.9.0` (refreshes the 1.0 release candidate — additive SDK seams
 + a semantic-validation feature + internal refactors; no breaking changes to
 the frozen surface, only deliberate **additions** recorded in the snapshot +
@@ -275,3 +275,59 @@ ARCHITECTURE.md matches the live registry (48 canonicals, real Pattern B);
 repairs corruption before render; built-in adapters import the SDK and the
 seams they needed are public + frozen. `0.9.0` cuts at the close-out commit as
 the refreshed 1.0 release candidate.
+
+---
+
+## Close-out (`0.9.0` — refreshed 1.0 RC)
+
+Phase 18 complete. All five review findings addressed; `0.9.0` is the refreshed
+1.0 release candidate (additive surface, no breaking changes).
+
+**Per-group:**
+
+- **A — Docs.** ARCHITECTURE.md regenerated from the live registry: 48
+  canonicals (was "Twenty", ×3), the real multi-canvas Pattern B
+  (`canvasSlots` → per-slot `<Element canvas>`, used by Card/Table/Tabs/
+  Stepper/Carousel), the `html` adapter in the tree.
+- **B — Render model.** Pure `src/craft/nodeRenderModel.ts` extracted from
+  `CanonicalNode` (composition + slot metadata + pseudo-state preview); 9 unit
+  tests (finally possible — the helper is DOM-free). Component is now wiring.
+- **C — Wrapper guard.** `registerAdapter` warns on a post-mount
+  Wrapper-bearing adapter (reuses the editor-mounted latch via
+  `_isEditorMounted`); contract documented on `Adapter.Wrapper` + DEVELOPER_GUIDE;
+  3 tests.
+- **D — Semantic validation.** `nodeStyleSchema` + `validateDocumentSemantics`
+  (props vs `propsSchema.partial()`, style vs schema, only-when-present); wired
+  into `applyEnvelopeSafely` as a lenient, report-only pass (telemetry metric +
+  dev warn, never blocks); 8 tests.
+- **E — SDK dogfooding.** Promoted the overlay-authoring seam + `cn` + 48
+  per-canonical prop types; migrated every `@/editor`/`@/state`/`@/lib` reach
+  in the built-in adapters to `@design/sdk` (74-file codemod + 6 hand edits;
+  0 reaches remain); `/sdk` budget bumped 60→70 for the new seams.
+- **F — Close-out.** CHANGELOG `0.9.0`; version bump; "Road to 1.0" + RELEASE
+  go/no-go refreshed to `0.9.0`.
+
+**Decisions / discoveries:**
+
+- **#2 guarded, not re-architected** — the wrapper-host rebuild was unwarranted
+  for a narrow post-mount edge case.
+- **#4 lenient/report-only** — repair-to-defaults stays a documented future
+  option; nothing that loads today regresses.
+- **#5 surfaced two real things:** `useEditorStore.setEditingTextNode` in
+  adapters was the wrong seam (now `useStartTextEdit`); and exposing the
+  overlay seam + `cn` grew `/sdk` 44→60.9 KB gz (mostly tailwind-merge via
+  `cn`) — a deliberate, tree-shake-protected budget bump, exactly the kind of
+  gap dogfooding is meant to expose.
+- **Skipped** the adapter-level `no-restricted-imports` ban: built-ins
+  legitimately use `@/components/ui` (shadcn primitives) + `@/registry/components`
+  (table/stepper value helpers not yet in the SDK), so it needs an allowlist —
+  deferred.
+
+**Verification:** lint 0 errors; tsc clean; 636 tests; app + dist builds; size
+gate green (full 254.9 / core 246.9 / sdk 60.9÷70 / css 124.5 KB gz); surface +
+side-effect-free frozen.
+
+**Remaining to `1.0.0`:** unchanged from Phase 17 — host/ops (public repo,
+`NPM_TOKEN`, Actions + Pages) + an RC soak + promote `next → latest` per
+`RELEASE.md`. Optional follow-ups surfaced here: promote the table/stepper slot
+helpers to the SDK; an allowlisted adapter import rule.

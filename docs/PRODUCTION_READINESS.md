@@ -26,12 +26,17 @@ Each item is tagged:
 > subpaths, with MUI/Emotion as optional peers. A **third built-in adapter
 > (plain HTML, no UI library)** covers all 48 canonicals. See § 7.
 >
-> **Road to 1.0 (`0.8.0`, Phase 17):** every non-Stretch item across §§ 8, 10,
-> 12 is now shipped and the **public SDK surface is frozen** (enforced by
-> `src/sdk/surface.test.ts`). `0.8.0` is the **1.0 release candidate**. The
-> remaining work to `1.0.0` is host/ops + a soak, tracked by the go/no-go
-> checklist in [RELEASE.md](./RELEASE.md). Stretch items (charts, i18n, RTL,
-> collaboration, marketplaces, DevTools, videos, SVG diagrams) stay Stretch.
+> **Road to 1.0 (`0.8.0` → `0.9.0`):** Phase 17 (`0.8.0`) shipped every
+> non-Stretch item across §§ 8, 10, 12 and **froze the public SDK surface**
+> (`src/sdk/surface.test.ts`). Phase 18 (`0.9.0`) folded in the post-RC review
+> follow-ups — architecture-doc refresh, a pure node-render-model, the adapter
+> wrapper-stability guard, semantic document validation, and SDK dogfooding
+> (which **added** overlay-authoring + `cn` + per-canonical-prop-type seams to
+> the surface — a deliberate, snapshot-recorded pre-1.0 addition). `0.9.0` is
+> the current **1.0 release candidate**. Remaining work to `1.0.0` is host/ops
+> + a soak per the go/no-go checklist in [RELEASE.md](./RELEASE.md). Stretch
+> items (charts, i18n, RTL, collaboration, marketplaces, DevTools, videos, SVG
+> diagrams) stay Stretch.
 
 **What works:**
 - 48 canonical components, full coverage in shadcn + MUI adapters.

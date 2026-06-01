@@ -1,7 +1,7 @@
 # Release runbook
 
 How `@crafted-design/editor` gets published, and the path from the current
-`0.8.0` release candidate to a stable `1.0.0`. Some steps are **host/ops
+`0.9.0` release candidate to a stable `1.0.0`. Some steps are **host/ops
 actions** that can't happen inside the repo — they're called out as such.
 
 ---
@@ -71,11 +71,12 @@ Don't promote until the 1.0 criteria below are all met.
 
 ## Road to 1.0 — go / no-go criteria
 
-`1.0.0` is cut only when **every** box is checked. `0.8.0` (this RC) exists to
-soak against these.
+`1.0.0` is cut only when **every** box is checked. `0.9.0` (the current RC)
+exists to soak against these.
 
 - [ ] **Public surface frozen.** `src/sdk/surface.test.ts` green; no pending
-      surface changes. (Phase 17 Group C — ✅ in `0.8.0`.)
+      surface changes. (Frozen in `0.8.0`; `0.9.0` added the overlay/cn/
+      prop-type authoring seams — deliberate, snapshot-recorded.)
 - [ ] **Migration template in place.** `docs/MIGRATION.md` exists; a concrete
       entry is only needed if a break lands before 1.0. (Group D — ✅.)
 - [ ] **All CI gates green** on `main`: lint, type-check, tests, `build:dist`,
@@ -84,7 +85,7 @@ soak against these.
       COOKBOOK, FAQ, ADAPTER_MATRIX/VERSIONING current. (✅ in `0.8.0`.)
 - [ ] **Host actions done.** Repo public, `NPM_TOKEN` set, Actions + Pages
       enabled. (Ops — see "One-time host setup".)
-- [ ] **RC soak elapsed.** `0.8.0` published to `next` and exercised by at
+- [ ] **RC soak elapsed.** `0.9.0` published to `next` and exercised by at
       least one real integration with no surface change required.
 
 When all are true:

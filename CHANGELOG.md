@@ -124,6 +124,58 @@ App build (`npm run build`):
 
 (none yet)
 
+## [0.9.0] — 2026-06-01
+
+Phase 18 — architecture hygiene + SDK dogfooding (post-`0.8.0` review
+follow-ups). Refreshes the 1.0 release candidate. No breaking changes — the
+public surface only **grows** (additive, recorded in the frozen snapshot).
+
+### Added
+
+- **Overlay-authoring SDK seam** — `useOverlayRuntime`, `readOverlayOpen`,
+  `useOverlayStageTarget`, `OverlayCard` (+ `OverlayKind` / `OverlayDef`
+  types) are now public, so a third-party adapter can build overlay
+  canonicals with the same editor-stage + runtime behavior as the built-ins.
+- **`cn`** — the clsx + tailwind-merge class-merge util adapter impls use.
+- **Per-canonical prop types** — every canonical's props type (`ButtonProps`,
+  `ModalProps`, `TableProps`, …) is exported from the SDK (type-only).
+- **Pure node-render-model** — `buildNodeRenderModel` extracted from
+  `CanonicalNode` (internal), now directly unit-tested.
+
+### Changed
+
+- **Built-in adapters now consume the public SDK boundary** — shadcn / MUI /
+  html no longer reach into `@/editor` / `@/state` / `@/lib` internals; they
+  import `useIsEditing` / `EditableText` / `useStartTextEdit` / the overlay
+  seam / `cn` from `@crafted-design/editor/sdk`. Behavior identical (same
+  bindings); this is what surfaced the missing seams above.
+- **`/sdk` bundle budget 60 → 70 KB gz** — the new overlay seam + `cn`
+  (tailwind-merge) grow the full-surface number. `/sdk` is side-effect-free,
+  so a consumer importing one symbol tree-shakes the rest.
+- `CanonicalNode` is now wiring over the pure render model (no behavior
+  change).
+
+### Fixed
+
+- **Adapter wrapper-stability hazard** — `registerAdapter` now warns when a
+  `Wrapper`-bearing adapter registers *after* `<Editor />` mounts (a late
+  Wrapper reshapes the composed wrapper tree and can remount Craft's
+  `<Frame>`, wiping the canvas). The contract is documented on `Adapter.Wrapper`
+  + the DEVELOPER_GUIDE adapter recipe.
+- **Stale architecture docs** — `ARCHITECTURE.md` refreshed from the live
+  registry: 48 canonicals (was "Twenty"), the real multi-canvas Pattern B
+  (`canvasSlots` → per-slot `<Element canvas>`, used by Card/Table/Tabs/
+  Stepper/Carousel), and the `html` adapter in the tree.
+
+### Added — validation
+
+- **Semantic document validation** — alongside the structural integrity check,
+  a lenient pass validates each node's `nodeProps` against its canonical
+  `propsSchema` and `style` against a new `NodeStyle` zod schema. Corrupt
+  props/styles are reported (telemetry `document.semanticIssues` metric + a dev
+  warning) **before render** without blocking a document the editor can still
+  best-effort display.
+
 ## [0.8.0] — 2026-06-01
 
 Phase 17 — production-readiness completion. The **1.0 release candidate**:
