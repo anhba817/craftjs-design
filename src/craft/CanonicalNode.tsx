@@ -1,19 +1,13 @@
 import { Element, useNode } from '@craftjs/core'
-import { useMemo, type CSSProperties, type ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { useActiveAdapter } from '../adapters/AdapterContext'
 import type { ClassMapResult } from '../adapters/types'
-import { getCanvasSlots, getComponent } from '../registry/registry'
+import { getComponent } from '../registry/registry'
 import { getResolver } from './resolver'
 import type { NodeStyle } from '../registry/types'
 import { useEditorStore } from '../state/editorStore'
-import {
-  readBucketClasses,
-  readBucketInline,
-  type StyleState,
-} from '../style/dimensions'
-import { composeInlineStyle } from '../style/inline'
-import { composeResponsive } from '../style/responsive'
-import { composeResponsiveInline } from '../style/responsive-inline'
+import { type StyleState } from '../style/dimensions'
+import { buildNodeRenderModel } from './nodeRenderModel'
 
 export interface CanonicalNodeProps {
   canonicalId: string
@@ -93,68 +87,24 @@ export function CanonicalNode({
     </div>
   ) : null
 
-  // Compose per-slot maps. Every slot the canonical declares gets a full
-  // responsive composition + inline merge. Pattern A canonicals (one slot
-  // named 'root') get a single-entry map; Pattern B canonicals (Card, Tabs)
-  // get entries for each named region.
-  //
-  // The `className` / `inlineStyle` fields below mirror `composedClasses.root`
-  // / `composedInlineStyles.root` for backwards compatibility with Pattern A
-  // impls written before Pattern B existed.
-  const composedClasses: Record<string, string> = {}
-  const composedInlineStyles: Record<string, CSSProperties> = {}
-  const responsiveInlineCSSParts: string[] = []
-  for (const slot of def.styleSlots) {
-    const baseClasses = composeResponsive(style, slot)
-    // Phase 6: when the slot has any responsiveInline entry, ALL of its inline
-    // (base + responsive) gets promoted to a generated CSS class. The base
-    // moves out of the inline-style attribute so its specificity doesn't beat
-    // the @media rule. When there's no responsive entry, the inline-style
-    // attribute fast path stays in place.
-    const ri = composeResponsiveInline(style, slot)
-    composedClasses[slot] = ri.className
-      ? `${baseClasses} ${ri.className}`.trim()
-      : baseClasses
-    if (ri.css) responsiveInlineCSSParts.push(ri.css)
-    if (!ri.consumesBaseInline) {
-      const inline = composeInlineStyle(style, slot)
-      if (inline) composedInlineStyles[slot] = inline
-    }
-    // Phase 12 § 4.2 — preview the edited pseudo-class state on the
-    // selected node. The state's classes are stored prefixed
-    // (`hover:bg-primary`) so they only apply on real hover; here we
-    // also apply the edited bucket's classes + inline UNPREFIXED so
-    // the designer sees the hover/focus/active look while editing it
-    // (render-only — never written to the document).
-    if (previewBucket) {
-      const pc = readBucketClasses(
-        style,
-        slot,
-        previewBucket.bp,
-        previewBucket.state,
-      )
-      if (pc) composedClasses[slot] = `${composedClasses[slot]} ${pc}`.trim()
-      const pi = readBucketInline(
-        style,
-        slot,
-        previewBucket.bp,
-        previewBucket.state,
-      )
-      if (Object.keys(pi).length > 0) {
-        composedInlineStyles[slot] = {
-          ...composedInlineStyles[slot],
-          ...(pi as CSSProperties),
-        }
-      }
-    }
-  }
-  const responsiveInlineCSS = responsiveInlineCSSParts.join('\n')
+  // Phase 18 § 3 — all composition (per-slot classes/styles, responsive-inline
+  // CSS, pseudo-state preview overlay, canvas-slot derivation) lives in the
+  // pure `buildNodeRenderModel`. The component keeps only the adapter/React
+  // wiring below. The `className` / `inlineStyle` props passed to the impl
+  // mirror `composedClasses.root` / `composedInlineStyles.root` for
+  // backwards compatibility with Pattern A impls written before Pattern B.
+  const {
+    composedClasses,
+    composedInlineStyles,
+    responsiveInlineCSS,
+    rootClassString,
+    canvasSlots,
+    usesSlotChildren,
+  } = buildNodeRenderModel(def, nodeProps, style, previewBucket)
 
   // Root-slot classMap output. Adapters with classMap receive the composed
   // root string; non-root slot composition isn't passed through classMap
-  // because the per-slot adapter-native rewriting isn't well-defined yet
-  // (Phase 6 if any adapter actually needs it).
-  const rootClassString = composedClasses.root ?? ''
+  // because the per-slot adapter-native rewriting isn't well-defined yet.
   const styleProps: ClassMapResult = adapter.classMap
     ? adapter.classMap(rootClassString, canonicalId)
     : { className: rootClassString }
@@ -180,8 +130,8 @@ export function CanonicalNode({
   // Phase 7 — canvasSlots can be a function for dynamic slot counts (Tabs
   // uses this: one canvas per props.tabs entry). nodeProps flows through so
   // adding/removing a tab via PropsPanel updates the slot list on next render.
-  const canvasSlots = getCanvasSlots(def, nodeProps)
-  const usesSlotChildren = def.canvasSlots !== undefined
+  // (`canvasSlots` / `usesSlotChildren` come from the render model above.)
+  //
   // Each Element wrapper renders as a plain <div> in the DOM (because `is="div"`).
   // We attach `canvas-slot` so global CSS in index.css can:
   //  - give every slot a sensible min-height so empty slots are still hit-test
@@ -203,33 +153,39 @@ export function CanonicalNode({
   const slotComponentId = def.slotComponent
   const slotDef = slotComponentId ? getComponent(slotComponentId) : null
   const SlotBound = slotDef ? getResolver()[slotDef.displayName] : null
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const slotChildren: Record<string, ReactNode> | undefined = useMemo(() => {
-    if (!usesSlotChildren) return undefined
-    return Object.fromEntries(
-      canvasSlots.map((slot) => [
-        slot,
-        SlotBound && slotDef ? (
-          <Element
-            key={slot}
-            id={slot}
-            is={SlotBound}
-            canvas={slotDef.isCanvas}
-            nodeProps={slotDef.defaults.props}
-            style={slotDef.defaults.style}
-          />
-        ) : (
-          <Element
-            key={slot}
-            id={slot}
-            is="div"
-            canvas
-            className="canvas-slot"
-          />
-        ),
-      ]),
-    )
-  }, [usesSlotChildren, slotKey, SlotBound, slotDef])
+  const slotChildren: Record<string, ReactNode> | undefined = useMemo(
+    () => {
+      if (!usesSlotChildren) return undefined
+      return Object.fromEntries(
+        canvasSlots.map((slot) => [
+          slot,
+          SlotBound && slotDef ? (
+            <Element
+              key={slot}
+              id={slot}
+              is={SlotBound}
+              canvas={slotDef.isCanvas}
+              nodeProps={slotDef.defaults.props}
+              style={slotDef.defaults.style}
+            />
+          ) : (
+            <Element
+              key={slot}
+              id={slot}
+              is="div"
+              canvas
+              className="canvas-slot"
+            />
+          ),
+        ]),
+      )
+    },
+    // `canvasSlots` is intentionally NOT a dep — it's a fresh array every
+    // render (dynamic canonicals rebuild it from props), so including it
+    // would defeat the memo. `slotKey` (its join) is the stable proxy.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [usesSlotChildren, slotKey, SlotBound, slotDef],
+  )
 
   // All Hooks have run — safe to bail to the missing-impl placeholder now.
   // Guard on `Impl` (not `missingImpl`) so TS narrows it to defined below.
