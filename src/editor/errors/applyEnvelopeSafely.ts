@@ -1,6 +1,7 @@
 import type { useEditor } from '@craftjs/core'
 import { useEditorStore } from '@/state/editorStore'
 import type { EditorDocument } from '@/persistence/schema'
+import { validateDocumentSemantics } from '@/persistence/documentSemantics'
 import { emitMetric } from '../telemetry/telemetry'
 import { validateCraftJson } from './craftJsonIntegrity'
 
@@ -97,6 +98,25 @@ function runApply(
   if (!check.ok) {
     setMalformedDocument({ docId, envelope, error: check.error })
     return { ok: false, error: check.error }
+  }
+  // Phase 18 § 4 — semantic pass (props + style vs the canonical schemas).
+  // Lenient: report through the telemetry seam + a dev warning, then load as
+  // normal. Corrupt props/style are surfaced BEFORE render without blocking a
+  // document that the renderer can still best-effort display.
+  const semanticIssues = validateDocumentSemantics(envelope.craftJson)
+  if (semanticIssues.length > 0) {
+    emitMetric({
+      name: 'document.semanticIssues',
+      docId,
+      count: semanticIssues.length,
+      issues: semanticIssues,
+    })
+    if (import.meta.env?.DEV) {
+      console.warn(
+        `[document semantics] ${semanticIssues.length} issue(s) in doc '${docId}':`,
+        semanticIssues,
+      )
+    }
   }
   const start = Date.now()
   try {
