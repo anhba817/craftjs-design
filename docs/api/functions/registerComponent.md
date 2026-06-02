@@ -8,7 +8,7 @@
 
 > **registerComponent**\<`P`\>(`def`): `void`
 
-Defined in: registry/registry.ts:83
+Defined in: registry/registry.ts:92
 
 Register a canonical component definition. Adds it to the in-memory
 registry keyed by `def.id`; subsequent `getComponent(id)` calls return

@@ -40,7 +40,7 @@ read `className` + `inlineStyle` + `children` + `rootRef`.
 
 ```tsx
 // components/Box.tsx
-import type { AdapterRenderProps } from '@design/sdk'
+import type { AdapterRenderProps } from '@crafted-design/editor/sdk'
 
 export function MyBox({ children, rootRef, className, inlineStyle }: AdapterRenderProps) {
   return (
@@ -63,7 +63,7 @@ Each impl is a thin wrapper. Read `props` for canonical props, use
 
 ```tsx
 // components/Button.tsx
-import type { AdapterRenderProps } from '@design/sdk'
+import type { AdapterRenderProps } from '@crafted-design/editor/sdk'
 
 export function MyButton({ props, rootRef, className, inlineStyle }: AdapterRenderProps) {
   const { label, intent, disabled } = props as {
@@ -87,7 +87,7 @@ Pattern B canonicals (Card, with header/body/footer canvas slots) consume
 
 ```tsx
 // components/Card.tsx
-import type { AdapterRenderProps } from '@design/sdk'
+import type { AdapterRenderProps } from '@crafted-design/editor/sdk'
 
 export function MyCard({
   rootRef,
@@ -119,7 +119,7 @@ where you want each region rendered.
 
 ```ts
 // index.ts
-import { registerAdapter } from '@design/sdk'
+import { registerAdapter } from '@crafted-design/editor/sdk'
 import { MyBox } from './components/Box'
 // ...other imports
 
@@ -177,9 +177,11 @@ ids, not adapter ids).
 
 ## Step 8 — Verify the SDK boundary
 
-Your `examples/adapter-mylib/` directory should import only from
-`@design/sdk`. Reaching into `../src/...` is unsupported — internal APIs
-move between versions.
+Your adapter should import only from the SDK entry —
+`@crafted-design/editor/sdk` in your own package, or the equivalent
+`@design/sdk` alias when working inside this repo's `examples/` (an ESLint
+rule enforces it there). Reaching into `../src/...` is unsupported — internal
+APIs move between versions.
 
 ```bash
 grep -r "from '\\.\\./\\.\\./src" examples/adapter-mylib/

@@ -8,7 +8,7 @@
 
 > **listComponents**(): [`CanonicalComponent`](../interfaces/CanonicalComponent.md)\<`any`\>[]
 
-Defined in: registry/registry.ts:154
+Defined in: registry/registry.ts:163
 
 All registered canonicals, in registration order.
 

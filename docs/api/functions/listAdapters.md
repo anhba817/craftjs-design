@@ -8,7 +8,7 @@
 
 > **listAdapters**(): [`Adapter`](../interfaces/Adapter.md)[]
 
-Defined in: adapters/AdapterContext.tsx:105
+Defined in: adapters/AdapterContext.tsx:123
 
 All registered adapters, in registration order.
 

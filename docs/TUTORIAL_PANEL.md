@@ -44,7 +44,7 @@ export function NotesPanel({ nodeId }: { nodeId: string }) {
 For panels that edit slot classes, use the `useNodeClasses` hook:
 
 ```tsx
-import { useNodeClasses } from '@design/sdk'
+import { useNodeClasses } from '@crafted-design/editor/sdk'
 
 export function CustomClassPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
   const { classString, writeClasses } = useNodeClasses(nodeId, slot)
@@ -65,7 +65,7 @@ panel gets responsive support for free.
 ## Step 2 — Register the panel
 
 ```ts
-import { registerPanel } from '@design/sdk'
+import { registerPanel } from '@crafted-design/editor/sdk'
 import { NotesPanel } from './NotesPanel'
 
 registerPanel({
@@ -131,7 +131,7 @@ Custom panels typically need to read / write node state. The SDK exposes:
 
 - `useNodeClasses(nodeId, slot)` — class string + inline style read/write,
   responsive-aware.
-- `useEditor()` (from `@craftjs/core`, not `@design/sdk`) — direct access to
+- `useEditor()` (from `@craftjs/core`, not the SDK) — direct access to
   Craft's `actions` and `query`. Use for cases the SDK doesn't cover.
 
 For setting canonical props (synthetic or schema-typed), use Craft's
@@ -141,8 +141,9 @@ Immer draft — mutate in place, don't return.
 ## Where to next
 
 - **Panel that reads the canonical definition.** Use
-  `getComponentByDisplayName(displayName)` from `@design/sdk` to look up
-  the canonical's metadata (e.g., to show the schema in a debug pane).
+  `getComponentByDisplayName(displayName)` from `@crafted-design/editor/sdk`
+  to look up the canonical's metadata (e.g., to show the schema in a debug
+  pane).
 - **Panel that interacts with multiple nodes.** `useEditor` exposes
   `state.events.selected` — your panel can react to selection changes.
 - **Panel scoped to specific canonicals.** Narrow `applicableTo`:

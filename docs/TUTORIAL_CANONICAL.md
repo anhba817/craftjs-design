@@ -34,7 +34,7 @@ case.
 ## Step 2 — Register the canonical
 
 ```ts
-import { registerCanonical } from '@design/sdk'
+import { registerCanonical } from '@crafted-design/editor/sdk'
 
 registerCanonical<StepperProps>({
   id: 'stepper',                       // stable — persisted in documents
@@ -89,7 +89,7 @@ Add an impl per adapter you support:
 
 ```tsx
 // src/adapters/shadcn/components/Stepper.tsx
-import type { AdapterRenderProps } from '@design/sdk'
+import type { AdapterRenderProps } from '@crafted-design/editor/sdk'
 
 export function ShadcnStepper({ props, rootRef, className, inlineStyle }: AdapterRenderProps) {
   const { currentStep, totalSteps, showLabels } = props as {

@@ -8,7 +8,7 @@
 
 > **getComponent**\<`P`\>(`id`): [`CanonicalComponent`](../interfaces/CanonicalComponent.md)\<`P`\> \| `undefined`
 
-Defined in: registry/registry.ts:127
+Defined in: registry/registry.ts:136
 
 Look up a canonical by id. Returns `undefined` when the id isn't
 registered. Cast via the `P` generic when you need the typed props

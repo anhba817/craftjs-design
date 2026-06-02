@@ -8,7 +8,7 @@
 
 > `const` **registerCanonical**: \<`P`\>(`def`) => `void` = `registerComponent`
 
-Defined in: registry/registry.ts:109
+Defined in: registry/registry.ts:118
 
 Register a canonical component. Identical to registerComponent — kept under
 a more readable name for SDK consumers writing custom canonicals.

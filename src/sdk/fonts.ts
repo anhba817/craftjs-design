@@ -8,7 +8,7 @@
 // dropdown lists the new token on next panel render.
 //
 // @example
-//   import { registerFontToken } from '@design/sdk'
+//   import { registerFontToken } from '@crafted-design/editor/sdk'
 //
 //   registerFontToken({
 //     id: 'inter',

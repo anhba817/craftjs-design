@@ -8,7 +8,7 @@
 
 > **uniqueTabValues**(`tabs`): `string`[]
 
-Defined in: registry/components/tabs.ts:71
+Defined in: registry/components/dynamic-slots.ts:38
 
 Synthesises a unique render value per tab. Phase 10's stable-id work
 (§ 2.11) makes this largely obsolete for slot-key derivation —

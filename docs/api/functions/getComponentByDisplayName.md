@@ -8,7 +8,7 @@
 
 > **getComponentByDisplayName**(`displayName`): [`CanonicalComponent`](../interfaces/CanonicalComponent.md)\<`any`\> \| `undefined`
 
-Defined in: registry/registry.ts:139
+Defined in: registry/registry.ts:148
 
 Reverse-lookup helper. Inspector panels and Craft.js know nodes by
 their `displayName` (each canonical's displayName is also its Craft

@@ -7,7 +7,7 @@
 //
 // @example
 // ```tsx
-// import { EditorImageProvider } from '@design/sdk'
+// import { EditorImageProvider } from '@crafted-design/editor/sdk'
 // import { Editor } from '@crafted-design/editor'
 //
 // const backend = {

@@ -8,4 +8,4 @@
 
 > `const` **SLIDE\_SLOT\_PREFIX**: `"slide-"` = `'slide-'`
 
-Defined in: registry/components/carousel.ts:27
+Defined in: registry/components/dynamic-slots.ts:20

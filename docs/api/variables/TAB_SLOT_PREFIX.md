@@ -8,4 +8,4 @@
 
 > `const` **TAB\_SLOT\_PREFIX**: `"tab-"` = `'tab-'`
 
-Defined in: registry/components/tabs.ts:39
+Defined in: registry/components/dynamic-slots.ts:19

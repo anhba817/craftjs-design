@@ -11,7 +11,7 @@
 // (responsive bucket routing, container peel on clear, etc.).
 //
 // @example
-//   import { useNodeClasses } from '@design/sdk'
+//   import { useNodeClasses } from '@crafted-design/editor/sdk'
 //
 //   function MyPanel({ nodeId, slot = 'root' }: { nodeId: string; slot?: string }) {
 //     const { classString, writeClasses } = useNodeClasses(nodeId, slot)
@@ -31,7 +31,7 @@ export { useNodeClasses } from '../editor/inspector/shared/useNodeClasses'
  * model. Mixed-value detection is left to the caller — typical pattern:
  *
  * ```tsx
- * import { useNodeClassesMulti } from '@design/sdk'
+ * import { useNodeClassesMulti } from '@crafted-design/editor/sdk'
  *
  * function MyMultiPanel({ nodeIds, slot }: { nodeIds: readonly string[]; slot: string }) {
  *   const { classStrings, writeClassesAll } = useNodeClassesMulti(nodeIds, slot)
@@ -63,7 +63,7 @@ export type { Breakpoint } from '../state/editorStore'
  *
  * @example
  * ```tsx
- * import { EditableText, useStartTextEdit } from '@design/sdk'
+ * import { EditableText, useStartTextEdit } from '@crafted-design/editor/sdk'
  *
  * function MyText({ props, rootRef }: AdapterRenderProps) {
  *   const { content } = props as { content: string }

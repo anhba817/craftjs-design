@@ -6,7 +6,7 @@
 // load; SDK consumers add custom panels the same way.
 //
 // @example
-//   import { registerPanel, useNodeClasses } from '@design/sdk'
+//   import { registerPanel, useNodeClasses } from '@crafted-design/editor/sdk'
 //
 //   function NotesPanel({ nodeId }: { nodeId: string }) {
 //     const { classString, writeClasses } = useNodeClasses(nodeId)

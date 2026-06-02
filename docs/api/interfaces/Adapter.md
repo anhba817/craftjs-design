@@ -14,7 +14,7 @@ Defined in: adapters/types.ts:57
 
 > `optional` **classMap?**: [`ClassMapFn`](../type-aliases/ClassMapFn.md)
 
-Defined in: adapters/types.ts:78
+Defined in: adapters/types.ts:86
 
 ***
 
@@ -46,7 +46,7 @@ Defined in: adapters/types.ts:58
 
 > `optional` **mount?**: () => `void`
 
-Defined in: adapters/types.ts:83
+Defined in: adapters/types.ts:91
 
 #### Returns
 
@@ -54,11 +54,19 @@ Defined in: adapters/types.ts:83
 
 ***
 
+### peerDependencies?
+
+> `optional` **peerDependencies?**: `Record`\<`string`, `string`\>
+
+Defined in: adapters/types.ts:103
+
+***
+
 ### themeTokens?
 
 > `optional` **themeTokens?**: `Record`\<`string`, `string`\>
 
-Defined in: adapters/types.ts:73
+Defined in: adapters/types.ts:81
 
 ***
 
@@ -66,7 +74,7 @@ Defined in: adapters/types.ts:73
 
 > `optional` **unmount?**: () => `void`
 
-Defined in: adapters/types.ts:84
+Defined in: adapters/types.ts:92
 
 #### Returns
 
@@ -78,4 +86,4 @@ Defined in: adapters/types.ts:84
 
 > `optional` **Wrapper?**: `ComponentType`\<\{ `children`: `ReactNode`; \}\>
 
-Defined in: adapters/types.ts:67
+Defined in: adapters/types.ts:75

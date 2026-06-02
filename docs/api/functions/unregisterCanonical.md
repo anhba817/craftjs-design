@@ -8,7 +8,7 @@
 
 > **unregisterCanonical**(`id`): `boolean`
 
-Defined in: registry/registry.ts:116
+Defined in: registry/registry.ts:125
 
 Remove a canonical from the registry. Used by SDK consumers that want to
 replace a built-in (call unregisterCanonical first, then registerCanonical

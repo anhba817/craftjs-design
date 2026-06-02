@@ -6,8 +6,8 @@
 // documents — only the rendering changes.
 //
 // @example
-//   import { registerAdapter } from '@design/sdk'
-//   import type { AdapterRenderProps } from '@design/sdk'
+//   import { registerAdapter } from '@crafted-design/editor/sdk'
+//   import type { AdapterRenderProps } from '@crafted-design/editor/sdk'
 //
 //   function MyButton({ props, rootRef, className }: AdapterRenderProps) {
 //     const { label } = props as { label: string }

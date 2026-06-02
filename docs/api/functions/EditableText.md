@@ -34,7 +34,7 @@ inside their root element and wire `onDoubleClick` on the root to
 ## Example
 
 ```tsx
-import { EditableText, useStartTextEdit } from '@design/sdk'
+import { EditableText, useStartTextEdit } from '@crafted-design/editor/sdk'
 
 function MyText({ props, rootRef }: AdapterRenderProps) {
   const { content } = props as { content: string }

@@ -8,7 +8,7 @@
 
 > **unregisterAdapter**(`id`): `boolean`
 
-Defined in: adapters/AdapterContext.tsx:44
+Defined in: adapters/AdapterContext.tsx:45
 
 Remove an adapter by id. Returns `true` if an adapter was removed.
 Hosts that want to replace a built-in adapter call this then

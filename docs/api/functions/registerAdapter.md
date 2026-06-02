@@ -8,7 +8,7 @@
 
 > **registerAdapter**(`adapter`): `void`
 
-Defined in: adapters/AdapterContext.tsx:81
+Defined in: adapters/AdapterContext.tsx:82
 
 Register an adapter — a UI library binding that provides renderers for
 each canonical id. Validates the manifest structurally (Zod) before

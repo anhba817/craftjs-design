@@ -6,7 +6,7 @@
 //
 // @example
 //   import { z } from 'zod'
-//   import { registerComponent } from '@design/sdk'
+//   import { registerComponent } from '@crafted-design/editor/sdk'
 //
 //   const stepperSchema = z.object({
 //     currentStep: z.number().int().min(0),

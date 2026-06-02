@@ -140,8 +140,20 @@ interface NodeStyle {
   inline?: Record<string, Record<string, string>>      // slot → cssProp → value (base)
   responsiveInline?: Record<string, Record<string, Record<string, string>>>
                                                        // bp → slot → cssProp → value
+  // Phase 12 — pseudo-class states, composing with breakpoints
+  // (state ∈ 'hover' | 'focus' | 'active'):
+  states?: Record<string, Record<string, string>>      // state → slot → classes
+  stateResponsive?: Record<string, Record<string, Record<string, string>>>
+                                                       // bp → state → slot → classes
+  stateInline?: Record<string, Record<string, Record<string, string>>>
+                                                       // state → slot → cssProp → value
+  stateResponsiveInline?: Record<string, Record<string, Record<string, Record<string, string>>>>
+                                                       // bp → state → slot → cssProp → value
 }
 ```
+
+A runtime Zod schema for this shape (`nodeStyleSchema`) backs the semantic
+document validation pass.
 
 #### `CanonicalCategory`
 
@@ -238,7 +250,7 @@ interface FontToken {
 throws on invalid input. Re-registering the same id overwrites.
 
 ```ts
-import { registerFontToken } from '@design/sdk'
+import { registerFontToken } from '@crafted-design/editor/sdk'
 
 registerFontToken({
   id: 'inter',
