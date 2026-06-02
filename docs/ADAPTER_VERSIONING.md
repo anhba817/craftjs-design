@@ -28,7 +28,7 @@ actually import:
 // MUI adapter? add the peers:
 {
   "dependencies": {
-    "@crafted-design/editor": "next",
+    "@crafted-design/editor": "^1.0.0",
     "@mui/material": "^9",
     "@emotion/react": "^11",
     "@emotion/styled": "^11"
@@ -46,8 +46,8 @@ import '@crafted-design/editor/adapters/mui'  // add MUI — requires the peers
 
 > The full entry (`@crafted-design/editor`) bundles the MUI adapter glue, so
 > consuming it **requires the MUI + Emotion peers installed**. Use `/core` if
-> you don't want MUI. This is the one breaking change in `0.7.0` — see the
-> CHANGELOG migration note.
+> you don't want MUI. (This split landed in the `0.7.0` CHANGELOG entry, before
+> the first published release.)
 
 ## Declared, tested version ranges
 

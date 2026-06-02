@@ -1,8 +1,11 @@
 # Chakra adapter — example
 
 A real Chakra UI v3 adapter built on top of `@design/sdk` /
-`@crafted-design/editor/sdk`. All 20 canonicals are wired with parity
-to the shadcn + MUI adapters. Demonstrates:
+`@crafted-design/editor/sdk`. It implements a **20-canonical subset** of the
+48-canonical registry — deliberately partial: it's a reference for authoring
+your own adapter, not a complete one (the three built-ins — shadcn, MUI,
+plain-HTML — each cover all 48; unimplemented canonicals render the
+missing-renderer placeholder). Demonstrates:
 
 - Adapter registration via `registerAdapter`.
 - Pattern A canonical impls (Box, Heading, Button, Text, Badge, Image,
@@ -20,7 +23,7 @@ to the shadcn + MUI adapters. Demonstrates:
 
 ```
 examples/adapter-chakra/
-  index.ts                 # registerAdapter call wiring all 20 components
+  index.ts                 # registerAdapter call wiring the 20 example components
   Wrapper.tsx              # <ChakraProvider value={defaultSystem}>
   components/
     Box.tsx, Button.tsx, Heading.tsx, Stack.tsx, Text.tsx, Badge.tsx,

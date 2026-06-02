@@ -4,7 +4,7 @@ How `@crafted-design/editor` is published. **`1.0.0` is the first stable
 release**; the public SDK surface is now **frozen under SemVer** — removing or
 renaming any export (the set enumerated in `src/sdk/surface.test.ts`) is a
 breaking, major-version change. See
-[SDK_GUIDE.md → Public API stability](./SDK_GUIDE.md#public-api-stability-toward-10).
+[SDK_GUIDE.md → Public API stability](./SDK_GUIDE.md#public-api-stability).
 Releases publish to the default **`latest`** dist-tag. Some steps are
 **host/ops actions** that can't happen inside the repo — they're called out as
 such.

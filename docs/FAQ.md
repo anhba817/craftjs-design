@@ -58,7 +58,7 @@ covers it. Per-adapter coverage is in
 `.d.ts` files ship for every entry. The public runtime surface is **frozen and
 enforced** (`src/sdk/surface.test.ts`) — exports can't be added/removed without
 a deliberate, CHANGELOG-noted change. The 1.0 SemVer promise is described in
-[SDK_GUIDE.md → Public API stability](./SDK_GUIDE.md#public-api-stability-toward-10).
+[SDK_GUIDE.md → Public API stability](./SDK_GUIDE.md#public-api-stability).
 
 ### Styling / responsive / state edits don't show up.
 

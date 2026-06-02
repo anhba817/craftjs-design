@@ -15,7 +15,7 @@ Vite + React 19 + TS app.
 ```bash
 npm create vite@latest my-editor -- --template react-ts
 cd my-editor
-npm install @crafted-design/editor@next react@19 react-dom@19 @craftjs/core@^0.2.12
+npm install @crafted-design/editor react@19 react-dom@19 @craftjs/core@^0.2.12
 ```
 
 shadcn + plain-HTML need no other peers. (Want MUI too? `npm install
@@ -28,7 +28,7 @@ shadcn + plain-HTML need no other peers. (Want MUI too? `npm install
 {
   "type": "module",
   "dependencies": {
-    "@crafted-design/editor": "next",
+    "@crafted-design/editor": "^1.0.0",
     "@craftjs/core": "^0.2.12",
     "react": "^19",
     "react-dom": "^19"

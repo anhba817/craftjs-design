@@ -526,7 +526,7 @@ likely needs a new export.
 
 ---
 
-## Public API stability (toward 1.0)
+## Public API stability
 
 The public runtime surface is **frozen and enforced**. `src/sdk/surface.test.ts`
 holds the exact list of exported names for both entry points and fails CI if
@@ -567,9 +567,9 @@ the old one `@deprecated` (with the JSDoc pointer to the replacement) for at
 least one minor, then remove it in the next major — updating the frozen list +
 CHANGELOG in that commit.
 
-### Pre-1.0 caveat
+### Since 1.0
 
-While the package is still `0.x` (behind the `next` dist-tag), the surface may
-still evolve between minors — but only deliberately: the frozen-surface test
-forces every change to be intentional and noted in the CHANGELOG. `1.0.0`
-freezes it under the full SemVer promise above.
+`1.0.0` (the first stable release, on the `latest` dist-tag) put the surface
+under the full SemVer promise above. New exports may still be **added** in
+minors — every addition updates the frozen list + the CHANGELOG — but nothing
+is removed or renamed outside a major.

@@ -189,7 +189,7 @@ grep -r "from '\\.\\./\\.\\./src" examples/adapter-mylib/
 ## Where to next
 
 - **Add more canonicals.** Browse `src/registry/components/*.ts` for the
-  full list — twenty canonicals total. Add impls + entries to the
+  full list — 48 canonicals total (`npm run docs:matrix` prints them). Add impls + entries to the
   `components` map.
 - **Override built-ins.** Add an alternative impl for an existing canonical;
   users can swap to your adapter to get your styling.

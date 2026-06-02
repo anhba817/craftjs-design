@@ -39,7 +39,7 @@ Each item is tagged:
 > diagrams) stay Stretch.
 
 **What works:**
-- 48 canonical components, full coverage in shadcn + MUI adapters.
+- 48 canonical components, full coverage in the shadcn + MUI + plain-HTML adapters.
 - Multi-document store with import / export / share-by-URL / templates.
 - Hot canonical reload (registry version + setOptions).
 - Pluggable inspector panels via `registerPanel`.
@@ -49,8 +49,11 @@ Each item is tagged:
 - Custom font tokens via `registerFontToken` (URL `@font-face` + per-class CSS).
 - 8 resize handles with snap-to-Tailwind-token.
 - 4-layer error boundaries with telemetry hook.
-- Dist build (`npm run build:dist`) — 440 KB combined gzipped, externalizes React + Craft.
-- 226 passing tests across pure helpers, parsers, registry lifecycle, persistence.
+- Dist build (`npm run build:dist`) — full entry ~258 KB gz / lean `/core`
+  ~250 KB / `/sdk` ~62 KB / CSS ~125 KB; externalizes React, Craft, and the
+  optional MUI/Emotion peers (`npm run check:size` is the budget gate).
+- 636 passing tests across pure helpers, parsers, registry lifecycle,
+  persistence, the render model, and the frozen SDK surface.
 
 **What's documented:**
 - ARCHITECTURE.md (full architecture reference).
@@ -60,7 +63,8 @@ Each item is tagged:
 - INTEGRATION_GUIDE.md (embedding walkthrough).
 - PERFORMANCE.md (static audit + measurement plan).
 - ACCESSIBILITY.md (static audit + WCAG AA target + known gaps).
-- 8 phase plans + close-outs (PHASE1_PLAN through PHASE8_PLAN).
+- 18 phase plans + close-outs (PHASE1_PLAN through PHASE18_PLAN), plus
+  COOKBOOK / FAQ / MIGRATION / RELEASE and the generated ADAPTER_MATRIX.
 
 **What's missing:** the rest of this document.
 
@@ -1017,12 +1021,12 @@ Today: ESM only. For broader compatibility:
 ### 12.2 Subpath imports *(High / DevEx)*
 
 ```ts
-import { registerCanonical } from '@design/editor/sdk'
-import { Editor } from '@design/editor/runtime'
+import { registerCanonical } from '@crafted-design/editor/sdk'
+import { Editor } from '@crafted-design/editor/core'
 ```
 
-vs the current single entry. `package.json` `exports` field already
-shown in SDK_GUIDE.md but not actually shipped.
+Shipped — see INTEGRATION_GUIDE "Subpath exports" for the full entry-point
+matrix (`/core`, `/adapters/{shadcn,mui,html}`, `/sdk`, `/vite-plugin`).
 
 ### 12.3 Bundle analyzer + budgets *(Production-blocker)*
 - `vite-bundle-visualizer` integration.

@@ -13,15 +13,14 @@ semantics + the unified `Fragment` are load-bearing.
 ## Install
 
 ```bash
-# Initial `0.1.0` preview lives behind the `next` dist-tag — opt in
-# explicitly to avoid surprises until Phase 11 promotes it to `latest`.
-npm install @crafted-design/editor@next react@19 react-dom@19 @craftjs/core@^0.2.12
+npm install @crafted-design/editor react@19 react-dom@19 @craftjs/core@^0.2.12
 ```
 
-`@emotion/react`, `@emotion/styled`, and `@mui/material` are bundled into
-the editor build — you don't need to install them separately. If you
-strip the Chakra example or MUI adapter from your fork, you can also
-omit the matching peer chain.
+`@mui/material`, `@emotion/react`, and `@emotion/styled` are **optional peer
+dependencies** — they are NOT bundled. Install them only if you use the full
+`@crafted-design/editor` entry (which registers the MUI adapter) or import
+`/adapters/mui`; the lean `/core` entry (shadcn + plain-HTML) needs no extra
+peers. See *Subpath exports* below.
 
 ## Subpath exports
 
@@ -107,24 +106,24 @@ function App() {
 
 ## Customizing the registry
 
-The editor pre-registers 48 canonicals, 3 adapters (shadcn / MUI / Chakra
-example), 7 themes, inspector panels, and starter templates. Override
-any of these by calling the SDK BEFORE rendering `<Editor />`:
+The editor pre-registers 48 canonicals, the built-in adapters (shadcn + MUI +
+plain-HTML on the full entry; shadcn + plain-HTML on `/core`), 7 themes,
+inspector panels, and starter templates. Override any of these by calling the
+SDK BEFORE rendering `<Editor />`:
 
-> **Adapter coverage policy.** shadcn and MUI implement **every** canonical.
-> The Chakra adapter is an *example* — a third-party-adapter demo that
-> renders a representative subset (Box, Heading, Button, Stack, Card,
-> and the basic inputs). It deliberately does **not** track every new
-> canonical. When a document uses a canonical the active adapter doesn't
-> implement, the node renders a labeled placeholder
+> **Adapter coverage policy.** The three built-in adapters (shadcn, MUI,
+> plain-HTML) implement **every** canonical — see
+> [ADAPTER_MATRIX.md](./ADAPTER_MATRIX.md). The in-repo Chakra adapter is an
+> *example* (a third-party-adapter demo covering a 20-canonical subset) and is
+> NOT part of the published package. When a document uses a canonical the
+> active adapter doesn't implement, the node renders a labeled placeholder
 > (`<Name> — no impl in adapter "<adapter>"`) instead of crashing, so you
-> can swap adapters or remove the node. If you ship a production Chakra
-> adapter, fill the gaps the same way shadcn / MUI do.
+> can swap adapters or remove the node.
 
 ### Remove a built-in canonical
 
 ```tsx
-import { Editor, unregisterCanonical } from '@design/editor'
+import { Editor, unregisterCanonical } from '@crafted-design/editor'
 
 unregisterCanonical('alert')  // drops Alert from the toolbox
 
@@ -137,7 +136,7 @@ function App() {
 
 ```tsx
 import { z } from 'zod'
-import { Editor, registerCanonical } from '@design/editor'
+import { Editor, registerCanonical } from '@crafted-design/editor'
 
 registerCanonical({
   id: 'callout',
@@ -161,7 +160,7 @@ registerCanonical({
 ### Add a custom adapter
 
 ```tsx
-import { Editor, registerAdapter, type AdapterRenderProps } from '@design/editor'
+import { Editor, registerAdapter, type AdapterRenderProps } from '@crafted-design/editor'
 
 function MyBox({ children, rootRef, className }: AdapterRenderProps) {
   return <div ref={rootRef} className={className}>{children}</div>
@@ -177,7 +176,7 @@ registerAdapter({
 ### Add a custom inspector panel
 
 ```tsx
-import { Editor, registerPanel, useNodeClasses } from '@design/editor'
+import { Editor, registerPanel, useNodeClasses } from '@crafted-design/editor'
 
 function NotesPanel({ nodeId }: { nodeId: string }) {
   const { classString, writeClasses } = useNodeClasses(nodeId)
@@ -202,7 +201,7 @@ registerPanel({
 ### Add a custom theme
 
 ```tsx
-import { Editor, registerTheme } from '@design/editor'
+import { Editor, registerTheme } from '@crafted-design/editor'
 
 // Add the CSS block to your host's global stylesheet:
 // [data-theme="forest"] { --primary: oklch(...); }
@@ -326,7 +325,7 @@ For one-off blob round-trips outside the store, the lower-level helpers
 still exist:
 
 ```tsx
-import { exportDocument, importDocumentFromFile } from '@design/editor'
+import { exportDocument, importDocumentFromFile } from '@crafted-design/editor'
 
 const blob = exportDocument(myEnvelope)        // → JSON Blob
 const env = await importDocumentFromFile(file) // File → validated envelope
@@ -344,7 +343,7 @@ per-inspector-panel). The top-shell boundary catches anything that bubbles
 out of the rest. You can supply your own telemetry handler:
 
 ```tsx
-import { Editor, ErrorBoundary, TopShellErrorFallback } from '@design/editor'
+import { Editor, ErrorBoundary, TopShellErrorFallback } from '@crafted-design/editor'
 
 function App() {
   return (
@@ -600,7 +599,7 @@ Common fixes:
 Make sure you import the editor's CSS:
 
 ```tsx
-import '@design/editor/dist-lib/index.css'
+import '@crafted-design/editor/index.css'
 ```
 
 The editor's Tailwind safelist is baked into this CSS. Your host app's
@@ -613,8 +612,8 @@ Tailwind config can either:
 ### Adapter switcher shows "no impl in adapter X" placeholders
 
 The adapter doesn't have a component impl for that canonical. Either swap
-to a covering adapter (shadcn / MUI cover all 20) or implement the missing
-canonical in your custom adapter.
+to a covering adapter (shadcn / MUI / plain-HTML cover all 48) or implement
+the missing canonical in your custom adapter.
 
 ## Where to next
 

@@ -297,7 +297,7 @@ A new adapter wraps a UI library and provides impls for some or all canonicals. 
 3. Create `src/adapters/<name>/index.ts`:
 
    ```ts
-   import { registerAdapter } from '../AdapterContext'
+   import { registerAdapter } from '@design/sdk'
    import { MyButton } from './components/Button'
 
    registerAdapter({

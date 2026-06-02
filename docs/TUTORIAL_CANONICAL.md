@@ -172,12 +172,13 @@ For tokens from existing slices (typography, layout, spacing, size,
 appearance, effects), the safelist already covers them at every
 breakpoint — no action needed.
 
-## Step 8 — Register before mount
+## Step 8 — Register at module load
 
-The registry warns if you `registerCanonical` after the Editor has mounted.
-Hot canonical reload isn't supported yet — register at module load via
-side-effect imports in `src/App.tsx` (the canonical app does this for all
-20 built-ins).
+Register at module load via side-effect imports in `src/App.tsx` (the
+canonical app does this for all 48 built-ins). Post-mount registration is
+also supported — the registry bumps a version counter and the editor
+re-resolves, so a hot-reloaded canonical appears in the toolbox without a
+page reload — but module-load registration is the predictable default.
 
 ## Verifying
 

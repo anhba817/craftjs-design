@@ -11,7 +11,7 @@ npm install          # also installs git hooks (lefthook) via `prepare`
 npm run dev          # the dogfood editor app at the printed localhost URL
 ```
 
-Node 22+. The package is ESM-only.
+Node 20+ (CI runs on 22). The package is ESM-only.
 
 ## The dev loop
 
