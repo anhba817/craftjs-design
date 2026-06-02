@@ -62,6 +62,25 @@ body {
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Phase 19 — editor-chrome tokens (--ed-*), mapped inline so utilities
+     like `bg-ed-surface` / `text-ed-text-muted` / `border-ed-border`
+     compile. The chrome (toolbox, inspector, toolbar, panels, banners)
+     references ONLY these; presets and host token maps swap the variable
+     values on the editor root without touching the shadcn/canvas tokens
+     above — the document theme and the chrome theme stay independent. */
+  --color-ed-surface: var(--ed-surface);
+  --color-ed-surface-2: var(--ed-surface-2);
+  --color-ed-surface-3: var(--ed-surface-3);
+  --color-ed-border: var(--ed-border);
+  --color-ed-border-2: var(--ed-border-2);
+  --color-ed-border-strong: var(--ed-border-strong);
+  --color-ed-text-strong: var(--ed-text-strong);
+  --color-ed-text: var(--ed-text);
+  --color-ed-text-muted: var(--ed-text-muted);
+  --color-ed-text-faint: var(--ed-text-faint);
+  --color-ed-accent: var(--ed-accent);
+  --color-ed-accent-fg: var(--ed-accent-fg);
 }
 
 :root {
@@ -104,6 +123,40 @@ body {
   --brand-blue: oklch(0.55 0.2 255);
   --brand-ink: oklch(0.22 0.03 265);
   --brand-sand: oklch(0.85 0.06 80);
+}
+
+/* Phase 19 — editor-chrome theme: the `light` preset (default).
+   Defined on :root — NOT on .cd-editor-chrome — so chrome content that
+   portals outside the editor root (Radix popovers/dropdowns mounted on
+   <body>) still resolves the tokens. Non-default themes override these
+   via [data-editor-theme] / inline variables on the editor root
+   (Group C handles the portal gap there).
+
+   Values are byte-identical to the Tailwind v4 grays the chrome
+   hardcoded before the Phase 19 sweep, so the default look is
+   pixel-unchanged. Where two grays collapsed into one token, the
+   majority value won (minority call sites hand-reviewed in the sweep). */
+:root {
+  --ed-surface: #fff; /* was bg-white */
+  --ed-surface-2: oklch(98.5% 0.002 247.839); /* gray-50 */
+  --ed-surface-3: oklch(96.7% 0.003 264.542); /* gray-100 */
+  --ed-border: oklch(92.8% 0.006 264.531); /* gray-200 */
+  --ed-border-2: oklch(87.2% 0.01 258.338); /* gray-300 */
+  --ed-border-strong: oklch(70.7% 0.022 261.325); /* gray-400 (+ collapsed gray-500 borders) */
+  --ed-text-strong: oklch(27.8% 0.033 256.848); /* gray-800 (+ collapsed gray-900) */
+  --ed-text: oklch(37.3% 0.034 259.733); /* gray-700 */
+  --ed-text-muted: oklch(55.1% 0.027 264.364); /* gray-500 (+ collapsed gray-600) */
+  --ed-text-faint: oklch(70.7% 0.022 261.325); /* gray-400 (+ collapsed gray-300) */
+  /* Chrome accent — selected states, focus rings, primary chrome buttons.
+     Defaults to the shadcn `primary` LIGHT values the chrome borrowed
+     before the sweep, but as literals: the chrome must NOT follow the
+     document theme / colorMode. */
+  --ed-accent: oklch(0.205 0 0);
+  --ed-accent-fg: oklch(0.985 0 0);
+}
+
+/* The `dark` preset — values authored in Phase 19 Group C. Stub. */
+[data-editor-theme='dark'] {
 }
 
 .dark {

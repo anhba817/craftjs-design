@@ -150,7 +150,17 @@ export function Editor({ adapter, allowUserToSwitchAdapter }: EditorProps = {}) 
         {/* Phase 9 § 1.7 — blocking modal when localStorage save fails
             with QuotaExceededError. */}
         <StorageQuotaErrorModal />
-        <div className="flex h-screen flex-col">
+        {/* Phase 19 — `cd-editor-chrome` + data-editor-theme scope the
+            editor-chrome theme tokens (--ed-*). Light defaults live on
+            :root (so portaled chrome inherits them); this attribute is
+            where presets/host token maps apply (dynamic in Group C).
+            NOTE for Group C: sibling overlays above (ResizeOverlay,
+            banners, modals) render outside this div — non-default themes
+            must cover them too. */}
+        <div
+          className="cd-editor-chrome flex h-screen flex-col"
+          data-editor-theme="light"
+        >
           <SaveLoadBar />
           {/* Phase 9 § 1.7 — non-blocking warning when usage ≥ 80%. */}
           <StorageQuotaBanner />
