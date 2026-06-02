@@ -16,6 +16,7 @@ beforeEach(() => {
     malformedDocument: null,
     activeAdapterId: 'shadcn',
     activeThemeId: 'default',
+    allowAdapterSwitch: true,
   })
 })
 
@@ -55,6 +56,22 @@ describe('applyEnvelopeSafely', () => {
     expect(actions.deserialize).toHaveBeenCalledWith(validCraftJson)
     expect(useEditorStore.getState().malformedDocument).toBeNull()
     expect(useEditorStore.getState().activeAdapterId).toBe('mui')
+    expect(useEditorStore.getState().activeThemeId).toBe('rose')
+  })
+
+  it('does NOT override a host-pinned adapter (allowAdapterSwitch=false)', async () => {
+    // Phase 18 follow-up — <Editor adapter=… allowUserToSwitchAdapter={false}>
+    // pins the adapter: the envelope's adapterId becomes a preference, not a
+    // command. Theme/colorMode still apply.
+    useEditorStore.setState({ allowAdapterSwitch: false })
+    const actions = mockActions()
+    const envelope = makeEnvelope(validCraftJson, {
+      adapterId: 'mui',
+      themeId: 'rose',
+    })
+    const result = await applyEnvelopeSafely(actions, 'doc-pinned', envelope)
+    expect(result).toEqual({ ok: true })
+    expect(useEditorStore.getState().activeAdapterId).toBe('shadcn')
     expect(useEditorStore.getState().activeThemeId).toBe('rose')
   })
 

@@ -122,7 +122,20 @@ App build (`npm run build`):
 
 ## [Unreleased]
 
-(none yet)
+### Added
+
+- **Host-pinned adapter** — `<Editor adapter="mui" />` lets the host choose the
+  design system (the product intent: the host picks, not the host's end
+  users). Pinning sets the active adapter before first paint, hides the
+  toolbar AdapterSwitcher, and makes loading a document NOT override the
+  adapter (the envelope's `adapterId` is a preference, not a command —
+  documents are canonical-id based and render under any adapter). A separate
+  `allowUserToSwitchAdapter` prop controls the switcher independently
+  (defaults: `false` when `adapter` is set, `true` otherwise — legacy behavior
+  unchanged for prop-less `<Editor />`). Pinning an unregistered adapter warns
+  and falls back to the default; **`adapter="mui"` requires the MUI peers**
+  (`@mui/material`, `@emotion/react`, `@emotion/styled`). New `EditorProps`
+  type export (type-only).
 
 ## [1.0.0] — 2026-06-02
 

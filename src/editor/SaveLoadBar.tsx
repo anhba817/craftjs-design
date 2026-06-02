@@ -20,6 +20,9 @@ import { UndoRedo } from './UndoRedo'
 export function SaveLoadBar() {
   const { actions, query } = useEditor()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // Phase 18 follow-up — the host decides whether end users may switch
+  // adapters (<Editor allowUserToSwitchAdapter />). Hidden when pinned.
+  const allowAdapterSwitch = useEditorStore((s) => s.allowAdapterSwitch)
 
   const currentEnvelope = (): EditorDocument => {
     const { activeThemeId, activeAdapterId, colorMode } =
@@ -111,7 +114,7 @@ export function SaveLoadBar() {
       <UndoRedo />
       <div className="flex-1" />
       <PreviewToggle />
-      <AdapterSwitcher />
+      {allowAdapterSwitch && <AdapterSwitcher />}
       <ThemeSwitcher />
       <ThemeEditorButton />
       <ColorModeToggle />

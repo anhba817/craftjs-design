@@ -71,6 +71,16 @@ load, download (`.json`), and share-by-URL** — and persists automatically
 through the built-in storage adapter (IndexedDB, falling back to localStorage),
 so a refresh restores the last document. No host wiring required.
 
+**Pin your design system** (recommended) so end users can't switch adapters:
+
+```tsx
+<Editor adapter="shadcn" />   // or "html"; hides the adapter switcher
+```
+
+Pinning `adapter="mui"` additionally requires the full entry (or
+`/adapters/mui`) **and** the MUI peers: `npm install @mui/material
+@emotion/react @emotion/styled`.
+
 ## Persisting to your own backend
 
 Don't reach for the `exportDocument` helpers to bolt on persistence — point the

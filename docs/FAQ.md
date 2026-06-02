@@ -19,7 +19,18 @@ Full matrix: [INTEGRATION_GUIDE.md → Subpath exports](./INTEGRATION_GUIDE.md#s
 
 No. Import `/core` and you need no UI-library peers — shadcn and plain-HTML are
 built in. You only install `@mui/material` + `@emotion/react` + `@emotion/styled`
-if you use the full entry or import `/adapters/mui`.
+if you use the full entry or import `/adapters/mui` (including when you pin
+`<Editor adapter="mui" />` — the MUI adapter won't work without its peers).
+
+### Can my end users switch the design system?
+
+Only if you let them. The host picks the adapter: `<Editor adapter="mui" />`
+pins it, hides the toolbar AdapterSwitcher, and makes loaded documents render
+through your adapter regardless of which adapter they were saved under
+(documents are canonical-id based). Use `allowUserToSwitchAdapter` to control
+the switcher independently; with no props, the legacy behavior (switcher
+visible) is kept. See
+[INTEGRATION_GUIDE.md → Pinning the adapter](./INTEGRATION_GUIDE.md#pinning-the-adapter-host-chosen-design-system).
 
 ### Why is there no CommonJS / UMD build? Is it minified?
 

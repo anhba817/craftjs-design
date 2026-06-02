@@ -104,6 +104,53 @@ function App() {
 }
 ```
 
+## Pinning the adapter (host-chosen design system)
+
+The product model is that **you** — the host — choose the design system; the
+people using your editor don't. Pin it with the `adapter` prop:
+
+```tsx
+import { Editor } from '@crafted-design/editor'   // full entry registers MUI
+import '@crafted-design/editor/index.css'
+
+function App() {
+  return <Editor adapter="mui" />
+}
+```
+
+What pinning does:
+
+- The active adapter is set to `mui` before first paint.
+- The **AdapterSwitcher disappears** from the toolbar — end users can't change
+  the design system.
+- **Loading a document does not override it.** A document saved under shadcn
+  still opens — documents store canonical ids, not library components, so it
+  simply renders through MUI. The envelope's `adapterId` is a preference, not
+  a command, while pinned.
+
+> ⚠ **MUI requires its peers.** The MUI adapter (whether via the full entry or
+> `/adapters/mui`) needs the optional peer dependencies installed:
+>
+> ```bash
+> npm install @mui/material @emotion/react @emotion/styled
+> ```
+>
+> Pinning `adapter="mui"` without registering the MUI adapter (or without the
+> peers, which makes its import fail) logs a console warning and falls back to
+> the default `shadcn`.
+
+Want to pin a starting adapter but still let users switch? Both knobs are
+independent:
+
+```tsx
+<Editor adapter="html" allowUserToSwitchAdapter />   // starts on plain HTML, switcher stays
+<Editor allowUserToSwitchAdapter={false} />          // default adapter (shadcn), no switcher
+<Editor />                                           // legacy behavior: switcher shows all registered adapters
+```
+
+`allowUserToSwitchAdapter` defaults to `false` when `adapter` is set, `true`
+otherwise.
+
 ## Customizing the registry
 
 The editor pre-registers 48 canonicals, the built-in adapters (shadcn + MUI +

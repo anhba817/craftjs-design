@@ -136,7 +136,13 @@ function runApply(
     useEditorStore.getState().setActiveTheme(envelope.themeId)
   if (envelope.colorMode)
     useEditorStore.getState().setColorMode(envelope.colorMode)
-  useEditorStore.getState().setActiveAdapter(envelope.adapterId)
+  // Phase 18 follow-up — when the host pinned the adapter
+  // (<Editor adapter=… allowUserToSwitchAdapter={false} />), the envelope's
+  // adapterId is a preference, not a command: documents are canonical-id
+  // based, so they render under whichever adapter the host chose.
+  if (useEditorStore.getState().allowAdapterSwitch) {
+    useEditorStore.getState().setActiveAdapter(envelope.adapterId)
+  }
   // Phase 11 § 3.3 — selection ids reference nodes in the OLD craftJson
   // tree. After deserialize swaps the tree they're invalid; clear so
   // the Inspector / breadcrumbs / overlays don't briefly point at

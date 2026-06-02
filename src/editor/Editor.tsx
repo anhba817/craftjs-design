@@ -1,7 +1,7 @@
 import { Editor as Craft, Element, Frame } from '@craftjs/core'
 import { Loader2 } from 'lucide-react'
-import { useEffect } from 'react'
-import { AdapterProvider } from '../adapters/AdapterContext'
+import { useEffect, useLayoutEffect } from 'react'
+import { AdapterProvider, getAdapter } from '../adapters/AdapterContext'
 import { getResolver } from '../craft/resolver'
 import {
   bootstrapDocumentStore,
@@ -39,12 +39,60 @@ import { StorageQuotaErrorModal } from './persistence/StorageQuotaErrorModal'
 import { ResolverUpdater } from './ResolverUpdater'
 import { SaveLoadBar } from './SaveLoadBar'
 
-export function Editor() {
+// Phase 18 follow-up — host-level adapter policy. The product intent is that
+// the HOST picks the design system; end users of the host don't.
+export interface EditorProps {
+  /**
+   * Host-chosen adapter id (`'shadcn' | 'mui' | 'html'` or a custom adapter's
+   * id). Applied before first paint. The adapter must be REGISTERED — import
+   * its subpath (e.g. `@crafted-design/editor/adapters/mui`) before rendering,
+   * and for MUI install the optional peers: `@mui/material`,
+   * `@emotion/react`, `@emotion/styled` (the full `@crafted-design/editor`
+   * entry registers MUI and therefore also needs them). An unregistered id
+   * warns and falls back to the default (`shadcn`).
+   */
+  adapter?: string
+  /**
+   * Whether end users may switch adapters via the toolbar dropdown.
+   * Defaults to `false` when `adapter` is set (the host pinned it) and `true`
+   * otherwise (back-compat). When `false`, the AdapterSwitcher is hidden and
+   * loading a document does NOT override the active adapter — the envelope's
+   * `adapterId` is a preference, not a command (documents are canonical-id
+   * based, so they render under whichever adapter the host chose).
+   */
+  allowUserToSwitchAdapter?: boolean
+}
+
+export function Editor({ adapter, allowUserToSwitchAdapter }: EditorProps = {}) {
   // Phase 6 — flip the registry's post-mount flag so any registerCanonical
   // calls after this point warn instead of silently failing to appear.
   useEffect(() => {
     _markEditorMounted()
   }, [])
+
+  // Apply the host's adapter policy before first paint (layout effect — no
+  // visible flash; an adapter swap is safe by design, the wrapper tree stays
+  // stable). Re-applies if the host changes the props.
+  const allowSwitch = allowUserToSwitchAdapter ?? adapter === undefined
+  useLayoutEffect(() => {
+    const store = useEditorStore.getState()
+    if (adapter) {
+      if (getAdapter(adapter)) {
+        store.setActiveAdapter(adapter)
+      } else {
+        console.warn(
+          `[Editor] adapter "${adapter}" is not registered — falling back to the default. ` +
+            `Import its subpath before rendering <Editor /> (e.g. ` +
+            `import '@crafted-design/editor/adapters/${adapter}')` +
+            (adapter === 'mui'
+              ? ` and install the MUI peers: npm install @mui/material @emotion/react @emotion/styled`
+              : '') +
+            `.`,
+        )
+      }
+    }
+    store.setAllowAdapterSwitch(allowSwitch)
+  }, [adapter, allowSwitch])
 
   // Phase 14 § 6.2 — bootstrap the async document store on mount: runs the
   // adapter's one-time init (legacy migration / IDB import), reads the index,

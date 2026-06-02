@@ -47,7 +47,15 @@ export function App() {
 That mounts the full editor with all built-in canonicals, the shadcn + MUI +
 plain-HTML adapters, themes, and templates pre-registered (the full entry needs
 the `@mui/material` + `@emotion/*` peers — use `@crafted-design/editor/core`
-to skip MUI). Customize **before** rendering `<Editor />` via the SDK:
+to skip MUI). **Pin your design system** so end users can't switch it:
+
+```tsx
+<Editor adapter="mui" />   // host chooses; hides the adapter switcher
+```
+
+(For `adapter="mui"`, install the peers: `npm install @mui/material
+@emotion/react @emotion/styled`.) Customize **before** rendering `<Editor />`
+via the SDK:
 
 ```tsx
 import { registerCanonical, registerAdapter, setStorageAdapter } from '@crafted-design/editor/sdk'

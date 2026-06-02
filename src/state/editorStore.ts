@@ -53,6 +53,14 @@ interface EditorStore {
   activeAdapterId: string
   setActiveAdapter: (id: string) => void
 
+  // Phase 18 follow-up — host-controlled adapter policy. When false, the
+  // adapter is fixed by the host (<Editor adapter=… />): the AdapterSwitcher
+  // is hidden AND applying a document envelope does NOT override the active
+  // adapter (documents are canonical-id based, so they render fine under
+  // whichever adapter the host pinned). Set by <Editor /> from its props.
+  allowAdapterSwitch: boolean
+  setAllowAdapterSwitch: (allow: boolean) => void
+
   // Phase 4 — UI-only state. Inspector panels read/write the active
   // breakpoint's slice. NOT persisted; resets to 'base' on reload.
   activeBreakpoint: Breakpoint
@@ -165,6 +173,9 @@ export const useEditorStore = create<EditorStore>()((set) => ({
 
   activeAdapterId: 'shadcn',
   setActiveAdapter: (id) => set({ activeAdapterId: id }),
+
+  allowAdapterSwitch: true,
+  setAllowAdapterSwitch: (allow) => set({ allowAdapterSwitch: allow }),
 
   activeBreakpoint: 'base',
   setActiveBreakpoint: (bp) => set({ activeBreakpoint: bp }),
