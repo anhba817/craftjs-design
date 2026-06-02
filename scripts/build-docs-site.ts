@@ -19,6 +19,8 @@ const pkg = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8')) as {
   version: string
   description: string
   repository?: { url?: string }
+  keywords?: string[]
+  license?: string
 }
 
 interface Guide {
@@ -60,8 +62,29 @@ const repoUrl = (pkg.repository?.url ?? '')
   .replace(/^git\+/, '')
   .replace(/\.git$/, '')
 
+// GitHub Pages deploy target (docs.yml) — used for the canonical URL, Open
+// Graph tags, and the sitemap. Falls back to empty (tags omitted) if the
+// repository URL isn't a github.com one.
+const gh = /github\.com\/([^/]+)\/([^/]+)/.exec(repoUrl)
+const ghOwner = gh?.[1] ?? ''
+const ghRepo = gh?.[2] ?? ''
+const siteUrl = ghOwner ? `https://${ghOwner}.github.io/${ghRepo}/` : ''
+
+// Maintainer avatar — favicon, social-card image, sidebar brand, author credit.
+const AVATAR = 'https://avatars.githubusercontent.com/u/19990046'
+
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+// SEO: the page keeps exactly ONE <h1> (the hero). Every converted guide's
+// headings are demoted one level (its `#` title → <h2>, `##` → <h3>, …) so
+// the document outline is a proper hierarchy instead of fifteen competing h1s.
+const demoteHeadings = (html: string) =>
+  html.replace(
+    /<(\/?)h([1-5])([\s>])/g,
+    (_m, slash: string, lvl: string, tail: string) =>
+      `<${slash}h${Number(lvl) + 1}${tail}`,
+  )
 
 // Rewrite markdown links: `…/X.md#frag` → `#slug` when X is a site guide
 // (the sub-heading fragment collapses to the guide's section). A non-site .md
@@ -87,7 +110,7 @@ marked.setOptions({ gfm: true, breaks: false })
 
 const sections = GUIDES.map((g) => {
   const md = readFileSync(resolve(ROOT, g.file), 'utf8')
-  const body = rewriteLinks(marked.parse(md) as string, g.file)
+  const body = demoteHeadings(rewriteLinks(marked.parse(md) as string, g.file))
   return `<section id="${g.slug}" class="doc">
   <div class="doc-eyebrow">${esc(g.group)}</div>
   ${body}
@@ -120,8 +143,53 @@ const html = `<!doctype html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${esc(pkg.name)} — Documentation</title>
-<meta name="description" content="${esc(pkg.description)}" />
+<title>${esc(pkg.name)} — Pluggable drag-and-drop website builder for React · Docs</title>
+<meta name="description" content="${esc(pkg.description)} Quick start, integration guide, cookbook, SDK reference, tutorials and FAQ." />
+${pkg.keywords?.length ? `<meta name="keywords" content="${esc(pkg.keywords.join(', '))}" />` : ''}
+<meta name="robots" content="index, follow" />
+<meta name="author" content="${esc(ghOwner || pkg.name)}" />
+<meta name="theme-color" content="#faf6ef" />
+${siteUrl ? `<link rel="canonical" href="${esc(siteUrl)}" />` : ''}
+<link rel="icon" href="${AVATAR}" />
+<link rel="apple-touch-icon" href="${AVATAR}" />
+<!-- Open Graph / Twitter cards -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="${esc(pkg.name)}" />
+<meta property="og:title" content="${esc(pkg.name)} — pluggable drag-and-drop website builder for React" />
+<meta property="og:description" content="${esc(pkg.description)}" />
+${siteUrl ? `<meta property="og:url" content="${esc(siteUrl)}" />` : ''}
+<meta property="og:image" content="${AVATAR}" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="${esc(pkg.name)} — docs" />
+<meta name="twitter:description" content="${esc(pkg.description)}" />
+<meta name="twitter:image" content="${AVATAR}" />
+<script type="application/ld+json">
+${JSON.stringify(
+  {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: pkg.name,
+    description: pkg.description,
+    applicationCategory: 'DeveloperApplication',
+    operatingSystem: 'Web',
+    softwareVersion: pkg.version,
+    license: pkg.license,
+    url: siteUrl || repoUrl,
+    sameAs: repoUrl ? [repoUrl] : undefined,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    author: ghOwner
+      ? {
+          '@type': 'Person',
+          name: ghOwner,
+          url: `https://github.com/${ghOwner}`,
+          image: AVATAR,
+        }
+      : undefined,
+  },
+  null,
+  2,
+)}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -160,9 +228,15 @@ a:hover{color:var(--accent-deep);text-decoration:underline;text-underline-offset
 }
 .brand{display:flex;flex-direction:column;gap:.15rem;margin-bottom:1.6rem;text-decoration:none}
 .brand:hover{text-decoration:none}
+.brand-row{display:flex;align-items:center;gap:.55rem}
+.brand-avatar{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);flex:none}
 .brand-mark{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.02em;color:var(--ink);line-height:1.05}
 .brand-mark em{font-style:italic;color:var(--accent)}
 .brand-scope{font-family:var(--mono);font-size:.7rem;color:var(--ink-faint);letter-spacing:.02em}
+
+/* footer credit */
+.site-footer{display:flex;align-items:center;gap:.6rem;padding:2.5rem 0 0;color:var(--ink-faint);font-size:.85rem}
+.site-footer img{width:24px;height:24px;border-radius:50%;border:1px solid var(--line)}
 .nav-group{margin-bottom:1.35rem}
 .nav-group-title{
   font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.13em;
@@ -198,12 +272,13 @@ a:hover{color:var(--accent-deep);text-decoration:underline;text-underline-offset
 .doc:last-child{border-bottom:none}
 .doc-eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:.5rem}
 
-/* long-form typography */
-.doc h1,.doc h2,.doc h3,.doc h4{font-family:var(--serif);font-weight:600;letter-spacing:-.018em;line-height:1.18;color:var(--ink);scroll-margin-top:1.5rem}
-.doc h1{font-size:2.15rem;margin:.2rem 0 1rem}
-.doc h2{font-size:1.5rem;margin:2.4rem 0 .9rem;padding-bottom:.35rem;border-bottom:1px solid var(--line)}
-.doc h3{font-size:1.18rem;margin:1.9rem 0 .6rem}
-.doc h4{font-size:1rem;margin:1.5rem 0 .5rem;font-family:var(--sans);font-weight:700}
+/* long-form typography — guide headings are demoted one level at build time
+   (the hero owns the page's single h1), so a doc's title is the h2. */
+.doc h2,.doc h3,.doc h4,.doc h5{font-family:var(--serif);font-weight:600;letter-spacing:-.018em;line-height:1.18;color:var(--ink);scroll-margin-top:1.5rem}
+.doc h2{font-size:2.15rem;margin:.2rem 0 1rem}
+.doc h3{font-size:1.5rem;margin:2.4rem 0 .9rem;padding-bottom:.35rem;border-bottom:1px solid var(--line)}
+.doc h4{font-size:1.18rem;margin:1.9rem 0 .6rem}
+.doc h5{font-size:1rem;margin:1.5rem 0 .5rem;font-family:var(--sans);font-weight:700}
 .doc p{margin:.85rem 0}
 .doc strong{font-weight:700;color:var(--ink)}
 .doc em{font-style:italic}
@@ -257,7 +332,10 @@ a:hover{color:var(--accent-deep);text-decoration:underline;text-underline-offset
 <div class="layout">
   <aside class="sidebar" id="sidebar">
     <a class="brand" href="#top">
-      <span class="brand-mark">crafted<em>·</em>design</span>
+      <span class="brand-row">
+        <img class="brand-avatar" src="${AVATAR}" alt="" width="30" height="30" loading="lazy" />
+        <span class="brand-mark">crafted<em>·</em>design</span>
+      </span>
       <span class="brand-scope">${esc(pkg.name)}</span>
     </a>
     ${nav}
@@ -279,6 +357,14 @@ a:hover{color:var(--accent-deep);text-decoration:underline;text-underline-offset
         </div>
       </header>
       ${sections}
+      ${
+        ghOwner
+          ? `<footer class="site-footer">
+        <img src="${AVATAR}" alt="${esc(ghOwner)}" width="24" height="24" loading="lazy" />
+        <span>Built by <a href="https://github.com/${esc(ghOwner)}" rel="author">@${esc(ghOwner)}</a> · MIT · v${esc(pkg.version)}</span>
+      </footer>`
+          : ''
+      }
     </div>
   </main>
 </div>
@@ -321,7 +407,29 @@ a:hover{color:var(--accent-deep);text-decoration:underline;text-underline-offset
 mkdirSync(OUT_DIR, { recursive: true })
 const outFile = resolve(OUT_DIR, 'index.html')
 writeFileSync(outFile, html)
+
+// SEO crawl files — deployed alongside index.html by docs.yml (the Pages
+// workflow copies all of docs-site/ to the site root; TypeDoc lives at /api/).
+if (siteUrl) {
+  const today = new Date().toISOString().slice(0, 10)
+  writeFileSync(
+    resolve(OUT_DIR, 'robots.txt'),
+    `User-agent: *\nAllow: /\nSitemap: ${siteUrl}sitemap.xml\n`,
+  )
+  writeFileSync(
+    resolve(OUT_DIR, 'sitemap.xml'),
+    `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>${siteUrl}</loc><lastmod>${today}</lastmod></url>
+  <url><loc>${siteUrl}api/</loc><lastmod>${today}</lastmod></url>
+</urlset>
+`,
+  )
+}
+
 const kb = (Buffer.byteLength(html) / 1024).toFixed(0)
 console.log(
-  `Built docs site → ${outFile}\n  ${GUIDES.length} guides, ${kb} KB. Open it in a browser or host docs-site/.`,
+  `Built docs site → ${outFile}\n  ${GUIDES.length} guides, ${kb} KB` +
+    (siteUrl ? ' (+ robots.txt, sitemap.xml)' : '') +
+    `. Open it in a browser or host docs-site/.`,
 )

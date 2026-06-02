@@ -46,7 +46,7 @@ jobs:
           rm -rf _pages
           mkdir -p _pages/api
           cp -R _site/. _pages/api/
-          cp docs-site/index.html _pages/index.html
+          cp -R docs-site/. _pages/   # index.html + robots.txt + sitemap.xml
           touch _pages/.nojekyll
 
       - uses: actions/upload-pages-artifact@v3
