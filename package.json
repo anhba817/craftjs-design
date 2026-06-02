@@ -79,6 +79,7 @@
     "prebuild:dist": "npm run gen-safelist",
     "docs": "typedoc",
     "docs:html": "typedoc --options typedoc.html.json",
+    "docs:site": "tsx scripts/build-docs-site.ts",
     "docs:matrix": "tsx scripts/adapter-matrix.ts",
     "check:size": "tsx scripts/check-bundle-size.ts",
     "check:licenses": "tsx scripts/check-licenses.ts",
@@ -98,9 +99,15 @@
     "react-dom": "^19"
   },
   "peerDependenciesMeta": {
-    "@mui/material": { "optional": true },
-    "@emotion/react": { "optional": true },
-    "@emotion/styled": { "optional": true }
+    "@mui/material": {
+      "optional": true
+    },
+    "@emotion/react": {
+      "optional": true
+    },
+    "@emotion/styled": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
@@ -138,6 +145,7 @@
     "fake-indexeddb": "^6.2.5",
     "globals": "^17.6.0",
     "lefthook": "^2.1.9",
+    "marked": "^14.1.4",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "rollup-plugin-visualizer": "^7.0.1",

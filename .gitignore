@@ -29,3 +29,6 @@ src/style/safelist.generated.css
 *.sw?
 bundle-stats.html
 _site/
+
+# Generated docs site (built by scripts/build-docs-site.ts; deployed by docs.yml)
+docs-site/

@@ -1,11 +1,14 @@
-name: API docs
+name: Docs site
 
-# Phase 15 § 10.1 — build the SDK API reference (TypeDoc HTML) and deploy
-# it to GitHub Pages on every push to main.
+# Phase 15 § 10.1 / Phase 18 — build the documentation site and deploy it to
+# GitHub Pages on every push to main. The site has two parts:
 #
-# Host action required once: repo Settings → Pages → Source = "GitHub
-# Actions". Until then this workflow builds but the deploy step has nowhere
-# to publish.
+#   /        → the hand-crafted guide site (scripts/build-docs-site.ts, from
+#              the markdown in docs/ + the quick-start) → docs-site/index.html
+#   /api/    → the auto-generated TypeDoc API reference (npm run docs:html)
+#
+# Host action required once: repo Settings → Pages → Source = "GitHub Actions".
+# Until then this builds but the deploy step has nowhere to publish.
 
 on:
   push:
@@ -31,11 +34,24 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Build API reference (HTML)
-        run: npm run docs:html
+
+      - name: Build docs site (landing + guides)
+        run: npm run docs:site # → docs-site/index.html
+
+      - name: Build API reference (TypeDoc HTML)
+        run: npm run docs:html # → _site/
+
+      - name: Assemble Pages site (guides at /, API at /api)
+        run: |
+          rm -rf _pages
+          mkdir -p _pages/api
+          cp -R _site/. _pages/api/
+          cp docs-site/index.html _pages/index.html
+          touch _pages/.nojekyll
+
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: _pages
 
   deploy:
     needs: build
