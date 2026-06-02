@@ -124,6 +124,20 @@ App build (`npm run build`):
 
 (none yet)
 
+## [1.0.2] — 2026-06-02
+
+### Fixed
+
+- **Toolbox: dragging from "Recently used" grabbed the wrong component.** The
+  recently-used LRU was recorded on `mousedown`, which reordered the Recent
+  section (and reflowed every tile below it) while the pointer was still
+  down — so by the time `dragstart` fired, a different tile sat under the
+  cursor and became the drag source (e.g. dragging the 4th recent tile dropped
+  the old 3rd). The LRU bump now records on `dragend` (and on keyboard
+  Enter-insert, as before), after the pointer is released, so the grid never
+  reflows mid-drag. A click that never starts a drag no longer bumps the LRU
+  (it inserts nothing, so it isn't a "use").
+
 ## [1.0.1] — 2026-06-02
 
 First post-1.0 release (the published `1.0.0` tarball predates this feature).

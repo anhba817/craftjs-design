@@ -135,10 +135,14 @@ export function Toolbox() {
     })
   }, [])
 
-  // Record "intent to use" on mousedown of the toolbox button — fires whether
-  // or not the drag completes. Cap to MAX_RECENT entries (LRU). De-duplicating
-  // before unshift means re-using an already-recent canonical bumps it to
-  // front rather than creating duplicates.
+  // Record "recently used" when the interaction ENDS (the tile's dragend, or
+  // a keyboard Enter-insert via dropDef) — never on mousedown. Recording on
+  // mousedown reordered the Recent section (and reflowed every tile below it)
+  // while the pointer was still down, so by the time the browser fired
+  // dragstart a DIFFERENT tile sat under the cursor and the wrong component
+  // got dragged. Cap to MAX_RECENT entries (LRU). De-duplicating before
+  // unshift means re-using an already-recent canonical bumps it to front
+  // rather than creating duplicates.
   const recordUse = useCallback((id: string) => {
     setState((prev) => {
       const filtered = prev.recent.filter((r) => r !== id)
@@ -294,7 +298,10 @@ export function Toolbox() {
                 connectedEls.current.add(el)
               }
             }}
-            onMouseDown={() => recordUse(def.id)}
+            // dragend (NOT mousedown): the recent-list reorder must wait until
+            // the pointer is released, or the grid reflows under the cursor
+            // before dragstart and the wrong tile becomes the drag source.
+            onDragEnd={() => recordUse(def.id)}
             onFocus={() => setFocusedIndex(rovingIdx)}
             tabIndex={isRovingFocused ? 0 : -1}
             title={def.displayName}
