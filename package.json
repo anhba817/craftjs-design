@@ -1,6 +1,6 @@
 {
   "name": "@crafted-design/editor",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "A pluggable drag-and-drop website builder built on Craft.js — pick your design system (shadcn, MUI, Chakra…), drop the editor in, ship.",
   "license": "MIT",
   "type": "module",
@@ -86,7 +86,7 @@
     "analyze": "ANALYZE=1 vite build --config vite.config.dist.ts",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "npm run build:dist && changeset publish --tag next",
+    "release": "npm run build:dist && changeset publish",
     "prepare": "lefthook install || true",
     "prepublishOnly": "npm run build:dist && vitest run"
   },
@@ -161,7 +161,7 @@
   },
   "publishConfig": {
     "access": "public",
-    "tag": "next"
+    "tag": "latest"
   },
   "engines": {
     "node": ">=20"

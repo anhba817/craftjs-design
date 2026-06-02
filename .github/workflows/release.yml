@@ -5,7 +5,8 @@ name: Release
 #   - pending changesets → changesets/action opens/updates a "Version Packages"
 #     PR (bumps package.json + folds changesets into CHANGELOG);
 #   - that PR merged (no pending changesets) → publish the new version to npm
-#     with `npm publish`, authenticated by the GitHub OIDC token.
+#     (the `latest` dist-tag) with `npm publish`, authenticated by the GitHub
+#     OIDC token.
 #
 # We deliberately do NOT use changesets/action's `publish:` input: its
 # `changeset publish` currently trips an E404 with OIDC + SCOPED packages
@@ -63,7 +64,7 @@ jobs:
 
       # When no changesets remain (the Version Packages PR was just merged, or
       # there's nothing to release) AND package.json's version isn't on the
-      # registry yet, publish it to the `next` tag via OIDC. `npm publish`
+      # registry yet, publish it to the `latest` tag via OIDC. `npm publish`
       # auto-detects the GitHub OIDC token — no NODE_AUTH_TOKEN needed;
       # `--provenance` attaches the build attestation (not emitted otherwise).
       # `prepublishOnly` (package.json) rebuilds dist-lib + runs the tests
@@ -76,6 +77,6 @@ jobs:
           if npm view "$NAME@$VERSION" version > /dev/null 2>&1; then
             echo "$NAME@$VERSION is already published — nothing to do."
           else
-            echo "Publishing $NAME@$VERSION to the 'next' dist-tag…"
-            npm publish --provenance --tag next
+            echo "Publishing $NAME@$VERSION to the 'latest' dist-tag…"
+            npm publish --provenance --tag latest
           fi

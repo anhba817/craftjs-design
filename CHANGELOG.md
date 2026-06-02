@@ -122,6 +122,17 @@ App build (`npm run build`):
 
 ## [Unreleased]
 
+(none yet)
+
+## [1.0.0] — 2026-06-02
+
+First stable release. Promotes the editor off the `next` preview tag to
+`latest`. The **public SDK surface is now frozen under the full SemVer
+promise** — see [SDK_GUIDE.md](docs/SDK_GUIDE.md) "Public API stability":
+removing or renaming any exported name (enumerated in `src/sdk/surface.test.ts`)
+is from here a breaking, major-version change. No API changes vs `0.9.0`; this
+is the stabilization cut, folding in the `0.9.0`-cycle work below.
+
 ### Changed
 
 - **Toolbox is now a visual icon-thumbnail grid** (Unlayer-style) instead of a
