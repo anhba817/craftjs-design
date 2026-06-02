@@ -122,6 +122,13 @@ App build (`npm run build`):
 
 ## [Unreleased]
 
+(none yet)
+
+## [1.0.1] — 2026-06-02
+
+First post-1.0 release (the published `1.0.0` tarball predates this feature).
+Additive — no breaking changes.
+
 ### Added
 
 - **Host-pinned adapter** — `<Editor adapter="mui" />` lets the host choose the
