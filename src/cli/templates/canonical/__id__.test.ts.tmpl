@@ -1,0 +1,9 @@
+import { expect, test } from 'vitest'
+import { getComponent } from '@crafted-design/editor/sdk'
+import './__id__'
+
+// Smoke test: importing the module registers the canonical under its id.
+test('__id__ canonical registers', () => {
+  const def = getComponent('__id__')
+  expect(def?.displayName).toBe('__title__')
+})

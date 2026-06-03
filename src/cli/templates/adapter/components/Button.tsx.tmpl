@@ -1,0 +1,31 @@
+import type { AdapterRenderProps } from '@crafted-design/editor/sdk'
+import { EditableText, useStartTextEdit } from '@crafted-design/editor/sdk'
+
+// Button shows the two interactive editor seams every text-bearing impl wants:
+//   - <EditableText> renders the label and makes it editable in place.
+//   - useStartTextEdit() begins editing on double-click.
+// Swap the <button> for your design system's Button; keep `rootRef`,
+// `className`, and `inlineStyle` wired so editor selection + styling work.
+export function __Name__ButtonImpl({
+  props,
+  rootRef,
+  className,
+  inlineStyle,
+}: AdapterRenderProps) {
+  const { label, disabled } = props as { label: string; disabled?: boolean }
+  const startEdit = useStartTextEdit()
+  return (
+    <button
+      ref={rootRef as never}
+      className={className}
+      style={inlineStyle}
+      disabled={disabled}
+      onDoubleClick={(e) => {
+        e.stopPropagation()
+        startEdit()
+      }}
+    >
+      <EditableText text={label} propPath="label" />
+    </button>
+  )
+}

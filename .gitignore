@@ -13,6 +13,10 @@ dist-lib
 dist-ssr
 *.local
 
+# Throwaway dirs for the CLI scaffold compile gate (scripts/check-cli-scaffold.ts)
+.cli-check
+.cli-tmp
+
 # Phase 4 — regenerated from src/style/tw-classes.ts on every dev/build via the
 # `gen-safelist` npm script. See scripts/gen-safelist.ts.
 src/style/safelist.generated.css

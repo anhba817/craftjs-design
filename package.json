@@ -14,6 +14,9 @@
   "homepage": "https://github.com/anhba817/craftjs-design#readme",
   "main": "./dist-lib/index.js",
   "types": "./dist-lib/main-app.d.ts",
+  "bin": {
+    "crafted-design": "./dist-lib/cli.js"
+  },
   "exports": {
     ".": {
       "types": "./dist-lib/main-app.d.ts",
@@ -68,7 +71,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:dist": "tsc -b && vite build --config vite.config.dist.ts",
+    "build:dist": "tsc -b && vite build --config vite.config.dist.ts && npm run copy-cli-templates",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
@@ -83,6 +86,8 @@
     "docs:matrix": "tsx scripts/adapter-matrix.ts",
     "check:size": "tsx scripts/check-bundle-size.ts",
     "check:chrome": "tsx scripts/check-chrome-tokens.ts",
+    "check:cli": "tsx scripts/check-cli-scaffold.ts",
+    "copy-cli-templates": "tsx scripts/copy-cli-templates.ts",
     "check:licenses": "tsx scripts/check-licenses.ts",
     "analyze": "ANALYZE=1 vite build --config vite.config.dist.ts",
     "changeset": "changeset",

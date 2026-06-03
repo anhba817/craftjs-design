@@ -1,0 +1,9 @@
+import { expect, test } from 'vitest'
+import { listPanels } from '@crafted-design/editor/sdk'
+import './__Name__Panel'
+
+// Smoke test: importing the module registers the panel under its id.
+test('__id__ panel registers', () => {
+  const ids = listPanels().map((p) => p.id)
+  expect(ids).toContain('__id__')
+})

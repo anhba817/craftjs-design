@@ -42,6 +42,10 @@ const BUDGETS: Budget[] = [
   // tree-shakes the rest (guarded by side-effect-free.test.ts).
   { label: 'SDK (sdk.js)', entry: 'sdk.js', maxGzipKB: 70 },
   { label: 'vite-plugin', entry: 'vite-plugin.js', maxGzipKB: 5 },
+  // Phase 20 — the scaffolding CLI (`bin`). Node built-ins only; must stay tiny
+  // and must NEVER pull the editor runtime/React into its graph. A regression
+  // here (e.g. an accidental `@/...` import) would blow past this budget.
+  { label: 'CLI (cli.js)', entry: 'cli.js', maxGzipKB: 5 },
 ]
 
 // CSS is a single emitted file (not code-split), checked directly.

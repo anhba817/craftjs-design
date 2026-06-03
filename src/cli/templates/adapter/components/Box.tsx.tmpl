@@ -1,0 +1,19 @@
+import type { AdapterRenderProps } from '@crafted-design/editor/sdk'
+
+// Box is the universal layout primitive + the canvas root. An adapter impl
+// receives `props` (the canonical's typed props), `rootRef` (attach to the
+// real DOM node so selection/resize work), `className` (editor-applied
+// Tailwind utilities — ALWAYS spread this), and `inlineStyle` (resolved
+// inline styles). `children` are the nested canvas nodes.
+export function __Name__BoxImpl({
+  rootRef,
+  className,
+  inlineStyle,
+  children,
+}: AdapterRenderProps) {
+  return (
+    <div ref={rootRef} className={className} style={inlineStyle}>
+      {children}
+    </div>
+  )
+}

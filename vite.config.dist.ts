@@ -93,6 +93,9 @@ export default defineConfig({
         // Phase 12 § 4.1 — optional, node-only build-time safelist plugin.
         // Separate entry (not in the browser SDK) since it imports node:fs.
         'vite-plugin': path.resolve(__dirname, 'src/vite/safelistPlugin.ts'),
+        // Phase 20 — the scaffolding CLI (`bin`). Node-only; templates are
+        // copied to dist-lib/cli-templates by scripts/copy-cli-templates.ts.
+        cli: path.resolve(__dirname, 'src/cli/index.ts'),
       },
       formats: ['es'],
       // Vite already emits CSS at `index.css` for the full editor entry;
@@ -123,6 +126,13 @@ export default defineConfig({
         'vite',
         /^node:/,
       ],
+      output: {
+        // Phase 20 — the CLI entry is an executable; prepend a shebang to
+        // cli.js only (the package `bin` points at it). Other entries are
+        // libraries imported by bundlers and must NOT carry a shebang.
+        banner: (chunk) =>
+          chunk.fileName === 'cli.js' ? '#!/usr/bin/env node' : '',
+      },
     },
     // Don't minify by default — easier to debug post-install. Hosts that want
     // a minified copy can run their own bundler over our dist (esbuild,

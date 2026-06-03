@@ -1,0 +1,9 @@
+import { expect, test } from 'vitest'
+import { listAdapters } from '@crafted-design/editor/sdk'
+import './index'
+
+// Smoke test: importing the adapter registers it under its id.
+test('__id__ adapter registers', () => {
+  const ids = listAdapters().map((a) => a.id)
+  expect(ids).toContain('__id__')
+})

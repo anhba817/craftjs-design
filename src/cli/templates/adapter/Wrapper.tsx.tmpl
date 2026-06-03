@@ -1,0 +1,19 @@
+import type { ReactNode } from 'react'
+
+// __title__ adapter Wrapper.
+//
+// Every registered adapter's Wrapper is composed around the editor's children
+// (regardless of which adapter is active), so a Wrapper must be INERT for the
+// subtrees it doesn't own — provide context/theme only, never a global CSS
+// reset, and keep it layout-transparent. `display: contents` does that: the
+// wrapper adds no box to the layout tree.
+//
+// If your design system needs a provider (theme, config), render it here and
+// keep its side effects scoped so other adapters' components are unaffected.
+export function __Name__Wrapper({ children }: { children: ReactNode }) {
+  return (
+    <div className="__id__-bridge" style={{ display: 'contents' }}>
+      {children}
+    </div>
+  )
+}
