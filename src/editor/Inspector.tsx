@@ -12,6 +12,10 @@ import { StateBar } from './inspector/StateBar'
 import { SlotPicker } from './inspector/SlotPicker'
 import { CollapsibleSection } from './inspector/shared/CollapsibleSection'
 
+// Stable fallback for canonicals with no explicit styleSlots — a module-level
+// constant so the `?? ROOT_SLOTS` below doesn't allocate a new array per render.
+const ROOT_SLOTS = ['root']
+
 export function Inspector() {
   // Phase 11 § 3.3 — Inspector reads selection from editorStore (the
   // multi-id source of truth) rather than from Craft directly. See
@@ -78,7 +82,10 @@ export function Inspector() {
     if (p.id === 'assetLibrary' && !imageProviderCanList) return false
     return true
   })
-  const slots = def?.styleSlots ?? ['root']
+  // Stable references: the registry's styleSlots array (stable per def) or a
+  // module-level constant. Avoids the fresh `['root']` literal that would
+  // otherwise change the effect deps below on every render — no useMemo needed.
+  const slots = def?.styleSlots ?? ROOT_SLOTS
 
   // Slot state is per-selection — resets to the first slot when the user
   // selects a different node. Kept here in component state rather than

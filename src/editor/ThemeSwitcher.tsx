@@ -19,6 +19,7 @@ export function ThemeSwitcher() {
   // Hide transient `__`-prefixed themes (the theme editor's live preview).
   const themes = useMemo(
     () => listThemes().filter((t) => !t.id.startsWith('__')),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `version` is the registry-change trigger; listThemes() reads mutable registry state.
     [version],
   )
 

@@ -110,6 +110,7 @@ export function Toolbox() {
   // draggable toolbox tiles.
   const allDefs = useMemo(
     () => listComponents().filter((d) => !d.hidden),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `version` is the registry-change trigger; listComponents() reads mutable registry state.
     [version],
   )
   const byId = useMemo(() => {

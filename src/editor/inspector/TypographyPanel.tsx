@@ -75,6 +75,7 @@ export function TypographyPanel({
   )
   const fontOptions = useMemo(
     () => listFontTokens().map((t) => t.id),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `fontRegistryVersion` is the registry-change trigger; listFontTokens() reads mutable registry state.
     [fontRegistryVersion],
   )
 

@@ -63,7 +63,6 @@ interface PartialNodeStyle {
   [k: string]: unknown
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface CraftNode {
   props?: {
     style?: PartialNodeStyle

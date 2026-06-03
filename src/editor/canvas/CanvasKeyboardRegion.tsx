@@ -358,6 +358,7 @@ export function CanvasKeyboardRegion({ children }: { children: ReactNode }) {
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `query` is intentionally omitted: its methods read live store state at event time, so the handler needs no re-subscription when query's identity changes.
   }, [
     actions,
     firstChild,

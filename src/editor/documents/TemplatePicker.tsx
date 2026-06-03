@@ -27,6 +27,7 @@ export function TemplatePicker({
     getTemplateRegistryVersion,
     getTemplateRegistryVersion,
   )
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `version` is the registry-change trigger; listTemplates() reads mutable registry state.
   const templates = useMemo(() => listTemplates(), [version])
 
   return (

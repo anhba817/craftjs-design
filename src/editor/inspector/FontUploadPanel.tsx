@@ -41,6 +41,7 @@ export function FontUploadPanel() {
   )
   // Only url-backed tokens are uploads — the built-ins (sans/heading/mono)
   // carry no url and aren't removable here.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `version` is the registry-change trigger; listFontTokens() reads mutable registry state.
   const uploaded = useMemo(() => listFontTokens().filter((t) => t.url), [version])
 
   const fileRef = useRef<HTMLInputElement>(null)

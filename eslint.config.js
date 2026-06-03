@@ -47,21 +47,32 @@ export default defineConfig([
           destructuredArrayIgnorePattern: '^_',
         },
       ],
-      // Phase 15 § 9.4 — lint-baseline triage. eslint-plugin-react-hooks v7
-      // + react-refresh added several aggressive rules this codebase
-      // predates; many fire as false positives (immutability on Craft's
-      // Immer `setProp` mutators; incompatible-library on TanStack Virtual;
-      // only-export-components on intentional module shapes). Demoted to
-      // WARN so they stay visible as tech debt without making CI's lint
-      // gate red. The genuine bug-class rule (rules-of-hooks) stays an
-      // error. TODO(phase15+): triage and re-promote individually.
-      'react-refresh/only-export-components': 'warn',
-      'react-hooks/set-state-in-effect': 'warn',
-      'react-hooks/immutability': 'warn',
+      // eslint-plugin-react-hooks v7 ships React-Compiler-readiness rules, and
+      // react-refresh ships a Fast-Refresh hint. This codebase predates the
+      // compiler and doesn't use it; these rules fire on correct, shipped,
+      // runtime-verified patterns, so they're OFF (refactoring valid code to
+      // appease an advisory would only add regression risk):
+      //   - immutability        → false-positive on ref-merge callbacks that
+      //                            assign `ref.current = el` (the correct way
+      //                            to set a ref) — see the MUI adapter impls.
+      //   - set-state-in-effect  → flags legitimate external-sync / DOM-
+      //                            measurement effects (matchMedia sync,
+      //                            ResizeOverlay/selection-outline positioning).
+      //   - refs                 → flags intentional ref reads during render.
+      //   - static-components    → flags a dynamic component built per render.
+      //   - incompatible-library → TanStack Virtual interop.
+      //   - only-export-components → noise on barrels, context modules, and
+      //                            shadcn `cva` variant co-exports.
+      // The genuine bug-class rule (rules-of-hooks) stays an error (plugin
+      // default). exhaustive-deps stays on (below) — it's the one with real
+      // bug-catching value; its sites are all fixed or documented.
+      'react-hooks/immutability': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/refs': 'off',
+      'react-hooks/static-components': 'off',
+      'react-hooks/incompatible-library': 'off',
+      'react-refresh/only-export-components': 'off',
       'react-hooks/exhaustive-deps': 'warn',
-      'react-hooks/refs': 'warn',
-      'react-hooks/static-components': 'warn',
-      'react-hooks/incompatible-library': 'warn',
     },
   },
   // Phase 10 § 2.5 — SDK boundary enforcement. Code under examples/**

@@ -16,6 +16,7 @@ export function AdapterSwitcher() {
     getAdapterRegistryVersion,
     getAdapterRegistryVersion,
   )
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `version` is the registry-change trigger; listAdapters() reads mutable registry state the linter can't track.
   const adapters = useMemo(() => listAdapters(), [version])
 
   return (
