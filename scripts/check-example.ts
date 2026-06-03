@@ -30,7 +30,10 @@ writeFileSync(
   CHECK_TSCONFIG,
   JSON.stringify(
     {
-      extends: './tsconfig.json',
+      // Extend the example's REAL app config (jsx, skipLibCheck, bundler
+      // resolution, …) — `tsconfig.json` is just a references-only solution
+      // file (Vite's scaffold), so it carries no compilerOptions.
+      extends: './tsconfig.app.json',
       compilerOptions: {
         paths: {
           '@crafted-design/editor': ['../../dist-lib/main-app.d.ts'],
