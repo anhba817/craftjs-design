@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the **architecture as it stands**. For the historical/phased roadmap and per-phase implementation plans, see [`./plans/`](./plans/). For task-oriented recipes (adding a canonical, adding an adapter, conventions, gotchas), see [`DEVELOPER_GUIDE.md`](./DEVELOPER_GUIDE.md).
+This document describes the **architecture as it stands**. For task-oriented recipes (adding a canonical, adding an adapter, conventions, gotchas), see [`DEVELOPER_GUIDE.md`](./DEVELOPER_GUIDE.md).
 
 ---
 
@@ -21,15 +21,15 @@ This architecture decouples them via a **Canonical Component Registry** (the abs
 ## Four-Layer Model
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│  Editor UI            (Toolbox, Inspector, Canvas chrome)│
-├──────────────────────────────────────────────────────────┤
-│  Canonical Component Registry  (abstract Button, Input…) │
-├──────────────────────────────────────────────────────────┤
-│  Adapter Layer        (shadcn / MUI / Chakra → canonical)│
-├──────────────────────────────────────────────────────────┤
-│  Craft.js kernel + Document JSON                         │
-└──────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│  Editor UI            (Toolbox, Inspector, Canvas chrome)       │
+├─────────────────────────────────────────────────────────────────┤
+│  Canonical Component Registry  (abstract Button, Input…)        │
+├─────────────────────────────────────────────────────────────────┤
+│  Adapter Layer        (shadcn / MUI / Chakra → canonical)       │
+├─────────────────────────────────────────────────────────────────┤
+│  Craft.js kernel + Document JSON                                │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 Each layer talks only to its immediate neighbor. The discipline is enforced by the type contracts in `src/registry/types.ts` and `src/adapters/types.ts` — those are the *only* legal vocabulary between layers.
@@ -43,11 +43,11 @@ The user-facing chrome. Has no opinion about *what* components exist, only about
 | `Editor.tsx` | Top-level shell. Builds the resolver, mounts Craft.js, wraps the canvas in `<ThemeProvider>`, lays out the 3-column UI. On mount, calls `_markEditorMounted()` so the registry can warn about post-mount canonical registrations. |
 | `Toolbox.tsx` | Left panel. Reads `listComponents()` from the registry; renders entries grouped by `category` with a search input, a "Favorites" section (toggle via star icon), and a "Recently used" section. Favorites + recents persist to `localStorage['craftjs-design.toolbox']` — user-level state, separate from the document envelope. Attaches Craft `connectors.create()` per entry; mousedown on a button records use into the recents LRU. |
 | `Inspector.tsx` | Right panel. Reads the selected node from Craft state, shows type/id, exposes Delete (root-guarded), mounts the `ResponsiveBar`, mounts a `SlotPicker` when the canonical declares more than one style slot, and renders panels from the panel registry (`getPanelsFor(def)`). Tracks `activeSlot` (`'root'` by default). Resize handles are rendered as a canvas overlay (see `canvas/ResizeOverlay.tsx`), not inside the inspector. |
-| `canvas/ResizeOverlay.tsx` | Phase 7 — fixed-position overlay rendered over the selected node's bounding rect. Four corner handles. Mutates `dom.style.width/height` directly during drag (60fps), commits final px to `style.inline.root.{width,height}` via `setProp` on release. Tracks node position on selection change, scroll (capture phase), window resize, and `ResizeObserver` ticks. |
-| `documents/DocumentMenu.tsx` | Phase 7 — top-bar dropdown showing the active document's name + chevron. Inline rename, duplicate, delete actions for the active doc; "New blank document", nested `<TemplatePicker />`, and a "Switch to" list of other documents. |
+| `canvas/ResizeOverlay.tsx` | Fixed-position overlay rendered over the selected node's bounding rect. Four corner handles. Mutates `dom.style.width/height` directly during drag (60fps), commits final px to `style.inline.root.{width,height}` via `setProp` on release. Tracks node position on selection change, scroll (capture phase), window resize, and `ResizeObserver` ticks. |
+| `documents/DocumentMenu.tsx` | Top-bar dropdown showing the active document's name + chevron. Inline rename, duplicate, delete actions for the active doc; "New blank document", nested `<TemplatePicker />`, and a "Switch to" list of other documents. |
 | `documents/TemplatePicker.tsx` | Nested popover listing registered starter templates (name + description). Clicking a template invokes the supplied `onPick` and closes. |
 | `documents/useDocumentSwitcher.ts` | Hook orchestrating runtime document switches. `switchTo(id)` / `createBlank(name)` / `createFromTemplate(id, name)`. Each one snapshots the current canvas via `query.serialize()`, persists to the active doc, swaps `activeId`, loads the target's blob (or the Empty template seed), calls `actions.deserialize`, and applies theme + adapter. |
-| `ResolverUpdater.tsx` | Phase 7 — side-effect component rendered inside `<Craft>`. Subscribes to the registry version counter via `useSyncExternalStore` and calls `actions.setOptions((opts) => { opts.resolver = getResolver() })` on every bump. Powers hot canonical reload — `registerCanonical` at runtime updates Craft's internal resolver without remounting. |
+| `ResolverUpdater.tsx` | Side-effect component rendered inside `<Craft>`. Subscribes to the registry version counter via `useSyncExternalStore` and calls `actions.setOptions((opts) => { opts.resolver = getResolver() })` on every bump. Powers hot canonical reload — `registerCanonical` at runtime updates Craft's internal resolver without remounting. |
 | `ShareButton.tsx` | Toolbar Share button. Popover renders the encoded URL ready to copy. Over the 30 KB cap, switches to "Copy as JSON" with a paste-into-importer message. |
 | `inspector/ResponsiveBar.tsx` | Six breakpoint pills (`base` / `sm` / `md` / `lg` / `xl` / `2xl`). Active pill = which class slice the panels read/write. Loud "writing to: …" status line warns when an edit will only apply at and above a breakpoint. |
 | `inspector/SlotPicker.tsx` | Pill bar above the panels for Pattern B canonicals (`styleSlots.length > 1`). Switches `activeSlot` (`'root'`, `'header'`, `'body'`, `'footer'`, etc.). Resets to `'root'` on selection change. |
@@ -60,7 +60,7 @@ The user-facing chrome. Has no opinion about *what* components exist, only about
 | `inspector/fields/ObjectField.tsx` | `z.object` editor used by ArrayField when the element is an object. Renders the sub-schema's fields recursively via PropField. |
 | `inspector/fields/defaults.ts` | `defaultValueFor(schema)` — seeds new items when the "+ Add" button fires. |
 | `inspector/shared/useNodeClasses.ts` | Read/write helper. Signature: `useNodeClasses(nodeId, slot = 'root')`. Returns `classString` (active breakpoint, scoped to the slot), `inlineStyle` (active-breakpoint arbitrary CSS for the slot), `writeClasses`, `writeInline`. At non-base, reads/writes route through `style.responsiveInline[bp][slot]`. Funnels every inspector style I/O through one place. |
-| `inspector/shared/ColorPicker.tsx` | Popover with three sections: token swatch grid, `react-colorful` visual picker (sat/lightness + hue), hex text input. Tagged-union `ColorPickerValue` (`token` / `hex` / `unset`). Works at every breakpoint — Phase 6 lifted the base-only restriction. |
+| `inspector/shared/ColorPicker.tsx` | Popover with three sections: token swatch grid, `react-colorful` visual picker (sat/lightness + hue), hex text input. Tagged-union `ColorPickerValue` (`token` / `hex` / `unset`). Works at every breakpoint. |
 | `inspector/shared/NumericInput.tsx` | Hybrid text input accepting tokens or arbitrary CSS values (`13px`, `50%`, `1.5rem`). Step buttons walk the token scale; Popover dropdown for picking. Works at every breakpoint. |
 | `inspector/shared/BoxSidesEditor.tsx` | Linked-corners editor (padding / margin). Linked mode uses `NumericInput`; per-side mode uses `ValueSelect` (token-only). |
 | `inspector/shared/CollapsibleSection.tsx` | Native `<details>`/`<summary>` wrapper used by Inspector to make each panel collapsible. |
@@ -71,7 +71,7 @@ The user-facing chrome. Has no opinion about *what* components exist, only about
 | `UndoRedo.tsx` | Undo/redo toolbar buttons wired to `actions.history.undo/redo`. Subscribes to `query.history.canUndo/canRedo` for disabled state. Installs a global Cmd/Ctrl+Z, Cmd/Ctrl+Shift+Z keyboard handler (skipped when target is an editable element). |
 | `ThemeSwitcher.tsx` | Dropdown that flips `activeThemeId` in the editor store. |
 | `AdapterSwitcher.tsx` | Dropdown that flips `activeAdapterId` in the editor store. |
-| `Hydrator.tsx` | Renders `null`. On mount: if the URL has `#doc=…`, decodes the shared document and creates a new "Shared document" entry; otherwise loads the active document from `documentStore`. Module-level `hydrated` flag prevents re-restore on any future remount. Load passes through `migrateDocument` (Phase-5 Card props, Phase-6/7 Tabs content). |
+| `Hydrator.tsx` | Renders `null`. On mount: if the URL has `#doc=…`, decodes the shared document and creates a new "Shared document" entry; otherwise loads the active document from `documentStore`. Module-level `hydrated` flag prevents re-restore on any future remount. Load passes through `migrateDocument` (Card props, Tabs content). |
 
 ### Layer 2 — Canonical Component Registry (`src/registry/`)
 
@@ -136,12 +136,12 @@ the class-editing panels; the `activeSlot` mode routes every panel write into
 | File | Role |
 |---|---|
 | `types.ts` | `CanonicalComponent` (with optional `canvasSlots: readonly string[] \| ((props) => readonly string[])`), `NodeStyle` (with optional `responsive` + `inline` + `responsiveInline`), `CanonicalCategory`, `CanonicalId`, `PanelId`. |
-| `registry.ts` | `registerComponent` / `registerCanonical` (aliases), `unregisterCanonical`, `getComponent`, `getComponentByDisplayName`, `listComponents`, `getApplicablePanels`, `getCanvasSlots(def, nodeProps?)`, `getRegistryVersion`, `subscribeRegistry`, `_markEditorMounted`. Phase 7 — post-mount registrations bump the version counter; Editor subscribers re-resolve. In-memory map. |
+| `registry.ts` | `registerComponent` / `registerCanonical` (aliases), `unregisterCanonical`, `getComponent`, `getComponentByDisplayName`, `listComponents`, `getApplicablePanels`, `getCanvasSlots(def, nodeProps?)`, `getRegistryVersion`, `subscribeRegistry`, `_markEditorMounted`. Post-mount registrations bump the version counter; Editor subscribers re-resolve. In-memory map. |
 | `components/index.ts` | Barrel of side-effect imports. Adding a new canonical = one line here. |
-| `components/{box,text,button,input}.ts` | Phase 3 canonicals. Button explicitly omits the typography panel (shadcn's flex-centered primitive doesn't respect text utilities). |
-| `components/{heading,link,image,stack,divider,icon,badge,avatar,alert}.ts` | Phase 5 Pattern A breadth — content, navigation, media, display, and feedback canonicals. |
-| `components/{select,checkbox,radio,switch,textarea}.ts` | Phase 5 form canonicals. Their adapter impls render with no-op `onChange` handlers (and `readOnly` for Textarea) so the editor preview is visually faithful but interactively inert. |
-| `components/{card,tabs}.ts` | Phase 5 Pattern B composites. Multiple `styleSlots`; impls consume `composedClasses[slot]` and `composedInlineStyles[slot]`. |
+| `components/{box,text,button,input}.ts` | Canonicals. Button explicitly omits the typography panel (shadcn's flex-centered primitive doesn't respect text utilities). |
+| `components/{heading,link,image,stack,divider,icon,badge,avatar,alert}.ts` | Pattern A breadth — content, navigation, media, display, and feedback canonicals. |
+| `components/{select,checkbox,radio,switch,textarea}.ts` | Form canonicals. Their adapter impls render with no-op `onChange` handlers (and `readOnly` for Textarea) so the editor preview is visually faithful but interactively inert. |
+| `components/{card,tabs}.ts` | Pattern B composites. Multiple `styleSlots`; impls consume `composedClasses[slot]` and `composedInlineStyles[slot]`. |
 
 ### Layer 3 — Adapter Layer (`src/adapters/`)
 
@@ -191,7 +191,7 @@ Adapters are registered by side-effect import. `registerAdapter` validates the m
   // Pattern B impls read per-slot maps. Pattern A impls can ignore these.
   composedClasses?: Record<string, string>          // slot → composed responsive class string
   composedInlineStyles?: Record<string, CSSProperties>  // slot → composed inline CSS (base only)
-  slotChildren?: Record<string, ReactNode>          // Phase 6 — slot → <Element canvas/> wrapper for multi-canvas Pattern B
+  slotChildren?: Record<string, ReactNode>          // slot → <Element canvas/> wrapper for multi-canvas Pattern B
 }
 ```
 
@@ -206,7 +206,7 @@ Craft.js manages the document tree, selection set, drag/drop, and history. The b
 | File | Role |
 |---|---|
 | `CanonicalNode.tsx` | Generic React component. Given `canonicalId` + `nodeProps` + `style`, looks up the canonical def from the registry, the impl from the active adapter, and iterates `def.styleSlots`: for each slot, calls `composeResponsive(style, slot)` + `composeInlineStyle(style, slot)` and stores the result in `composedClasses[slot]` / `composedInlineStyles[slot]`. When `def.canvasSlots` is set, calls `getCanvasSlots(def, nodeProps)` (passes the node's current props so the function form of `canvasSlots` can return a dynamic slot list — e.g., Tabs returns one per tab), then generates one `<Element id={slot} is="div" canvas/>` wrapper per slot and passes them via `slotChildren`. When `style.responsiveInline` has entries for a slot, calls `composeResponsiveInline` to generate a hash-keyed CSS class with `@media` rules, appends the class to `composedClasses[slot]`, and renders an inline `<style>` block sibling to the impl. The root-slot results are mirrored to `className` / `inlineStyle` for Pattern A backwards compat. Attaches Craft's `connect/drag` via `rootRef`. Renders a labeled placeholder if the active adapter has no impl for the canonical. |
-| `resolver.tsx` | Builds and caches the Craft.js resolver — one user-component per canonical id. Phase 7 — cache is keyed by `getRegistryVersion()`; calls after a `registerCanonical` / `unregisterCanonical` post-mount return a freshly-built resolver. Identity stays stable when no registry mutation has happened. |
+| `resolver.tsx` | Builds and caches the Craft.js resolver — one user-component per canonical id. The cache is keyed by `getRegistryVersion()`; calls after a `registerCanonical` / `unregisterCanonical` post-mount return a freshly-built resolver. Identity stays stable when no registry mutation has happened. |
 | `resolver.tsx` | `buildResolver()` walks `listComponents()` and produces one Craft user-component per canonical id, each delegating to `CanonicalNode`. `getResolver()` is the cached singleton accessor. |
 
 ---
@@ -303,7 +303,7 @@ Token values live in `src/index.css`:
 
 These are the **document/canvas** tokens (`--primary`, `--background`, …) — they style the content end users design.
 
-**Editor-chrome theme (`--ed-*`, Phase 19) is a separate, independent system.** The chrome — toolbox, inspector, toolbar, panels, banners — references only `--ed-*` tokens (`bg-ed-surface`, `text-ed-text-muted`, …), never the canvas tokens above. The host sets it via the `Editor` `editorTheme` prop (`'light'` | `'dark'` | a partial `EditorChromeTokens` map), resolved by `src/editor/chromeTheme.ts` and applied as `data-editor-theme` + inline `--ed-*` variables on `<html>` (so body-portaled chrome is themed too). `:root` holds the light preset (byte-identical to the grays the chrome used pre-Phase-19), `[data-editor-theme='dark']` the dark preset. The canvas is carved out of the chrome theme via the `.cd-canvas` hook (set by `ThemeProvider`) so a dark chrome never restyles a light document. `scripts/check-chrome-tokens.ts` (CI `check:chrome`) forbids palette literals and canvas-token borrows under `src/editor/` so the two layers stay decoupled.
+**Editor-chrome theme (`--ed-*`) is a separate, independent system.** The chrome — toolbox, inspector, toolbar, panels, banners — references only `--ed-*` tokens (`bg-ed-surface`, `text-ed-text-muted`, …), never the canvas tokens above. The host sets it via the `Editor` `editorTheme` prop (`'light'` | `'dark'` | a partial `EditorChromeTokens` map), resolved by `src/editor/chromeTheme.ts` and applied as `data-editor-theme` + inline `--ed-*` variables on `<html>` (so body-portaled chrome is themed too). `:root` holds the light preset, `[data-editor-theme='dark']` the dark preset. The canvas is carved out of the chrome theme via the `.cd-canvas` hook (set by `ThemeProvider`) so a dark chrome never restyles a light document. `scripts/check-chrome-tokens.ts` (CI `check:chrome`) forbids palette literals and canvas-token borrows under `src/editor/` so the two layers stay decoupled.
 
 ### Editor State (`src/state/`)
 
@@ -341,7 +341,7 @@ The **safelist** is the bridge between this single-funnel parser and Tailwind v4
 
 ### Public SDK boundary (`src/sdk/`)
 
-Phase 6 carved out a public boundary for external authors. Anything in `src/sdk/*` is part of the contract; everything else is internal and can change without notice. The SDK is consumed via the `@design/sdk` path alias (wired in `tsconfig.json`, `tsconfig.app.json`, `vite.config.ts`).
+`src/sdk/` is the public boundary for external authors. Anything in `src/sdk/*` is part of the contract; everything else is internal and can change without notice. The SDK is consumed via the `@design/sdk` path alias (wired in `tsconfig.json`, `tsconfig.app.json`, `vite.config.ts`).
 
 | File | Role |
 |---|---|
@@ -363,12 +363,12 @@ User-facing docs:
 
 ### Persistence (`src/persistence/`)
 
-Phase 7 reshaped this layer from a single-active-doc store into a multi-document index with import/export/share affordances.
+This layer is a multi-document index with import/export/share affordances.
 
 | File | Role |
 |---|---|
 | `schema.ts` | Zod-validated `EditorDocument` envelope: `{ version, adapterId, themeId?, craftJson }`. Opaque `craftJson` — Craft owns its serialization. |
-| `migrations.ts` | `migrateDocument(doc)` walks the Craft JSON and applies idempotent migration steps. Phase 6 added Card-prop strip; Phase 7 added Tabs `content`-field strip. New canonical shape changes add a step here. |
+| `migrations.ts` | `migrateDocument(doc)` walks the Craft JSON and applies idempotent migration steps. Steps include a Card-prop strip and a Tabs `content`-field strip. New canonical shape changes add a step here. |
 | `documentRegistry.ts` | Pure storage layer over `localStorage`. CRUD + the v1 → v2 migration. No module state — tests stub `localStorage` per-case. |
 | `documentStore.ts` | Zustand wrapper exposing `createDocument` / `renameDocument` / `duplicateDocument` / `deleteDocument` / `saveActiveDocument` / `loadActiveDocument` / `setActiveId`. UI subscribers re-render on changes. |
 | `exportDocument.ts` | `exportDocument(doc): Blob` (pure) + `downloadDocument(doc, name): void` (synthesizes a `<a download>` click). |
@@ -376,7 +376,7 @@ Phase 7 reshaped this layer from a single-active-doc store into a multi-document
 | `share.ts` | URL-fragment encoding via lz-string. `encodeDocument(doc)` / `decodeDocument(encoded)` / `shareUrlFor(doc, baseUrl)` / `readSharedFragment(hash)` / `clearSharedFragment()`. `SHARE_URL_MAX_PAYLOAD = 30_000` is the conservative threshold for "fits in a browser URL." |
 | `templates/registry.ts` | Template registry: `registerTemplate` / `getTemplate` / `listTemplates`. |
 | `templates/builder.ts` | `buildTemplate({ root, adapterId?, themeId? })` walks a `NodeSpec` tree and emits a Craft-shaped serialized envelope. Reads canonical defaults from the registry; deterministic node ids (`node-0`, `node-1`, …) for reproducible JSON. |
-| `templates/{empty,landing-page,form}.ts` | Three starter templates shipped Phase 7. Pattern-A-only — multi-canvas templates are a Phase 8 item. |
+| `templates/{empty,landing-page,form}.ts` | Three starter templates. Pattern-A-only. |
 | `templates/index.ts` | Side-effect barrel importing all template modules so they register at boot. |
 
 Storage shape (v2):
@@ -409,7 +409,7 @@ craftjs-design/
   src/
     main.tsx                    # ReactDOM root (dev — Vite app)
     App.tsx                     # Dev boot: side-effect imports + top-shell ErrorBoundary
-    main-app.tsx                # Phase 8 dist entry — same side-effects + re-exports for integration consumers
+    main-app.tsx                # dist entry — same side-effects + re-exports for integration consumers
     index.css                   # Tailwind v4 entry + @import safelist.generated.css + @theme inline bridge + token blocks + .mui-bridge
     lib/
       utils.ts                  # shadcn's tailwind-merge-backed cn
@@ -420,7 +420,7 @@ craftjs-design/
       registry.ts
       components/
         index.ts                # barrel of side-effect registrations
-        *.ts                    # 48 canonical defs across Phases 3–13
+        *.ts                    # 48 canonical defs
                                 #   (layout/content/input/display/navigation/
                                 #    feedback/media). dynamic-slots.ts holds the
                                 #   pure Tabs/Carousel slot-key helpers.
@@ -436,7 +436,7 @@ craftjs-design/
         theme.ts
         Wrapper.tsx
         components/             # one .tsx per canonical (parity with shadcn)
-      html/                     # Phase 16 — dependency-free, semantic HTML
+      html/                     # dependency-free, semantic HTML
         index.ts                # registerAdapter for all 48 canonicals
         components.tsx          # all 48 impls in one file, no UI library
     themes/
@@ -454,7 +454,7 @@ craftjs-design/
       inline.ts                 # composeInlineStyle(style, slot) → React.CSSProperties from style.inline
       responsive-inline.ts      # composeResponsiveInline(style, slot) → CSS class + @media rules
       responsive-inline.test.ts
-      safelist-extract.ts       # Phase 8 — pure extractArbitraryClasses(tree) helper
+      safelist-extract.ts       # pure extractArbitraryClasses(tree) helper
       safelist-extract.test.ts
       safelist.generated.css    # gitignored — emitted by scripts/gen-safelist.ts
     craft/
@@ -469,20 +469,20 @@ craftjs-design/
       AdapterSwitcher.tsx
       Hydrator.tsx
       UndoRedo.tsx                # toolbar buttons + Cmd+Z global handler
-      ShareButton.tsx             # Phase 7 — toolbar Share popover (URL or copy-as-JSON)
-      ResolverUpdater.tsx         # Phase 7 — hot canonical reload bridge
+      ShareButton.tsx             # toolbar Share popover (URL or copy-as-JSON)
+      ResolverUpdater.tsx         # hot canonical reload bridge
       canvas/
-        ResizeOverlay.tsx         # Phase 7 — fixed-position resize handles overlay
-        snap.ts                   # Phase 8 — snapToSizeToken(px) helper
+        ResizeOverlay.tsx         # fixed-position resize handles overlay
+        snap.ts                   # snapToSizeToken(px) helper
         snap.test.ts
-      errors/                     # Phase 8 — 4-layer error boundaries
+      errors/                     # 4-layer error boundaries
         ErrorBoundary.tsx         # generic class component (componentDidCatch)
         ErrorBoundary.test.tsx
         fallbacks.tsx             # TopShell / Canvas / Panel / Toolbox typed fallbacks
       documents/
-        DocumentMenu.tsx          # Phase 7 — top-bar dropdown (replaces title)
-        TemplatePicker.tsx        # Phase 7 — nested popover for starter templates
-        useDocumentSwitcher.ts    # Phase 7 — switchTo/createBlank/createFromTemplate
+        DocumentMenu.tsx          # top-bar dropdown (replaces title)
+        TemplatePicker.tsx        # nested popover for starter templates
+        useDocumentSwitcher.ts    # switchTo/createBlank/createFromTemplate
       inspector/
         ResponsiveBar.tsx
         SlotPicker.tsx              # Pattern B canonicals only (>1 slot)
@@ -497,16 +497,16 @@ craftjs-design/
           ObjectField.tsx           # z.object recursion for nested element schemas
           defaults.ts               # defaultValueFor(schema) for seeded "Add" items
           defaults.test.ts
-          arrayOps.ts               # Phase 7 — pure helpers (reorder/swap/removeAt/setAt)
+          arrayOps.ts               # pure helpers (reorder/swap/removeAt/setAt)
           arrayOps.test.ts
         shared/
-          color-conversions.ts    # Phase 8 — hex / rgb / hsl pure helpers
+          color-conversions.ts    # hex / rgb / hsl pure helpers
           color-conversions.test.ts
           RgbSliders.tsx, HslSliders.tsx
-          EyedropperButton.tsx    # Phase 8 — feature-gated EyeDropper API
-          gradient.ts             # Phase 8 — Gradient types + parse / serialize
+          EyedropperButton.tsx    # feature-gated EyeDropper API
+          gradient.ts             # Gradient types + parse / serialize
           gradient.test.ts
-          GradientEditor.tsx      # Phase 8 — popover-rendered gradient editor
+          GradientEditor.tsx      # popover-rendered gradient editor
         shared/
           useNodeClasses.ts       # reads/writes classes + inline; subscribes to activeBreakpoint
           ColorPicker.tsx         # tokens + react-colorful visual picker + hex input
@@ -542,7 +542,7 @@ craftjs-design/
       adapter.ts, canonical.ts, style.ts, hooks.ts, panel.ts
       boundary.test.ts          # asserts expected exports + no internal leakage
   examples/                     # SDK consumer examples — sibling to src/
-    adapter-chakra/             # Phase 6 — Chakra adapter walkthrough
+    adapter-chakra/             # Chakra adapter walkthrough
       index.ts                  # registerAdapter via @design/sdk
       lib.tsx                   # mock primitives (swap for @chakra-ui/react)
       components/               # Box, Heading, Button, Stack, Card impls
@@ -555,7 +555,7 @@ craftjs-design/
     TUTORIAL_CANONICAL.md       # walkthrough — adding a canonical
     TUTORIAL_PANEL.md           # walkthrough — adding an inspector panel
     plans/
-      *.md                      # historical/phased implementation plans
+      *.md                      # internal implementation plans
 ```
 
 ---
@@ -627,7 +627,7 @@ Either via `Hydrator` (auto, once on mount) or `useDocumentSwitcher` (runtime). 
 3. `actions.deserialize(...)` — Craft replaces the tree.
 4. Apply theme + adapter from the envelope.
 
-**Race conditions (§ 1.10).** `applyEnvelopeSafely` returns a `Promise<ApplyEnvelopeResult>`. Work runs through a module-level promise queue + generation counter:
+**Race conditions.** `applyEnvelopeSafely` returns a `Promise<ApplyEnvelopeResult>`. Work runs through a module-level promise queue + generation counter:
 
 - Each call increments a global generation number; the work is enqueued behind any in-flight apply.
 - When the work fires (next microtask), it compares its captured generation to the current global one. If newer calls have come in, the work returns `{ ok: true, superseded: true }` without touching Craft.
@@ -671,7 +671,7 @@ Either via `Hydrator` (auto, once on mount) or `useDocumentSwitcher` (runtime). 
 
 1. User opens ColorPicker, drags the visual picker or types a hex. NumericInput accepts `13px` and commits on Enter.
 2. The panel detects the value isn't in the token enum (or comes from the picker's onChange) and calls `writeInline(cssProperty, value)` AND `writeClasses(mergeSlice(classString, { <field>: undefined }))` — clearing any matching token class.
-3. `writeInline` writes to `props.style.inline[slot][cssProperty]`. Always base-level — Phase 4.5 doesn't store responsive arbitrary values.
+3. `writeInline` writes to `props.style.inline[slot][cssProperty]`. Always base-level — responsive arbitrary values aren't stored.
 4. Craft re-renders. `composeInlineStyle` returns the new inline map. The impl receives it as `inlineStyle` and applies it via the rendered element's `style` attribute.
 5. Theme swaps don't affect this value (inline style is fixed). That's correct semantically: the user picked a specific color, not a token reference.
 
@@ -679,7 +679,7 @@ Either via `Hydrator` (auto, once on mount) or `useDocumentSwitcher` (runtime). 
 
 1. User clicks `md` in `ResponsiveBar`. `setActiveBreakpoint('md')`.
 2. Every component using `useEditorStore((s) => s.activeBreakpoint)` re-renders — `ResponsiveBar` itself and every inspector panel via `useNodeClasses`.
-3. Each panel's `useNodeClasses` re-reads from `style.responsive.md[slot]` (empty for a fresh md edit → `classString = ''`). The `inlineStyle` read still returns the base inline (Phase 4.5 doesn't store responsive arbitrary).
+3. Each panel's `useNodeClasses` re-reads from `style.responsive.md[slot]` (empty for a fresh md edit → `classString = ''`). The `inlineStyle` read still returns the base inline (responsive arbitrary isn't stored).
 4. ColorPicker's hex section and NumericInput's arbitrary mode both disable themselves and show "Arbitrary values supported at base breakpoint only." Token pickers remain interactive.
 5. User edits a control with a token. The panel writes the new class string to `style.responsive.md[slot]`. `style.classes[slot]` is untouched — the base value survives.
 6. `composeResponsive` now emits `<base classes> md:<class1> md:<class2> …`. The browser applies the md-prefixed utilities only at viewports ≥ 768px.
@@ -734,7 +734,7 @@ Craft.js offers two patterns for containers:
 
 This codebase uses Pattern A for single-slot containers. An earlier draft tried to *combine* both ("the component is a canvas AND has a nested canvas slot") and discovered the hard way that competing drop targets break hit-testing — so a Pattern-B node's *outer* element is NOT a canvas; only its named sub-slots are.
 
-**True multi-canvas Pattern B is live** (shipped Phase 6, extended through Phase 13). A canonical declares `canvasSlots` — a static `string[]` or a `(props) => string[]` function — and `CanonicalNode` generates one `<Element canvas id={slot}>` per slot, handing the adapter impl `slotChildren[slot]` to place each independently-droppable region. Five canonicals use it:
+**True multi-canvas Pattern B is live.** A canonical declares `canvasSlots` — a static `string[]` or a `(props) => string[]` function — and `CanonicalNode` generates one `<Element canvas id={slot}>` per slot, handing the adapter impl `slotChildren[slot]` to place each independently-droppable region. Five canonicals use it:
 
 - **Card** — static `canvasSlots: ['header', 'body', 'footer']`. Three real drop zones; the inspector also styles each via `styleSlots`.
 - **Table** — dynamic, one cell slot per `rows × cols` (with merge handling).
@@ -784,7 +784,7 @@ The Toolbox is more than a flat list of components. It's the user's primary inde
 
 ### <a id="multi-canvas-via-canvasslots"></a>Multi-canvas Pattern B via `canvasSlots`
 
-The Container Pattern decision (above) describes Pattern A — outer node is the single canvas — and earlier reserved Pattern B for genuine composites. Phase 6 ships Pattern B for Card.
+The Container Pattern decision (above) describes Pattern A — outer node is the single canvas — and earlier reserved Pattern B for genuine composites. Pattern B is now shipped for Card.
 
 The contract: a canonical declares `canvasSlots: readonly string[]`. When set, `CanonicalNode` generates one `<Element id={slot} is="div" canvas/>` wrapper per slot and passes the wrappers via `slotChildren: Record<string, ReactNode>`. Each wrapper becomes a linked Craft child node — its own drop zone with its own subtree. The outer canonical node is NOT a canvas (declaring `isCanvas: false`); declaring both would create competing drop targets and break hit-testing.
 
@@ -809,11 +809,11 @@ Empty slot wrappers are invisible by default (zero height when their `<Element>`
 - `canvasSlots` unset, `isCanvas: true` → Pattern A (legacy single canvas via `['root']`).
 - `canvasSlots` unset, `isCanvas: false` → no canvas (leaf).
 
-Tabs stays props-driven in Phase 6 — its canvas count varies with `props.tabs.length`, which is a different complexity class from Card's fixed three slots. Phase 7 will revisit.
+Tabs is props-driven — its canvas count varies with `props.tabs.length`, which is a different complexity class from Card's fixed three slots.
 
 ### <a id="responsive-arbitrary-via-runtime-style-injection"></a>Responsive arbitrary inline via runtime `<style>` injection
 
-Phase 4.5 limited arbitrary CSS values (hex colors, custom `13px` spacing) to the base breakpoint because the inline-style HTML attribute can't carry `@media` queries. Phase 6 lifts the limit using runtime CSS injection rather than a Vite-time safelist.
+An inline-style HTML attribute can't carry `@media` queries, which would otherwise limit arbitrary CSS values (hex colors, custom `13px` spacing) to the base breakpoint. The limit is lifted using runtime CSS injection rather than a Vite-time safelist.
 
 For each slot that has at least one entry in `style.responsiveInline[bp][slot]`, `CanonicalNode`:
 
@@ -829,7 +829,7 @@ Compared to a Vite-time safelist this approach trades a small per-node `<style>`
 
 ### <a id="sdk-boundary"></a>SDK boundary — public surface in `src/sdk/`
 
-Phase 6 carved out `src/sdk/` as the public boundary for adapter / canonical / panel authors. Two motivations:
+`src/sdk/` is the public boundary for adapter / canonical / panel authors. Two motivations:
 
 1. **Stability.** Internal types in `src/adapters/types.ts`, `src/registry/types.ts`, etc. evolve as the editor's internals shift. A pinned public surface insulates SDK consumers from those moves.
 2. **Discoverability.** A single import path (`@design/sdk`) is documentable in a way "import from this file or that file deep inside the project" is not.
@@ -845,7 +845,7 @@ Internal adapters dogfood the boundary — `src/adapters/{shadcn,mui}/index.ts` 
 
 ### <a id="panel-registry"></a>Pluggable inspector panels
 
-Phase 6 replaced the Inspector's hardcoded `panels.includes('layout') && <LayoutPanel/>` cascade with a panel registry. `PanelDefinition` describes a panel:
+The Inspector renders panels from a panel registry rather than a hardcoded `panels.includes('layout') && <LayoutPanel/>` cascade. `PanelDefinition` describes a panel:
 
 ```ts
 interface PanelDefinition {
@@ -865,15 +865,15 @@ Resolution (`getPanelsFor(def)`):
 
 Inspector iterates the resolved list, sorts by `order`, and renders each via `<panel.component nodeId={...} slot={activeSlot} />` wrapped in a `CollapsibleSection`. The PropsPanel passes `slot` but ignores it (it edits canonical props, not slot classes).
 
-### <a id="document-lifecycle"></a>Document lifecycle (Phase 7)
+### <a id="document-lifecycle"></a>Document lifecycle
 
-The Phase-6 editor had one document. Phase 7 turned that into a vocabulary — designers create, name, switch, duplicate, share, import, export.
+The editor supports a full document vocabulary — designers create, name, switch, duplicate, share, import, export.
 
 **Storage.** Two key shapes:
 - `craftjs-design:doc-index:v2` — the index. `{ documents: [{id,name,created,updated}], activeId }`.
 - `craftjs-design:doc:<id>:v2` — one envelope per document.
 
-Old Phase-5/6 documents stored at `:doc:v1` migrate to a single "Untitled" entry in the v2 index on first read. The legacy key is removed after migration; subsequent reads see the v2 state.
+Old documents stored at `:doc:v1` migrate to a single "Untitled" entry in the v2 index on first read. The legacy key is removed after migration; subsequent reads see the v2 state.
 
 **Boot flow:** `Hydrator` runs once on mount. Two branches:
 1. **Shared URL** — if `window.location.hash` matches `#doc=<encoded>`, decode via `share.decodeDocument`, create a new "Shared document" entry via `documentStore.createDocument`, deserialize into Craft, clear the fragment. Non-destructive: the user's previous active doc stays in the index.
@@ -881,17 +881,17 @@ Old Phase-5/6 documents stored at `:doc:v1` migrate to a single "Untitled" entry
 
 **Switch flow:** `useDocumentSwitcher.switchTo(id)` snapshots the current canvas via `query.serialize()` + `saveActiveDocument`, swaps `activeId`, loads the target's blob (or falls back to the Empty template seed for never-saved docs), and `deserialize`s. Auto-save before switch means in-progress changes never vanish silently.
 
-**Import / Export.** `exportDocument(env)` returns a Blob; `downloadDocument(env, name)` triggers a download. `importDocumentFromFile(file)` reads + validates + migrates. The SaveLoadBar Import button overwrites the active doc; the Hydrator's shared-URL branch creates a new doc. Two gestures, two defaults — see the close-out section in `PHASE7_PLAN.md`.
+**Import / Export.** `exportDocument(env)` returns a Blob; `downloadDocument(env, name)` triggers a download. `importDocumentFromFile(file)` reads + validates + migrates. The SaveLoadBar Import button overwrites the active doc; the Hydrator's shared-URL branch creates a new doc. Two gestures, two defaults.
 
 **Share.** `share.shareUrlFor(env, baseUrl)` produces a URL with the lz-string-compressed envelope in the fragment. The `ShareButton` popover renders the URL ready to copy. Encoded payloads over `SHARE_URL_MAX_PAYLOAD` (30 KB) flip to a "Copy as JSON" fallback — the user pastes into another editor's Import. Documents shared via URL are visible to anyone with the link AND to anyone with browser history access; documented as a privacy note in the popover.
 
 **Templates.** Three starter templates ship: Empty, Landing page, Sign-up form. Each is built via `buildTemplate({ root: NodeSpec })` which produces a valid Craft envelope from a TS-authored spec (better than hand-typed JSON — type-checked against the live canonical registry). Templates register at module load via `App.tsx`'s side-effect import.
 
-**Hot canonical reload (Phase 7 polish).** `registerCanonical` post-mount bumps `registryVersion`. The Toolbox subscribes via `useSyncExternalStore` and re-renders to show the new entry. A side-effect `<ResolverUpdater />` inside `<Craft>` calls `actions.setOptions((opts) => { opts.resolver = getResolver() })` on every bump, so Craft's internal resolver picks up new canonical ids for dragging + deserialization. Existing canvases that reference a *removed* canonical fall back to the missing-impl placeholder.
+**Hot canonical reload.** `registerCanonical` post-mount bumps `registryVersion`. The Toolbox subscribes via `useSyncExternalStore` and re-renders to show the new entry. A side-effect `<ResolverUpdater />` inside `<Craft>` calls `actions.setOptions((opts) => { opts.resolver = getResolver() })` on every bump, so Craft's internal resolver picks up new canonical ids for dragging + deserialization. Existing canvases that reference a *removed* canonical fall back to the missing-impl placeholder.
 
 ### <a id="drag-resize-overlay"></a>Drag-resize via canvas overlay
 
-Phase 6 shipped resize as an Inspector toggle (CSS `resize: both` on the selected node's DOM, captured on toggle-off). Phase 7 replaced it with a fixed-position canvas overlay (`<ResizeOverlay />`).
+Resize is a fixed-position canvas overlay (`<ResizeOverlay />`), replacing an earlier Inspector toggle (CSS `resize: both` on the selected node's DOM, captured on toggle-off).
 
 The overlay sits outside the Craft `<Frame>` tree, positioned over the selected node's bounding rect. Four corner handles. The position recomputes on selection change, window resize, scroll (capture phase, to catch the canvas `<main>`'s independent scroller), and `ResizeObserver` ticks on the node DOM.
 
@@ -899,9 +899,9 @@ Mousedown on a handle stops propagation (defense against any document-level Craf
 
 Craft drag-connector conflict: the handles aren't inside any Craft node's DOM (the overlay is its own subtree, rendered as a sibling of `<Frame>`), so Craft's per-node mousedown listeners never see the handle's pointer events. `e.stopPropagation()` is belt-and-suspenders for future Craft versions.
 
-### <a id="selection-model"></a>Selection model — editorStore is the UI source of truth (Phase 11)
+### <a id="selection-model"></a>Selection model — editorStore is the UI source of truth
 
-Multi-select (Phase 11 § 3.3) split selection into two stores with a one-way bridge:
+Multi-select splits selection into two stores with a one-way bridge:
 
 - **`editorStore.selection: string[]`** is the source of truth for the UI — Inspector, Layer tree, breadcrumbs, secondary-selection outlines all subscribe here.
 - **Craft's `events.selected`** stays the source of truth for the document/connector layer (resize overlay, default left-click connector, drag).
@@ -909,17 +909,17 @@ Multi-select (Phase 11 § 3.3) split selection into two stores with a one-way br
 
 Every user-initiated selection entry point (layer-tree click, keyboard arrow-nav, canvas search jump, modifier-click) writes `editorStore.setSelection(...)` **synchronously via `flushSync`** and *then* calls `actions.selectNode`. This is load-bearing: `useSelectionSync`'s mirror runs in a passive `useEffect` (after paint), so relying on it alone left the editorStore-backed surfaces one frame behind the canvas — visible as off-by-one layer-tree clicks and laggy arrow-nav. `flushSync` commits the editorStore subscribers in the same frame as the Craft-backed canvas outline. Modifier-click semantics (toggle / range) are pure functions in `editor/selection/modifierSelection.ts`.
 
-### <a id="layer-tree"></a>Layer tree placement — tab-toggle, not a third sidebar (Phase 11 § 3.4)
+### <a id="layer-tree"></a>Layer tree placement — tab-toggle, not a third sidebar
 
 The layout had two `<aside>` + one `<main>`. A third always-on sidebar for the layer tree would have eaten canvas width. **Decision: toggle-replace** — a tab strip at the top of the existing left aside switches between `Components` (Toolbox) and `Layers` (`<LayerTree>`); the choice persists in localStorage (`craftjs-design.left-aside-tab:v1`). Designers rarely need component-search and the layer tree open simultaneously, so toggling preserves real estate. `buildTreeShape` flattens the Craft tree into a DFS pre-order list (pure, testable) consumed by both plain rendering and `@tanstack/react-virtual` (engaged past 50 visible rows). Drag-reorder uses HTML5 DnD with a `wouldCreateCycle` guard.
 
-### <a id="alignment-guides"></a>Alignment guides — visual-only over Craft's drag (Phase 11 § 3.6)
+### <a id="alignment-guides"></a>Alignment guides — visual-only over Craft's drag
 
 Smart guides depend on a drag *coordinate* model, but Craft uses native HTML5 drag-and-drop: the source element doesn't move during a drag (the browser renders a "drag image" ghost), and there's no `pointermove` stream — only `dragover` on drop targets, committed via insertion-index `actions.move`. The two escalation paths to true coordinate-snap — (1) a custom pointermove drag layer that bypasses Craft for in-document moves, or (2) forking `@craftjs/core` for a `beforeMove` hook — are each a weeks-scale rewrite and would force absolute positioning onto canvas nodes that currently live in flex flow.
 
-**Decision: visual-only for v1.** `useDragGuides` listens to `dragover`, builds a "dragged rect" centered on the pointer, and runs the pure `alignmentMatches` math against same-parent sibling rects. Matching edges draw red guide lines (`<GuideOverlay>`, ≤2 lines, 4px threshold); Alt bypasses; guides are suppressed inside Pattern B multi-canvas slots. The drop still commits through Craft's normal insertion-index move — no coordinate snap. Designers get the alignment *hint* (the high-value half of the Figma behavior) without the drag-layer rewrite. Coordinate snap is a documented Phase 12+ stretch.
+**Decision: visual-only for v1.** `useDragGuides` listens to `dragover`, builds a "dragged rect" centered on the pointer, and runs the pure `alignmentMatches` math against same-parent sibling rects. Matching edges draw red guide lines (`<GuideOverlay>`, ≤2 lines, 4px threshold); Alt bypasses; guides are suppressed inside Pattern B multi-canvas slots. The drop still commits through Craft's normal insertion-index move — no coordinate snap. Designers get the alignment *hint* (the high-value half of the Figma behavior) without the drag-layer rewrite. Coordinate snap is a documented future stretch.
 
-### <a id="image-provider"></a>Asset backend — host-pluggable image provider (Phase 11 § 3.10)
+### <a id="image-provider"></a>Asset backend — host-pluggable image provider
 
 `<EditorImageProvider>` is a React context with `{ upload, list, delete?, canList }`. Hosts wrap the editor to route uploads to their backend; absent a wrapper, a default provider inlines base64 data URLs and remembers session uploads in module scope (so the library lists all uploads, not just whatever `src` currently sits on a node). `canList` gates the host-only `AssetLibraryPanel` (the Inspector calls `useEditorImageProvider()` unconditionally and filters the panel out when false — `applicableTo` can't read context). The `ImagePicker` (Image `src` field) shows the union of provider `list()` + a document scan of existing Image `src` values.
 
@@ -1073,7 +1073,7 @@ Side-effecting work goes in `mount` / `unmount` — the imperative lifecycle hoo
 
 ---
 
-### The style "dimension" — breakpoint × state (Phase 12)
+### The style "dimension" — breakpoint × state
 
 A node's styling is addressed along two orthogonal axes: **breakpoint**
 (`base`, `sm`…`2xl`) and **pseudo-class state** (`base`, `hover`, `focus`,
@@ -1097,7 +1097,7 @@ otherwise beat a pseudo-class rule by specificity). The selected node
 previews a non-base state on the canvas by applying that quadrant's styles
 unprefixed (`CanonicalNode`).
 
-### Theme token derivation (Phase 12)
+### Theme token derivation
 
 Themes are authored from a small `tokens` map (often just `primary`).
 `deriveTokens(tokens, scheme)` (`src/themes/tokens.ts`) is a pure function
@@ -1136,7 +1136,7 @@ The `:v1` suffix on the storage key reserves namespace for a future v2 envelope 
 
 The `activeBreakpoint` (which breakpoint the user is currently editing) is **not** persisted — it's a UI mode, not a document property. It resets to `'base'` on every reload.
 
-**Migrations (`src/persistence/migrations.ts`).** `documentRegistry.readDocument` pipes the deserialized envelope through `migrateDocument` before handing back. Each migration step walks the opaque Craft JSON and mutates node shapes in place. Steps are idempotent; running them on an already-current document is a no-op. Phase 6 added one step (Card-prop strip + `isCanvas` flip). Phase 7 added one step (Tabs `content`-field strip per tab). Add a new migration step when bumping the envelope shape OR when changing a canonical's persisted shape in a way the current code can't read.
+**Migrations (`src/persistence/migrations.ts`).** `documentRegistry.readDocument` pipes the deserialized envelope through `migrateDocument` before handing back. Each migration step walks the opaque Craft JSON and mutates node shapes in place. Steps are idempotent; running them on an already-current document is a no-op. Current steps include a Card-prop strip + `isCanvas` flip and a Tabs `content`-field strip per tab. Add a new migration step when bumping the envelope shape OR when changing a canonical's persisted shape in a way the current code can't read.
 
 ---
 

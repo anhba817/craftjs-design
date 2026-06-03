@@ -112,7 +112,7 @@ interface CanonicalComponent<Props = Record<string, unknown>> {
   isCanvas: boolean
   styleSlots: readonly string[]
   canvasSlots?: readonly string[] | ((props: Props) => readonly string[])
-                                       // Phase 6/7 — multi-canvas Pattern B
+                                       // multi-canvas Pattern B
   propsSchema: z.ZodType<Props>
   defaults: { props: Props; style: NodeStyle }
   applicablePanels?: readonly PanelId[]
@@ -126,7 +126,7 @@ interface CanonicalComponent<Props = Record<string, unknown>> {
   more for Pattern B.
 - `canvasSlots` — when set, CanonicalNode generates one `<Element canvas>`
   wrapper per slot and passes them via `slotChildren`. Outer is NOT a
-  canvas; inner slots are. **Function form** (Phase 7): supply
+  canvas; inner slots are. **Function form**: supply
   `(props) => readonly string[]` for dynamic counts — Tabs uses this to
   expose one canvas per `props.tabs` entry. Adding/removing entries via
   PropsPanel updates the canvas list on next render.
@@ -140,7 +140,7 @@ interface NodeStyle {
   inline?: Record<string, Record<string, string>>      // slot → cssProp → value (base)
   responsiveInline?: Record<string, Record<string, Record<string, string>>>
                                                        // bp → slot → cssProp → value
-  // Phase 12 — pseudo-class states, composing with breakpoints
+  // pseudo-class states, composing with breakpoints
   // (state ∈ 'hover' | 'focus' | 'active'):
   states?: Record<string, Record<string, string>>      // state → slot → classes
   stateResponsive?: Record<string, Record<string, Record<string, string>>>
@@ -176,7 +176,7 @@ document validation pass.
 | `getApplicablePanels(def)` | Legacy helper returning panel ids; prefer `getPanelsFor` for new code. |
 | `getCanvasSlots(def)` | Resolves canvas slots (explicit `canvasSlots`, or `['root']` if `isCanvas`, else `[]`). |
 
-**Hot canonical reload** (Phase 7): `registerCanonical` / `unregisterCanonical`
+**Hot canonical reload**: `registerCanonical` / `unregisterCanonical`
 called AFTER the editor mounts bump an internal version counter; the Toolbox
 + Craft's internal resolver pick up the change without a reload. Existing
 canvas content keeps rendering — unaffected canonicals stay live; nodes
@@ -221,7 +221,7 @@ whitelist — only panels with those ids render. Otherwise each panel's
 
 ---
 
-## Font tokens (Phase 8)
+## Font tokens
 
 The Typography panel's Font dropdown reads from a registry. Built-ins
 (`sans`, `heading`, `mono`) seed at boot; SDK consumers add more.
@@ -262,9 +262,9 @@ registerFontToken({
 
 After registration, "Inter" appears in the Typography panel's Font
 dropdown on next render (the panel re-captures the registry on selection
-change — full hot-reload is a Phase 9 polish item).
+change — full hot-reload isn't supported yet).
 
-## ColorPicker gradient values (Phase 8)
+## ColorPicker gradient values
 
 The `ColorPickerValue` discriminated union extended with a `gradient`
 variant. Adapters / custom panels that render the color picker can opt in
@@ -274,7 +274,7 @@ to gradients via the `allowGradient` prop.
 type ColorPickerValue =
   | { kind: 'token'; token: TokenColor }
   | { kind: 'hex'; hex: string }
-  | { kind: 'gradient'; gradient: Gradient }  // Phase 8
+  | { kind: 'gradient'; gradient: Gradient }
   | { kind: 'unset' }
 
 interface Gradient {
@@ -291,7 +291,7 @@ interface GradientStop {
 ```
 
 Gradient values serialize via `gradientToCss(g)` and persist to
-`style.inline[slot].background` (CSS longhand). The Phase-8 AppearancePanel
+`style.inline[slot].background` (CSS longhand). The built-in AppearancePanel
 demonstrates the routing — `Fill` accepts gradients, `Border Color`
 doesn't (border-image would require a different rendering path).
 
@@ -318,7 +318,7 @@ of poking Craft state directly.
 
 ---
 
-## Theme tokens, color variables, fonts, safelist (Phase 12, 0.3.0)
+## Theme tokens, color variables, fonts, safelist (0.3.0)
 
 ### Theme token API
 
@@ -387,7 +387,7 @@ path stays the zero-config default.
 
 ---
 
-## Overlays + dynamic canvases (Phase 13, 0.4.0)
+## Overlays + dynamic canvases (0.4.0)
 
 ### `useIsEditing()` — the overlay editor-mode contract
 
@@ -419,7 +419,7 @@ contract that custom overlay canonicals should mirror:
 The top-bar **Preview** toggle flips `state.options.enabled`, so a designer
 can switch between the two branches without leaving the editor.
 
-### Overlay authoring seam (Phase 18, 0.9.0)
+### Overlay authoring seam (0.9.0)
 
 The pieces the built-in overlay impls use are public, so a custom overlay
 canonical gets the same editor-stage + runtime behavior:
@@ -482,7 +482,7 @@ The other two dynamic-canvas built-ins export the same kind of helpers:
 
 ---
 
-## Persistence backend + code export (Phase 14, 0.5.0)
+## Persistence backend + code export (0.5.0)
 
 ### `setStorageAdapter` — plug your own backend
 

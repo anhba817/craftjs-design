@@ -21,7 +21,7 @@ Verified by grep of the editor's interactive components:
 | `UndoRedo.tsx` | Undo / Redo buttons | `'Undo'` / `'Redo'` |
 | `ShareButton.tsx` | Copy link / Copy as JSON | (text-bearing buttons — no label needed) |
 | `EyedropperButton.tsx` | Pipette icon button | `'Pick color from screen'` |
-| `ResizeToggle.tsx` (removed Phase 7) | n/a | replaced by canvas overlay |
+| `ResizeToggle.tsx` (removed) | n/a | replaced by canvas overlay |
 | `ArrayField.tsx` | Move up / Move down / Remove | `'Move up'` / `'Move down'` / `'Remove'` |
 | `GradientEditor.tsx` | Add stop / Remove stop | `'Add stop'` / `'Remove stop'` |
 | `Inspector.tsx` | Delete | text-bearing (button reads "Delete") |
@@ -59,10 +59,9 @@ semantics natively. No custom slider logic to break.
 
 ## Known gaps
 
-These are documented to scope the gap honestly — not all are blockers for
-Phase 8 sign-off. Phase 9+ polish picks them up.
+These are documented to scope the gap honestly.
 
-### Shipped — Toolbox keyboard navigation (Phase 9 § 1.5)
+### Shipped — Toolbox keyboard navigation
 
 The Toolbox implements the WAI-ARIA toolbar pattern with roving tabindex.
 The component list is `role="toolbar"` with `aria-orientation="vertical"`;
@@ -82,7 +81,7 @@ Implementation: `src/editor/Toolbox.tsx`. The favorited buttons stay
 `tabIndex={-1}` so they don't fragment the roving rotation — `F` is the
 keyboard path; mouse users click directly.
 
-### Shipped — Canvas keyboard navigation (Phase 9 § 1.4)
+### Shipped — Canvas keyboard navigation
 
 The canvas region (`<CanvasKeyboardRegion>` in
 `src/editor/canvas/CanvasKeyboardRegion.tsx`) is a single tab stop. Arrow
@@ -129,7 +128,7 @@ Implementation notes:
   `editorStore`) update on the same frame as the canvas outline
   rather than a frame behind.
 
-### Shipped — Multi-select + breadcrumbs (Phase 11 § 3.3, 3.5)
+### Shipped — Multi-select + breadcrumbs
 
 Multi-selection is mouse-driven (Cmd/Ctrl-click toggles, Shift-click
 range-extends within a parent); the keyboard arrow-nav remains
@@ -181,7 +180,7 @@ focus.
 
 When a node is dropped on the canvas, screen readers don't announce it.
 Adding `aria-live` regions for "Component dropped" / "Node selected" would
-help. Out of Phase 8 scope.
+help. Not yet addressed.
 
 ## Color contrast (informational)
 
@@ -197,12 +196,11 @@ confirm.
 
 ## Audit plan
 
-Phase 8 Group I runs an axe-core scan in dev mode and records findings
+An axe-core scan runs in dev mode and records findings
 here. Initial expected findings:
 
 1. `Toolbox.tsx` search input — wrap in `<label>` per the gap above.
 2. Color contrast of muted-on-muted backgrounds — verify.
 3. ResizeOverlay handles announced as buttons — they aren't `<button>`s
    today (they're `<div onMouseDown>`); switch to `<button>` so keyboard
-   users can at least focus them, then implement arrow-key resize as a
-   Phase 9 stretch.
+   users can at least focus them, then implement arrow-key resize.

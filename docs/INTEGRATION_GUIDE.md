@@ -547,14 +547,13 @@ upgrade — skipping it changes nothing.
 
 ### React version
 
-The editor requires React 19. The Phase-1 `display: contents` ref-forwarding
+The editor requires React 19. The old `display: contents` ref-forwarding
 wrappers around shadcn primitives (which were React-18-era workarounds) are
 gone — refs now flow directly through plain function components via React 19's
 ref-as-prop semantics.
 
 Older React 18 hosts would fail at runtime; the dist's `peerDependencies`
-declare `^19`. To use the editor in a React 18 host, downgrade the editor to
-a pre-Phase-9 version.
+declare `^19`.
 
 ### Module format + bundle size
 
@@ -575,11 +574,11 @@ pays ~44 KB, not the full editor — the entries are separate chunks and the
 SDK surface doesn't pull the editor or MUI in.
 
 **MUI weight.** The full-editor entry eagerly bundles *both* the shadcn and
-MUI adapters; MUI is roughly 290 KB gz of `index.js`. Splitting the heavy
-adapter onto its own opt-in subpath entry (so shadcn-only hosts don't pay
-for MUI) is a queued optimization (PRODUCTION_READINESS § 8.3). The Chakra
-adapter is an **example** and is *not* in the published bundle (only the
-dogfood app registers it).
+MUI adapters; MUI is roughly 290 KB gz of `index.js`. Shadcn-only hosts can
+avoid paying for MUI entirely by importing `@crafted-design/editor/core`
+(shadcn + plain-HTML, no MUI) — see [Subpath exports](#subpath-exports). The
+Chakra adapter is an **example** and is *not* in the published bundle (only
+the dogfood app registers it).
 
 **Minification.** The dist is intentionally **not** minified (easier to
 debug post-install, smaller diffs in sourcemaps); your bundler minifies it
@@ -595,8 +594,8 @@ optional `@crafted-design/editor/vite-plugin` safelist generator.
 
 ### Document storage quota
 
-localStorage has a 5–10 MB quota per origin. Phase 9 added two UI layers
-that surface storage pressure before the editor silently drops a save:
+localStorage has a 5–10 MB quota per origin. Two UI layers surface storage
+pressure before the editor silently drops a save:
 
 - `<StorageQuotaBanner>` appears once `documentRegistry.getStorageUsage()`
   reports ≥ 80 % of a conservative 5 MB ceiling. Dismissable; the
@@ -645,8 +644,8 @@ tabindex. See `docs/ACCESSIBILITY.md` for the full key map.
 `registerFontToken` injects `<style data-craftjs-fonts>` into
 `document.head`. If your host CSP forbids inline `<style>`, this won't work
 — host apps need a CSP that allows `style-src 'self' 'unsafe-inline'` or
-the equivalent for inline style injection. Phase 9 polish could ship a
-nonce-aware variant.
+the equivalent for inline style injection. A nonce-aware variant could be
+added in future.
 
 ## Troubleshooting
 

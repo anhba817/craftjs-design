@@ -192,7 +192,7 @@ When each named region needs to be its own independently-droppable canvas (Card 
 
 3. Each `slotChildren[slot]` renders as a `<div class="canvas-slot">…</div>`. The `.canvas-slot` class in `src/index.css` gives empty slots a min-height + a dashed outline + a "Drop here" hint via `:empty` — disappears the moment the slot has children.
 
-4. **Document migrations.** Changing a canonical from props-driven to multi-canvas (or back) is a persisted-shape change. Existing saved documents have the old shape baked in. Add a migration step in `src/persistence/migrations.ts` that walks the Craft tree and rewrites stale Card / Splitter / etc. nodes. The Phase-6 Card migration is the reference example — strip the dropped string props AND flip persisted `isCanvas: true` to `false`.
+4. **Document migrations.** Changing a canonical from props-driven to multi-canvas (or back) is a persisted-shape change. Existing saved documents have the old shape baked in. Add a migration step in `src/persistence/migrations.ts` that walks the Craft tree and rewrites stale Card / Splitter / etc. nodes. The Card migration is the reference example — strip the dropped string props AND flip persisted `isCanvas: true` to `false`.
 
 ### Adding a dynamic-canvas canonical (one canvas per data item)
 
@@ -306,7 +306,7 @@ A new adapter wraps a UI library and provides impls for some or all canonicals. 
      components: { button: MyButton },
      // Optional: Wrapper, themeTokens, classMap, mount, unmount
      // Declare any external npm packages this adapter needs, mapped to the
-     // tested range (Phase 16 § 7.4). Surfaced in the compatibility matrix;
+     // tested range. Surfaced in the compatibility matrix;
      // omit if the adapter uses no external library.
      peerDependencies: { 'my-ui-lib': '^3' },
    })
@@ -332,7 +332,7 @@ A new adapter wraps a UI library and provides impls for some or all canonicals. 
 
    `AdapterSwitcher` picks the new adapter up automatically (iterates `listAdapters()`).
 
-#### Shipping an adapter as a subpath entry (Phase 16 § 8.3)
+#### Shipping an adapter as a subpath entry
 
 The three built-in adapters double as opt-in package entries
 (`@crafted-design/editor/adapters/{shadcn,mui,html}`) so a host bundles only
@@ -348,7 +348,7 @@ the UI libraries it renders. To add a built-in adapter the same way:
 3. **`package.json` `sideEffects`** — list `**/adapters/mylib/**`. This is
    mandatory: the registration is a side-effect import, and an unlisted module
    gets tree-shaken out of the published bundle (the bug that shipped an
-   adapter-less `dist-lib` before Phase 15). Add the same to `peerDependencies`
+   adapter-less `dist-lib` in earlier versions). Add the same to `peerDependencies`
    + `peerDependenciesMeta` (optional) if it needs an external library.
 4. **`src/core.tsx`** (and/or the full `src/main-app.tsx`) — add the
    side-effect import so the chosen batteries-included entry registers it.
@@ -399,7 +399,7 @@ The next render of any node with that canonical id picks up the new impl. No fur
 
 The Inspector reads panels from a pluggable registry — built-ins and custom panels register the same way. Seven panels ship today (Layout, Size, Spacing, Typography, Appearance, Effects, Properties); they register themselves at module load via `src/editor/inspector/built-in-panels.ts`. To add an eighth — say, a custom "Animation" panel — follow this template, copying from `TypographyPanel.tsx` as the canonical example.
 
-**Note on array props:** if your panel surfaces an array prop via PropsPanel, the built-in `ArrayField` editor ships with HTML5 drag-and-drop reorder (Phase 7). The drag handle is a `GripVertical` icon on each item card; drop indicator shows whether the dropped item will land before or after the target. ↑/↓ buttons are retained as a keyboard-accessibility fallback. No work required on your end — `ArrayField` handles it.
+**Note on array props:** if your panel surfaces an array prop via PropsPanel, the built-in `ArrayField` editor ships with HTML5 drag-and-drop reorder. The drag handle is a `GripVertical` icon on each item card; drop indicator shows whether the dropped item will land before or after the target. ↑/↓ buttons are retained as a keyboard-accessibility fallback. No work required on your end — `ArrayField` handles it.
 
 1. **Add a slice to `src/style/tw-classes.ts`** if your panel edits Tailwind classes. Each slice is a self-contained block: const arrays + slice interface + regex patterns + `parse*` / `serialize*` / `merge*` trio. Slices must be independent — `parseX` should pass through every class that's not in X's prefix family as `unknownClasses`. See the typography block as a template.
 
@@ -460,9 +460,9 @@ The Inspector reads panels from a pluggable registry — built-ins and custom pa
 
    **Read the live class string at write time** by passing the current `classString` into `merge*` — that's the closure-captured value, refreshed on every render via `useNodeClasses`. Don't call `parseAnimation` separately just before writing; the merge function already does it.
 
-5. **If the panel supports arbitrary values via ColorPicker/NumericInput**, follow the token-vs-arbitrary mutual-exclusion pattern (see Conventions). Phase 6 lifted the base-only restriction — arbitrary values work at every breakpoint via `style.responsiveInline`. `useNodeClasses` routes the writes automatically based on `activeBreakpoint`; no panel-side gating needed.
+5. **If the panel supports arbitrary values via ColorPicker/NumericInput**, follow the token-vs-arbitrary mutual-exclusion pattern (see Conventions). Arbitrary values work at every breakpoint via `style.responsiveInline`. `useNodeClasses` routes the writes automatically based on `activeBreakpoint`; no panel-side gating needed.
 
-6. **Register the panel via `registerPanel`.** Phase 6 replaced the Inspector's hardcoded panel cascade with a registry. Add a side-effect import for your panel's registration in `App.tsx` (or in `src/editor/inspector/built-in-panels.ts` if it's a built-in):
+6. **Register the panel via `registerPanel`.** The Inspector resolves panels through a registry. Add a side-effect import for your panel's registration in `App.tsx` (or in `src/editor/inspector/built-in-panels.ts` if it's a built-in):
 
    ```ts
    import { registerPanel } from '@design/sdk'   // or '../inspector/panel-registry' internally
@@ -498,7 +498,7 @@ This writes to `src/components/ui/<component-name>.tsx`. The adapter impl wraps 
 ### Authoring a canonical that supports inline text editing
 
 Any canonical whose adapter impl renders user-editable text can opt into
-double-click-to-edit (Phase 11 § 3.11) with two SDK exports —
+double-click-to-edit with two SDK exports —
 `EditableText` and `useStartTextEdit`. No canonical-schema change is
 needed; it's purely an adapter-impl concern.
 
@@ -546,7 +546,7 @@ Notes:
 ### Writing an `EditorImageProvider`
 
 To route image uploads to your own backend instead of the default
-base64-inline provider (Phase 11 § 3.10), wrap the editor:
+base64-inline provider, wrap the editor:
 
 ```tsx
 import { EditorImageProvider } from '@crafted-design/editor/sdk'
@@ -583,7 +583,7 @@ table in `docs/INTEGRATION_GUIDE.md` § Asset backends.
 
 ---
 
-### Authoring a token theme (Phase 12)
+### Authoring a token theme
 
 Define a theme from a handful of base colors — `deriveTokens` fills the
 rest and the CSS is generated + injected. Add `darkTokens` for a dark
@@ -817,9 +817,9 @@ Templates seed new documents with pre-arranged canvas content. Three ship today 
 - `style?: Partial<NodeStyle>` — classes merged per-slot; other fields shallow-merged.
 - `children?: NodeSpec[]` — only honored when the canonical is a Pattern A canvas (`isCanvas: true`). Ignored for leaves.
 
-Pattern B multi-canvas templates (Card with header/body/footer children, Tabs with per-tab content) aren't supported by the current builder — that's a Phase 8 polish item. Workaround: ship a Pattern-A-only template; users can drop Card/Tabs and populate the slots manually.
+Pattern B multi-canvas templates (Card with header/body/footer children, Tabs with per-tab content) aren't supported by the current builder. Workaround: ship a Pattern-A-only template; users can drop Card/Tabs and populate the slots manually.
 
-### Adding a schema migration step (Phase 14 § 6.4)
+### Adding a schema migration step
 
 When a canonical's persisted shape changes incompatibly (renamed a prop, dropped a field, changed a type), existing saved documents need a one-shot transformation at load time. Migrations live in `src/persistence/migrations.ts` and run through the versioned pipeline in `migrateDocument()`: each step declares the `version` it upgrades a document **to**, and `migrateDocument` runs every step whose `version` exceeds the document's stamped version, then re-stamps to `CURRENT_DOCUMENT_VERSION`.
 
@@ -852,7 +852,7 @@ Migration rules:
 - **Drops, don't transform** for changes that can't be losslessly converted (synthesizing fresh node ids + linked-parent wiring is a different complexity class).
 - **Add test cases** in `migrations.test.ts`: happy path, isolation, idempotency, and version-gating (a doc already at the new version is untouched).
 
-### Writing a StorageAdapter (Phase 14 § 6.2)
+### Writing a StorageAdapter
 
 The editor persists through a `StorageAdapter` (default: IndexedDB → localStorage fallback). To back persistence with your own store (a server, a different local DB), implement the interface and register it before `<Editor />` mounts:
 
@@ -897,7 +897,7 @@ Things to watch for:
 
 ### Adding a font token
 
-Phase 8 ships a font-token registry that drives the Typography panel's Font
+A font-token registry drives the Typography panel's Font
 dropdown. Built-ins (`sans`, `heading`, `mono`) seed at module load; add more
 by calling `registerFontToken` at app boot.
 
@@ -941,12 +941,11 @@ tokens). Redundant but harmless.
 
 **Hot reload caveat:** the dropdown captures `listFontTokens()` keyed by
 `[nodeId]`. Post-mount registrations appear when the user selects a
-different node. Phase 9 polish ports the Phase-7 `registryVersion` pattern
-for instant refresh.
+different node.
 
 ### Adding an error boundary fallback
 
-Phase 8 ships four error-boundary layers; integration consumers (or this
+The editor ships four error-boundary layers; integration consumers (or this
 project's contributors adding new editor regions) plug new ones the same
 way.
 
@@ -994,7 +993,7 @@ tool can throw async.
 
 ### The `@design/sdk` boundary
 
-Phase 6 carved out a public boundary at `src/sdk/`. Files under `src/sdk/` are the contract for external SDK consumers (adapters / canonicals / panels authored outside the editor's core). Internal code can import either way; new code outside `src/adapters/`, `src/registry/`, `src/editor/inspector/`, and `src/style/` should prefer the SDK path.
+There is a public boundary at `src/sdk/`. Files under `src/sdk/` are the contract for external SDK consumers (adapters / canonicals / panels authored outside the editor's core). Internal code can import either way; new code outside `src/adapters/`, `src/registry/`, `src/editor/inspector/`, and `src/style/` should prefer the SDK path.
 
 ```ts
 // ✅ Right — SDK consumers see clear, documented boundary
@@ -1015,7 +1014,7 @@ When adding a new public name (a new type or function intended for SDK consumers
 
 ### Responsive arbitrary inline works at every breakpoint
 
-Phase 6 lifted the Phase 4.5 base-only restriction. The data shape:
+Arbitrary inline values are not restricted to the base breakpoint. The data shape:
 
 - **Base** — `style.inline[slot][cssProp]` (unchanged).
 - **Non-base** — `style.responsiveInline[bp][slot][cssProp]` (new).
@@ -1067,7 +1066,7 @@ Theme-token utilities (`text-primary`, `bg-card`, …) are auto-generated by `@t
 
 **Status:** the editor runs on React 19. Refs flow directly through shadcn's plain function components via React 19's ref-as-prop semantics — adapter impls pass `ref={rootRef as never}` directly to the shadcn component without needing a wrapper.
 
-The Phase-1-era `display: contents` span workaround is gone (Phase 9). Any new adapter impl follows the direct-ref pattern; see `src/adapters/shadcn/components/Button.tsx` as the reference.
+The old `display: contents` span workaround is gone. Any new adapter impl follows the direct-ref pattern; see `src/adapters/shadcn/components/Button.tsx` as the reference.
 
 ### `actions.setProp` is an Immer mutator, not an immutable update
 
@@ -1249,4 +1248,4 @@ Update when you:
 
 Don't update for:
 - Internal refactors with no API change.
-- Phase-tracked progress — that's the implementation plan's job.
+- Routine progress tracking — that belongs in the changelog, not here.

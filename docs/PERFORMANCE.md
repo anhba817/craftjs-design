@@ -5,10 +5,10 @@ This is a *static* audit — read the source, flag patterns. The matching
 React Profiler run (under real edit gestures) is the next step; results land
 here as a Profile Findings section as they're measured.
 
-This document covers Phase 8's exit criterion "no re-render storms during
-typical edit flows." Findings are categorized as **shipped** (already
+This document covers the goal of no re-render storms during
+typical edit flows. Findings are categorized as **shipped** (already
 optimized), **acceptable** (works fine, no fix needed), or **future** (a
-fix is queued for later — Phase 9+).
+fix is queued for later).
 
 ## Subscription model
 
@@ -65,12 +65,12 @@ debouncing.
 
 ### Acceptable — runtime `<style>` injection per node
 
-Phase 6's responsive-arbitrary inline path emits a `<style>` element per
+The responsive-arbitrary inline path emits a `<style>` element per
 node whose `style.responsiveInline` has entries. For documents with ≤100
-nodes that have responsive inline, this is fine. The Phase 8 plan called
-for a Vite-plugin replacement but V1 was partially pulled — the runtime
+nodes that have responsive inline, this is fine. A Vite-plugin replacement
+was considered but V1 was partially pulled — the runtime
 path stays. See `src/style/safelist-extract.ts` for the foundation if a
-build-time path becomes worthwhile in Phase 9+.
+build-time path becomes worthwhile later.
 
 ### Acceptable — Inspector renders all panels on every selection change
 
@@ -102,7 +102,7 @@ canvases where per-tick re-render starts to drop frames.
 
 ## Measurement plan
 
-Phase 8 Group I records baseline numbers via React DevTools Profiler during
+Baseline numbers are recorded via React DevTools Profiler during
 six tracked flows:
 
 1. **Mount** — initial Editor render with one default document.
@@ -126,7 +126,7 @@ Each flow's expected scope:
 Anything that exceeds the expected scope is a re-render storm; fix via
 `useMemo`, `React.memo`, or refactoring shared state.
 
-## Phase 9 Group B — Profiler baselines (2026-05-25)
+## Profiler baselines (2026-05-25)
 
 Recorded with React DevTools Profiler against the editor in dev mode
 (StrictMode active). Raw exports live in `profiler/` at the repo root —
@@ -181,7 +181,7 @@ ColorPicker root, and the root re-renders the whole popover on every
 keystroke. Sub-components aren't memoized, so even unchanged siblings
 get reconciled.
 
-**Group C fix shipped (defer ALL React state during drag).** Approach taken:
+**Fix shipped (defer ALL React state during drag).** Approach taken:
 
 An rAF-coalescing approach was tried first and rejected — on a 60 Hz
 display the pointermove input rate already matches the frame rate, so
@@ -284,7 +284,7 @@ either an unbounded high-rate event source (no rAF coalescing) or
 that pointermove inside React's input pipeline fires more often than
 the display refresh.
 
-**Group C fix shipped (direct-DOM overlay sync).** Approach taken:
+**Fix shipped (direct-DOM overlay sync).** Approach taken:
 
 Tracked the actual source: every mousemove tick mutates
 `selectedDom.style.width/height` directly (no Craft.js dispatch — that
@@ -358,5 +358,5 @@ To re-profile after a fix:
 
 ## Bundle size (informational)
 
-Not currently measured. Phase 8 Group H ships a dist build target; bundle
-size lands in that group's close-out.
+Not currently measured. A dist build target ships; bundle
+size will be recorded once measured.
