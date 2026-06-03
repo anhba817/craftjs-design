@@ -71,16 +71,17 @@ describe('buildTemplate', () => {
     expect(child2.props.nodeProps.content).toBe('second')
   })
 
-  it('skips children on non-canvas canonicals', () => {
-    const env = buildTemplate({
-      root: {
-        canonical: 'button',
-        // Button is a leaf — children are ignored.
-        children: [{ canonical: 'text' }],
-      },
-    })
-    const tree = JSON.parse(env.craftJson)
-    expect(tree.ROOT.nodes).toEqual([])
+  it('rejects children on non-canvas canonicals', () => {
+    // Phase 21 — the headless builder the template builder now delegates to
+    // is STRICT: children on a leaf throw instead of being silently dropped.
+    expect(() =>
+      buildTemplate({
+        root: {
+          canonical: 'button',
+          children: [{ canonical: 'text' }],
+        },
+      }),
+    ).toThrow(/is a leaf/)
   })
 
   it('throws on unknown canonical ids', () => {

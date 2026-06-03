@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import * as core from '@/core'
+import * as headless from '@/headless'
 import * as sdk from '@/sdk'
 
 // Phase 17 § Group C — the FROZEN public runtime surface (the 1.0 gate).
@@ -107,6 +108,30 @@ const CORE_EDITOR_ONLY = [
 
 const CORE_SURFACE = [...SDK_SURFACE, ...CORE_EDITOR_ONLY].sort()
 
+// Phase 21 — `@crafted-design/editor/headless`: build/edit/validate/introspect
+// documents without React/DOM/Craft. Its own frozen surface under the same
+// SemVer promise (1.3.0+).
+const HEADLESS_SURFACE = [
+  'addNode',
+  'buildDocument',
+  'canonicalIdOf',
+  'describeCanonical',
+  'describeCanonicals',
+  'getComponent',
+  'getTemplate',
+  'getTheme',
+  'listComponents',
+  'listTemplates',
+  'listThemes',
+  'moveNode',
+  'parseDocumentJson',
+  'removeNode',
+  'slotKeysFor',
+  'updateNodeProps',
+  'updateNodeStyle',
+  'validateDocument',
+].sort()
+
 // Internals that must NEVER appear in the public surface. CanonicalNode is the
 // Craft.js bridge renderer (leaking it lets code mount nodes outside the
 // editor's render flow); getResolver builds the Craft resolver from the
@@ -128,12 +153,20 @@ describe('frozen public surface', () => {
     }
   })
 
+  it('the headless entry exports exactly the frozen set', () => {
+    expect(Object.keys(headless).sort()).toEqual(HEADLESS_SURFACE)
+  })
+
   it('leaks no internal renderer / resolver into either entry', () => {
     for (const name of SEALED_INTERNALS) {
       expect(name in sdk, `${name} must not be in the SDK surface`).toBe(false)
       expect(name in core, `${name} must not be in the editor surface`).toBe(
         false,
       )
+      expect(
+        name in headless,
+        `${name} must not be in the headless surface`,
+      ).toBe(false)
     }
   })
 

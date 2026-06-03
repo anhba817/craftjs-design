@@ -41,6 +41,10 @@ const BUDGETS: Budget[] = [
   // number; /sdk is side-effect-free, so a consumer importing one symbol
   // tree-shakes the rest (guarded by side-effect-free.test.ts).
   { label: 'SDK (sdk.js)', entry: 'sdk.js', maxGzipKB: 70 },
+  // Phase 21 — headless document API. Registers canonicals/themes/templates
+  // (data + zod, no React UI), so it's mid-sized; it must NOT pull the editor
+  // chrome or adapters into its graph.
+  { label: 'headless (headless.js)', entry: 'headless.js', maxGzipKB: 60 },
   { label: 'vite-plugin', entry: 'vite-plugin.js', maxGzipKB: 5 },
   // Phase 20 — the scaffolding CLI (`bin`). Node built-ins only; must stay tiny
   // and must NEVER pull the editor runtime/React into its graph. A regression

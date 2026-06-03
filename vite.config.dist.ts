@@ -104,6 +104,10 @@ export default defineConfig({
         'adapters/mui': path.resolve(__dirname, 'src/adapters/mui/index.ts'),
         'adapters/html': path.resolve(__dirname, 'src/adapters/html/index.ts'),
         sdk: path.resolve(__dirname, 'src/sdk/index.ts'),
+        // Phase 21 — headless build/edit/validate/introspect for documents
+        // (no React/DOM/Craft). Registers canonicals+themes+templates on
+        // import; consumed by the MCP server and server-side tooling.
+        headless: path.resolve(__dirname, 'src/headless/index.ts'),
         // Phase 12 § 4.1 — optional, node-only build-time safelist plugin.
         // Separate entry (not in the browser SDK) since it imports node:fs.
         'vite-plugin': path.resolve(__dirname, 'src/vite/safelistPlugin.ts'),
