@@ -67,10 +67,24 @@ export default defineConfig({
       : []),
   ],
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@design/sdk': path.resolve(__dirname, './src/sdk/index.ts'),
-    },
+    // Array form so the use-sync-external-store shim can be matched EXACTLY
+    // (a string/prefix alias would also catch `…/shim/with-selector`).
+    alias: [
+      {
+        find: '@design/sdk',
+        replacement: path.resolve(__dirname, './src/sdk/index.ts'),
+      },
+      // Drop the CJS use-sync-external-store shim (it `require`s React, which
+      // breaks pure-ESM consumers) in favor of React 19's native hook.
+      {
+        find: /^use-sync-external-store\/shim$/,
+        replacement: path.resolve(
+          __dirname,
+          './src/shims/use-sync-external-store-shim.ts',
+        ),
+      },
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+    ],
   },
   build: {
     outDir: 'dist-lib',

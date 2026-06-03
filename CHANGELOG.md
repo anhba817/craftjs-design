@@ -150,6 +150,16 @@ App build (`npm run build`):
 No public API changes — the frozen SDK surface is unchanged (the CLI is a `bin`,
 not an exported module).
 
+### Fixed
+
+- **Pure-ESM consumers no longer crash with `Calling require for "react"`.** A
+  transitive CJS dependency (`use-sync-external-store`'s shim, pulled in by a
+  Radix hook) did `require('react')`; with React externalized, the library
+  build left a bare `require("react")` in the ESM output, which throws in a
+  Vite/Rolldown (or any pure-ESM) host. The shim is now aliased to React 19's
+  native `useSyncExternalStore` at build time, so the published bundle is pure
+  ESM with no `require` calls.
+
 ## [1.1.0] — 2026-06-03
 
 ### Added
