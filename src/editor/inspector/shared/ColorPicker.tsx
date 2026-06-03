@@ -217,11 +217,11 @@ export function ColorPicker({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="flex w-full items-center gap-2 rounded border border-gray-300 bg-white px-2 py-1 text-left text-sm text-gray-700 hover:bg-gray-50"
+          className="flex w-full items-center gap-2 rounded border border-ed-border-2 bg-ed-surface px-2 py-1 text-left text-sm text-ed-text hover:bg-ed-surface-2"
         >
           <span
             aria-hidden
-            className="h-4 w-4 shrink-0 rounded border border-gray-300"
+            className="h-4 w-4 shrink-0 rounded border border-ed-border-2"
             style={swatchStyle}
           />
           <span className="truncate">{labelText}</span>
@@ -229,15 +229,15 @@ export function ColorPicker({
       </PopoverTrigger>
       <PopoverContent className="w-72 space-y-3 p-3">
         {allowGradient && (
-          <div className="flex rounded border border-gray-200 bg-gray-50 p-0.5 text-xs">
+          <div className="flex rounded border border-ed-border bg-ed-surface-2 p-0.5 text-xs">
             <button
               type="button"
               onClick={startSolid}
               className={cn(
                 'flex-1 rounded px-2 py-0.5 transition-colors',
                 surface === 'solid'
-                  ? 'bg-white text-gray-800 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700',
+                  ? 'bg-ed-surface text-ed-text-strong shadow-sm'
+                  : 'text-ed-text-muted hover:text-ed-text',
               )}
             >
               Solid
@@ -248,8 +248,8 @@ export function ColorPicker({
               className={cn(
                 'flex-1 rounded px-2 py-0.5 transition-colors',
                 surface === 'gradient'
-                  ? 'bg-white text-gray-800 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700',
+                  ? 'bg-ed-surface text-ed-text-strong shadow-sm'
+                  : 'text-ed-text-muted hover:text-ed-text',
               )}
             >
               Gradient
@@ -265,7 +265,7 @@ export function ColorPicker({
         ) : (
           <>
             <div>
-              <div className="mb-1.5 text-xs font-medium text-gray-600">Theme tokens</div>
+              <div className="mb-1.5 text-xs font-medium text-ed-text-muted">Theme tokens</div>
               <div className="grid grid-cols-5 gap-1.5">
                 {COLORS.map((c) => {
                   const isActive = value.kind === 'token' && value.token === c
@@ -278,8 +278,8 @@ export function ColorPicker({
                       className={cn(
                         'h-6 w-6 rounded border transition-colors',
                         isActive
-                          ? 'border-primary ring-2 ring-primary/40'
-                          : 'border-gray-300 hover:border-gray-500',
+                          ? 'border-ed-accent ring-2 ring-ed-accent/40'
+                          : 'border-ed-border-2 hover:border-ed-border-strong',
                       )}
                       style={{ backgroundColor: `var(--${c})` }}
                     />
@@ -289,14 +289,14 @@ export function ColorPicker({
               <button
                 type="button"
                 onClick={() => onChange({ kind: 'unset' })}
-                className="mt-2 text-xs text-gray-500 underline hover:text-gray-700"
+                className="mt-2 text-xs text-ed-text-muted underline hover:text-ed-text"
               >
                 Clear color
               </button>
             </div>
             {showVariables && (
-              <div className="border-t border-gray-200 pt-3">
-                <div className="mb-1.5 text-xs font-medium text-gray-600">
+              <div className="border-t border-ed-border pt-3">
+                <div className="mb-1.5 text-xs font-medium text-ed-text-muted">
                   Design variables
                 </div>
                 <div className="grid grid-cols-5 gap-1.5">
@@ -311,8 +311,8 @@ export function ColorPicker({
                         className={cn(
                           'h-6 w-6 rounded border transition-colors',
                           isActive
-                            ? 'border-primary ring-2 ring-primary/40'
-                            : 'border-gray-300 hover:border-gray-500',
+                            ? 'border-ed-accent ring-2 ring-ed-accent/40'
+                            : 'border-ed-border-2 hover:border-ed-border-strong',
                         )}
                         style={{ backgroundColor: `var(--${v.name})` }}
                       />
@@ -321,9 +321,9 @@ export function ColorPicker({
                 </div>
               </div>
             )}
-            <div className="space-y-2 border-t border-gray-200 pt-3">
+            <div className="space-y-2 border-t border-ed-border pt-3">
               <div className="flex items-center justify-between">
-                <div className="text-xs font-medium text-gray-600">Custom color</div>
+                <div className="text-xs font-medium text-ed-text-muted">Custom color</div>
                 <ModeToggle mode={solidMode} onChange={setSolidMode} />
               </div>
 
@@ -353,7 +353,7 @@ export function ColorPicker({
                     if (e.key === 'Enter') commitHex()
                   }}
                   placeholder="#fa8072"
-                  className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-gray-700"
+                  className="min-w-0 flex-1 rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 text-sm text-ed-text"
                 />
                 <EyedropperButton onPick={commitFromSliders} />
               </div>
@@ -379,7 +379,7 @@ function ModeToggle({
   onChange: (m: EditMode) => void
 }) {
   return (
-    <div className="flex rounded border border-gray-200 bg-gray-50 p-0.5 text-[10px]">
+    <div className="flex rounded border border-ed-border bg-ed-surface-2 p-0.5 text-[10px]">
       {MODE_OPTIONS.map((opt) => (
         <button
           key={opt.value}
@@ -388,8 +388,8 @@ function ModeToggle({
           className={cn(
             'rounded px-1.5 py-0.5 transition-colors',
             mode === opt.value
-              ? 'bg-white text-gray-800 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700',
+              ? 'bg-ed-surface text-ed-text-strong shadow-sm'
+              : 'text-ed-text-muted hover:text-ed-text',
           )}
         >
           {opt.label}

@@ -72,14 +72,14 @@ export function NumericInput({
           }
         }}
         placeholder={placeholder ?? '—'}
-        className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-gray-700"
+        className="min-w-0 flex-1 rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 text-sm text-ed-text"
       />
       <button
         type="button"
         onClick={() => onChange(tokens[tokenIndex - 1])}
         disabled={!canStepDown}
         aria-label="Decrease"
-        className="flex h-7 w-5 shrink-0 items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+        className="flex h-7 w-5 shrink-0 items-center justify-center rounded border border-ed-border-2 text-ed-text-muted hover:bg-ed-surface-2 disabled:opacity-40"
       >
         −
       </button>
@@ -88,7 +88,7 @@ export function NumericInput({
         onClick={() => onChange(tokens[tokenIndex + 1])}
         disabled={!canStepUp}
         aria-label="Increase"
-        className="flex h-7 w-5 shrink-0 items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+        className="flex h-7 w-5 shrink-0 items-center justify-center rounded border border-ed-border-2 text-ed-text-muted hover:bg-ed-surface-2 disabled:opacity-40"
       >
         +
       </button>
@@ -97,7 +97,7 @@ export function NumericInput({
           <button
             type="button"
             aria-label="Pick token"
-            className="flex h-7 w-5 shrink-0 items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
+            className="flex h-7 w-5 shrink-0 items-center justify-center rounded border border-ed-border-2 text-ed-text-muted hover:bg-ed-surface-2"
           >
             ▾
           </button>
@@ -106,7 +106,7 @@ export function NumericInput({
           <button
             type="button"
             onClick={() => onChange('')}
-            className="flex w-full items-center rounded px-2 py-1 text-xs text-gray-500 hover:bg-muted"
+            className="flex w-full items-center rounded px-2 py-1 text-xs text-ed-text-muted hover:bg-ed-surface-3"
           >
             (clear)
           </button>
@@ -116,8 +116,8 @@ export function NumericInput({
               type="button"
               onClick={() => onChange(t)}
               className={cn(
-                'flex w-full items-center rounded px-2 py-1 text-left text-xs hover:bg-muted',
-                value === t && 'bg-primary/10 text-primary',
+                'flex w-full items-center rounded px-2 py-1 text-left text-xs hover:bg-ed-surface-3',
+                value === t && 'bg-ed-accent/10 text-ed-accent',
               )}
             >
               {t}

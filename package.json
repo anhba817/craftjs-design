@@ -82,6 +82,7 @@
     "docs:site": "tsx scripts/build-docs-site.ts",
     "docs:matrix": "tsx scripts/adapter-matrix.ts",
     "check:size": "tsx scripts/check-bundle-size.ts",
+    "check:chrome": "tsx scripts/check-chrome-tokens.ts",
     "check:licenses": "tsx scripts/check-licenses.ts",
     "analyze": "ANALYZE=1 vite build --config vite.config.dist.ts",
     "changeset": "changeset",

@@ -23,12 +23,12 @@ export function ThemeSwitcher() {
   )
 
   return (
-    <label className="flex items-center gap-1.5 text-xs text-gray-600">
-      <span className="font-semibold tracking-wide uppercase text-gray-500">Theme</span>
+    <label className="flex items-center gap-1.5 text-xs text-ed-text-muted">
+      <span className="font-semibold tracking-wide uppercase text-ed-text-muted">Theme</span>
       <select
         value={activeThemeId}
         onChange={(e) => setActiveTheme(e.target.value)}
-        className="rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-gray-700 hover:bg-gray-50"
+        className="rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 text-sm text-ed-text hover:bg-ed-surface-2"
       >
         {themes.map((t) => (
           <option key={t.id} value={t.id}>

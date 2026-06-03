@@ -98,15 +98,15 @@ export function FontUploadPanel() {
         }}
         className={cn(
           'rounded border border-dashed px-3 py-4 text-center text-xs',
-          dragOver ? 'border-primary bg-primary/5' : 'border-gray-300',
+          dragOver ? 'border-ed-accent bg-ed-accent/5' : 'border-ed-border-2',
         )}
       >
-        <p className="text-gray-500">Drop a font file here, or</p>
+        <p className="text-ed-text-muted">Drop a font file here, or</p>
         <button
           type="button"
           disabled={busy}
           onClick={() => fileRef.current?.click()}
-          className="mt-1 rounded border border-gray-300 bg-white px-2 py-1 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          className="mt-1 rounded border border-ed-border-2 bg-ed-surface px-2 py-1 text-ed-text hover:bg-ed-surface-2 disabled:opacity-50"
         >
           {busy ? 'Uploading…' : 'Choose .woff2 / .ttf / .otf'}
         </button>
@@ -120,17 +120,17 @@ export function FontUploadPanel() {
       </div>
 
       {pending && (
-        <div className="space-y-1.5 rounded border border-gray-200 p-2">
-          <div className="text-[11px] text-gray-500">Name this font</div>
+        <div className="space-y-1.5 rounded border border-ed-border p-2">
+          <div className="text-[11px] text-ed-text-muted">Name this font</div>
           <input
             type="text"
             value={pending.name}
             onChange={(e) =>
               setPending((p) => (p ? { ...p, name: e.target.value } : p))
             }
-            className="w-full rounded border border-gray-300 px-1.5 py-1 text-sm text-gray-700"
+            className="w-full rounded border border-ed-border-2 px-1.5 py-1 text-sm text-ed-text"
           />
-          <div className="text-[10px] text-gray-400">
+          <div className="text-[10px] text-ed-text-faint">
             class <code>font-{pendingId || '…'}</code>
           </div>
           <div className="flex gap-2">
@@ -138,14 +138,14 @@ export function FontUploadPanel() {
               type="button"
               onClick={add}
               disabled={!pendingId}
-              className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground hover:opacity-90 disabled:opacity-40"
+              className="rounded bg-ed-accent px-2 py-1 text-xs text-ed-accent-fg hover:opacity-90 disabled:opacity-40"
             >
               Add font
             </button>
             <button
               type="button"
               onClick={() => setPending(null)}
-              className="rounded px-2 py-1 text-xs text-gray-600 hover:bg-gray-100"
+              className="rounded px-2 py-1 text-xs text-ed-text-muted hover:bg-ed-surface-3"
             >
               Cancel
             </button>
@@ -157,16 +157,16 @@ export function FontUploadPanel() {
 
       {uploaded.length > 0 && (
         <div className="space-y-1">
-          <div className="text-[11px] font-medium text-gray-500">
+          <div className="text-[11px] font-medium text-ed-text-muted">
             Uploaded fonts
           </div>
           {uploaded.map((t) => (
             <div
               key={t.id}
-              className="flex items-center justify-between rounded border border-gray-200 px-2 py-1"
+              className="flex items-center justify-between rounded border border-ed-border px-2 py-1"
             >
               <span
-                className="truncate text-sm text-gray-700"
+                className="truncate text-sm text-ed-text"
                 style={{ fontFamily: `"${t.id}", ${FALLBACK_FAMILY}` }}
               >
                 {t.name}
@@ -183,7 +183,7 @@ export function FontUploadPanel() {
         </div>
       )}
 
-      <p className="text-[10px] text-gray-400">
+      <p className="text-[10px] text-ed-text-faint">
         Uploaded fonts appear in the Typography → Font dropdown.
       </p>
     </section>

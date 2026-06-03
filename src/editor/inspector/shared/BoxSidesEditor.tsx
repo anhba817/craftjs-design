@@ -87,12 +87,12 @@ export function BoxSidesEditor({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-500">{label}</span>
+        <span className="text-xs text-ed-text-muted">{label}</span>
         <button
           type="button"
           onClick={linked ? unlink : link}
           disabled={mixed}
-          className="text-[10px] uppercase tracking-wide text-gray-500 hover:text-gray-700 disabled:opacity-40 disabled:hover:text-gray-500"
+          className="text-[10px] uppercase tracking-wide text-ed-text-muted hover:text-ed-text disabled:opacity-40 disabled:hover:text-ed-text-muted"
           aria-label={linked ? 'Unlink sides' : 'Link sides'}
         >
           {linked ? '⌗ linked' : '⌗ unlinked'}
@@ -113,7 +113,7 @@ export function BoxSidesEditor({
         <div className="grid grid-cols-2 gap-1.5">
           {SIDES.map((side) => (
             <div key={side} className="flex items-center gap-1">
-              <span className="w-4 text-[10px] text-gray-500">{SIDE_LABEL[side]}</span>
+              <span className="w-4 text-[10px] text-ed-text-muted">{SIDE_LABEL[side]}</span>
               <ValueSelect
                 value={value.sides?.[side] ?? ''}
                 options={options}

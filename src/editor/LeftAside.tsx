@@ -50,12 +50,12 @@ export function LeftAside() {
     <aside
       aria-label="Components and layers"
       data-onboarding-target="toolbox"
-      className="flex w-56 flex-col border-r border-gray-200"
+      className="flex w-56 flex-col border-r border-ed-border"
     >
       <div
         role="tablist"
         aria-label="Sidebar mode"
-        className="flex shrink-0 border-b border-gray-200"
+        className="flex shrink-0 border-b border-ed-border"
       >
         <TabButton
           isActive={tab === 'components'}
@@ -122,8 +122,8 @@ function TabButton({
       className={[
         'flex h-8 flex-1 items-center justify-center gap-1.5 text-[11px] font-medium tracking-wide uppercase transition-colors',
         isActive
-          ? 'border-b-2 border-primary text-primary'
-          : 'border-b-2 border-transparent text-gray-500 hover:text-gray-800',
+          ? 'border-b-2 border-ed-accent text-ed-accent'
+          : 'border-b-2 border-transparent text-ed-text-muted hover:text-ed-text-strong',
       ].join(' ')}
     >
       {icon}

@@ -30,21 +30,21 @@ export function StorageQuotaErrorModal() {
       // they pick an action.
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
     >
-      <div className="w-full max-w-md rounded-lg border border-destructive/40 bg-background p-5 shadow-xl">
+      <div className="w-full max-w-md rounded-lg border border-ed-danger/40 bg-ed-surface p-5 shadow-xl">
         <div className="flex items-start gap-3">
           <AlertOctagon
             size={24}
-            className="mt-0.5 shrink-0 text-destructive"
+            className="mt-0.5 shrink-0 text-ed-danger"
             aria-hidden
           />
           <div className="min-w-0 flex-1">
             <h2
               id="storage-quota-modal-title"
-              className="text-base font-semibold text-foreground"
+              className="text-base font-semibold text-ed-text-strong"
             >
               Couldn't save — storage is full
             </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-ed-text-muted">
               Your last change wasn't saved because the browser's
               localStorage quota for this origin is exhausted. To keep
               editing safely, open the document menu in the toolbar and
@@ -54,7 +54,7 @@ export function StorageQuotaErrorModal() {
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                className="rounded border border-ed-border-2 px-3 py-1.5 text-sm text-ed-text hover:bg-ed-surface-2"
               >
                 Continue without saving
               </button>
@@ -65,7 +65,7 @@ export function StorageQuotaErrorModal() {
                 // Documents menu (which lives in the toolbar). A future
                 // enhancement could pop the menu programmatically, but
                 // for now we route the user via the existing UI.
-                className="rounded bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                className="rounded bg-ed-accent px-3 py-1.5 text-sm font-medium text-ed-accent-fg hover:bg-ed-accent/90"
               >
                 Open documents menu
               </button>

@@ -15,7 +15,7 @@ export function ColorModeToggle() {
   const setColorMode = useEditorStore((s) => s.setColorMode)
 
   return (
-    <div className="flex rounded border border-gray-200 bg-gray-50 p-0.5 text-xs">
+    <div className="flex rounded border border-ed-border bg-ed-surface-2 p-0.5 text-xs">
       {MODES.map((m) => (
         <button
           key={m.value}
@@ -24,8 +24,8 @@ export function ColorModeToggle() {
           className={cn(
             'rounded px-1.5 py-0.5 transition-colors',
             colorMode === m.value
-              ? 'bg-white text-gray-800 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700',
+              ? 'bg-ed-surface text-ed-text-strong shadow-sm'
+              : 'text-ed-text-muted hover:text-ed-text',
           )}
         >
           {m.label}

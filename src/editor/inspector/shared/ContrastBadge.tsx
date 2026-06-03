@@ -54,7 +54,7 @@ export function ContrastBadge({
 
   if (result.ratio == null) {
     return (
-      <div className="text-[10px] text-gray-400">contrast: unknown background</div>
+      <div className="text-[10px] text-ed-text-faint">contrast: unknown background</div>
     )
   }
 
@@ -67,7 +67,7 @@ export function ContrastBadge({
       : 'bg-green-100 text-green-700'
 
   return (
-    <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
+    <div className="flex items-center gap-1.5 text-[10px] text-ed-text-muted">
       <span className={cn('rounded px-1 py-0.5 font-medium', tone)}>{grade}</span>
       <span className="tabular-nums">{result.ratio.toFixed(2)}:1 contrast</span>
     </div>

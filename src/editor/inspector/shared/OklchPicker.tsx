@@ -57,21 +57,21 @@ export function OklchPicker({
         <button
           type="button"
           aria-label="Open OKLCH picker"
-          className="h-3.5 w-3.5 shrink-0 rounded border border-gray-300"
+          className="h-3.5 w-3.5 shrink-0 rounded border border-ed-border-2"
           style={{ backgroundColor: value || 'transparent' }}
         />
       </PopoverTrigger>
       <PopoverContent className="w-60 space-y-3 p-3">
         <div
           aria-hidden
-          className="h-10 w-full rounded border border-gray-200"
+          className="h-10 w-full rounded border border-ed-border"
           style={{ backgroundColor: preview }}
         />
         {SLIDERS.map((s) => (
-          <label key={s.key} className="block space-y-1 text-[11px] text-gray-600">
+          <label key={s.key} className="block space-y-1 text-[11px] text-ed-text-muted">
             <span className="flex items-center justify-between">
               <span>{s.label}</span>
-              <span className="tabular-nums text-gray-500">
+              <span className="tabular-nums text-ed-text-muted">
                 {s.key === 'h' ? Math.round(draft.h) : draft[s.key].toFixed(3)}
               </span>
             </span>
@@ -86,7 +86,7 @@ export function OklchPicker({
             />
           </label>
         ))}
-        <div className="font-mono text-[10px] break-all text-gray-500">
+        <div className="font-mono text-[10px] break-all text-ed-text-muted">
           {preview}
         </div>
       </PopoverContent>

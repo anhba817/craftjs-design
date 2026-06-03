@@ -93,9 +93,9 @@ export function GradientEditor({
         </>
       )}
 
-      <div className="space-y-1 border-t border-gray-200 pt-2">
+      <div className="space-y-1 border-t border-ed-border pt-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-gray-600">
+          <span className="text-xs font-medium text-ed-text-muted">
             Stops ({gradient.stops.length})
           </span>
           <button
@@ -103,7 +103,7 @@ export function GradientEditor({
             onClick={handleAdd}
             disabled={!canAdd}
             aria-label="Add stop"
-            className="flex h-6 w-6 items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+            className="flex h-6 w-6 items-center justify-center rounded border border-ed-border-2 text-ed-text-muted hover:bg-ed-surface-2 disabled:opacity-40"
           >
             <Plus size={12} />
           </button>
@@ -182,7 +182,7 @@ function GradientPreviewBar({
       <div
         ref={barRef}
         aria-hidden
-        className="h-8 w-full rounded border border-gray-300"
+        className="h-8 w-full rounded border border-ed-border-2"
         style={{ background: preview }}
       />
       {/* Handle layer overlaid on the bar's bottom edge. position:absolute
@@ -226,7 +226,7 @@ function TypeToggle({
   onChange: (t: GradientType) => void
 }) {
   return (
-    <div className="flex rounded border border-gray-200 bg-gray-50 p-0.5 text-xs">
+    <div className="flex rounded border border-ed-border bg-ed-surface-2 p-0.5 text-xs">
       {(['linear', 'radial'] as const).map((t) => (
         <button
           key={t}
@@ -235,8 +235,8 @@ function TypeToggle({
           className={cn(
             'flex-1 rounded px-2 py-0.5 capitalize transition-colors',
             type === t
-              ? 'bg-white text-gray-800 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700',
+              ? 'bg-ed-surface text-ed-text-strong shadow-sm'
+              : 'text-ed-text-muted hover:text-ed-text',
           )}
         >
           {t}
@@ -261,7 +261,7 @@ function RangeRow({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="w-10 text-[10px] font-medium uppercase text-gray-500">
+      <span className="w-10 text-[10px] font-medium uppercase text-ed-text-muted">
         {label}
       </span>
       <input
@@ -273,7 +273,7 @@ function RangeRow({
         className="h-2 flex-1 cursor-pointer appearance-none rounded outline-none"
         style={{ background: '#e5e7eb' }}
       />
-      <span className="w-10 text-right text-[11px] tabular-nums text-gray-700">
+      <span className="w-10 text-right text-[11px] tabular-nums text-ed-text">
         {Math.round(value)}
         {suffix}
       </span>
@@ -373,14 +373,14 @@ function StopRow({
           }
         }}
         aria-label="Stop position percent"
-        className="w-11 rounded border border-gray-300 bg-white px-1 py-0.5 text-right text-[11px] tabular-nums text-gray-700"
+        className="w-11 rounded border border-ed-border-2 bg-ed-surface px-1 py-0.5 text-right text-[11px] tabular-nums text-ed-text"
       />
       <button
         type="button"
         onClick={onDelete}
         disabled={!canDelete}
         aria-label="Remove stop"
-        className="flex h-5 w-5 items-center justify-center rounded text-destructive hover:bg-destructive/10 disabled:opacity-30"
+        className="flex h-5 w-5 items-center justify-center rounded text-ed-danger hover:bg-ed-danger/10 disabled:opacity-30"
       >
         <Trash2 size={11} />
       </button>

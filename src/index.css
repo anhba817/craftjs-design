@@ -81,6 +81,8 @@ body {
   --color-ed-text-faint: var(--ed-text-faint);
   --color-ed-accent: var(--ed-accent);
   --color-ed-accent-fg: var(--ed-accent-fg);
+  --color-ed-danger: var(--ed-danger);
+  --color-ed-danger-fg: var(--ed-danger-fg);
 }
 
 :root {
@@ -153,6 +155,10 @@ body {
      document theme / colorMode. */
   --ed-accent: oklch(0.205 0 0);
   --ed-accent-fg: oklch(0.985 0 0);
+  /* Danger chrome — delete actions, error banners. Defaults to the shadcn
+     light `destructive` values, as literals, for the same reason. */
+  --ed-danger: oklch(0.577 0.245 27.325);
+  --ed-danger-fg: oklch(0.985 0 0);
 }
 
 /* The `dark` preset — values authored in Phase 19 Group C. Stub. */

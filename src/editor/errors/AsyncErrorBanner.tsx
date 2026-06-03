@@ -37,22 +37,22 @@ export function AsyncErrorBanner() {
     <div
       role="alert"
       aria-live="polite"
-      className="pointer-events-auto fixed bottom-4 right-4 z-50 max-w-md rounded border border-destructive/40 bg-background shadow-lg"
+      className="pointer-events-auto fixed bottom-4 right-4 z-50 max-w-md rounded border border-ed-danger/40 bg-ed-surface shadow-lg"
     >
       <div className="flex items-start gap-2 p-3">
         <AlertTriangle
           size={16}
-          className="mt-0.5 shrink-0 text-destructive"
+          className="mt-0.5 shrink-0 text-ed-danger"
           aria-hidden
         />
         <div className="min-w-0 flex-1">
-          <div className="text-xs font-medium text-foreground">
+          <div className="text-xs font-medium text-ed-text-strong">
             {error.source === 'promise-rejection'
               ? 'Unhandled promise rejection'
               : 'Async error'}
           </div>
           <p
-            className="mt-0.5 break-words text-xs text-muted-foreground"
+            className="mt-0.5 break-words text-xs text-ed-text-muted"
             title={error.message}
           >
             {error.message}
@@ -62,7 +62,7 @@ export function AsyncErrorBanner() {
           type="button"
           onClick={() => setError(null)}
           aria-label="Dismiss"
-          className="-mr-1 -mt-1 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+          className="-mr-1 -mt-1 rounded p-1 text-ed-text-faint hover:bg-ed-surface-3 hover:text-ed-text"
         >
           <X size={14} />
         </button>

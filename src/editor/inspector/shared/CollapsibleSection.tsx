@@ -20,10 +20,10 @@ export function CollapsibleSection({
   return (
     <details open={defaultOpen} className="group">
       <summary className="flex cursor-pointer list-none items-center justify-between py-1">
-        <span className="text-xs font-semibold tracking-wide uppercase text-gray-500">
+        <span className="text-xs font-semibold tracking-wide uppercase text-ed-text-muted">
           {title}
         </span>
-        <ChevronDown className="size-3 text-gray-500 transition-transform group-open:rotate-180" />
+        <ChevronDown className="size-3 text-ed-text-muted transition-transform group-open:rotate-180" />
       </summary>
       <div className="mt-2">{children}</div>
     </details>

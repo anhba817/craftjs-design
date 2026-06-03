@@ -193,15 +193,15 @@ export function OnboardingTour() {
       {/* Card */}
       <div
         style={tooltipStyle}
-        className="pointer-events-auto w-72 rounded-lg border border-border bg-popover p-4 text-sm shadow-lg"
+        className="pointer-events-auto w-72 rounded-lg border border-ed-border bg-ed-surface p-4 text-sm shadow-lg"
       >
-        <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-ed-text-muted">
           Step {stepIdx + 1} of {STEPS.length}
         </div>
-        <div className="mb-1 text-base font-semibold text-foreground">
+        <div className="mb-1 text-base font-semibold text-ed-text-strong">
           {step.title}
         </div>
-        <div className="mb-3 text-xs text-muted-foreground">
+        <div className="mb-3 text-xs text-ed-text-muted">
           {step.description}
         </div>
         <div className="flex items-center justify-between gap-2">

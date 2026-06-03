@@ -10,7 +10,7 @@ export function ThemeEditorButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+        className="rounded border border-ed-border-2 bg-ed-surface px-2 py-1 text-xs text-ed-text hover:bg-ed-surface-2"
       >
         Edit theme
       </button>

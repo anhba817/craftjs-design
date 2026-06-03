@@ -188,7 +188,7 @@ export function Editor({ adapter, allowUserToSwitchAdapter }: EditorProps = {}) 
             <ThemeProvider>
               <main
                 data-onboarding-target="canvas"
-                className="relative flex-1 overflow-auto bg-muted p-8"
+                className="relative flex-1 overflow-auto bg-ed-surface-3 p-8"
               >
                 <ErrorBoundary fallback={CanvasErrorFallback} boundary="canvas">
                   {malformedDocument ? (
@@ -245,11 +245,11 @@ function DocumentLoadingOverlay() {
   if (ready) return null
   return (
     <div
-      className="absolute inset-0 z-20 flex items-center justify-center bg-muted/60 backdrop-blur-sm"
+      className="absolute inset-0 z-20 flex items-center justify-center bg-ed-surface-3/60 backdrop-blur-sm"
       role="status"
       aria-live="polite"
     >
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 text-sm text-ed-text-muted">
         <Loader2 size={16} className="animate-spin" aria-hidden />
         Loading document…
       </div>

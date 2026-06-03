@@ -44,10 +44,10 @@ function ObjectFieldImpl({
   if (visibleEntries.length === 0) return null
 
   return (
-    <div className="space-y-1.5 rounded border-l-2 border-gray-200 bg-gray-50/50 py-1 pl-2">
+    <div className="space-y-1.5 rounded border-l-2 border-ed-border bg-ed-surface-2/50 py-1 pl-2">
       {visibleEntries.map(([key, fieldSchema]) => (
         <div key={key} className="flex items-center gap-2">
-          <label className="min-w-0 flex-shrink-0 text-[11px] text-gray-500">
+          <label className="min-w-0 flex-shrink-0 text-[11px] text-ed-text-muted">
             {key}
           </label>
           <div className="min-w-0 flex-1">

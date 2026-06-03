@@ -36,9 +36,9 @@ export function OverlayStage() {
   return (
     <aside
       aria-label="Overlay stage"
-      className="flex w-80 shrink-0 flex-col border-l border-gray-200 bg-gray-50"
+      className="flex w-80 shrink-0 flex-col border-l border-ed-border bg-ed-surface-2"
     >
-      <header className="border-b border-gray-200 px-3 py-2 text-[11px] font-medium uppercase tracking-wider text-gray-500">
+      <header className="border-b border-ed-border px-3 py-2 text-[11px] font-medium uppercase tracking-wider text-ed-text-muted">
         Overlays
       </header>
       <div
@@ -49,9 +49,9 @@ export function OverlayStage() {
         )}
       >
         {count === 0 && (
-          <p className="max-w-[14rem] text-center text-[11px] leading-relaxed text-gray-500">
+          <p className="max-w-[14rem] text-center text-[11px] leading-relaxed text-ed-text-muted">
             Right-click a Button on the canvas and choose{' '}
-            <span className="font-medium text-gray-700">Attach overlay</span>{' '}
+            <span className="font-medium text-ed-text">Attach overlay</span>{' '}
             to add a Modal / Drawer / Toast / Tooltip / Popover.
           </p>
         )}

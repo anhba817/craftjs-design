@@ -22,8 +22,8 @@ export function PreviewToggle() {
       className={cn(
         'inline-flex items-center gap-1.5 rounded border px-2 py-1 text-xs',
         enabled
-          ? 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-          : 'border-primary bg-primary text-primary-foreground',
+          ? 'border-ed-border-2 bg-ed-surface text-ed-text hover:bg-ed-surface-2'
+          : 'border-ed-accent bg-ed-accent text-ed-accent-fg',
       )}
     >
       {enabled ? <Eye size={14} /> : <Pencil size={14} />}

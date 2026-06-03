@@ -13,7 +13,7 @@ export function ResponsiveBar() {
   const set = useEditorStore((s) => s.setActiveBreakpoint)
 
   return (
-    <div className="space-y-1 border-b border-gray-200 px-2 py-2">
+    <div className="space-y-1 border-b border-ed-border px-2 py-2">
       <div className="flex gap-1">
         {BREAKPOINTS.map((bp) => (
           <button
@@ -23,17 +23,17 @@ export function ResponsiveBar() {
             className={cn(
               'rounded px-2 py-1 text-xs uppercase tracking-wide transition-colors',
               active === bp
-                ? 'bg-primary text-primary-foreground'
-                : 'text-gray-600 hover:bg-muted',
+                ? 'bg-ed-accent text-ed-accent-fg'
+                : 'text-ed-text-muted hover:bg-ed-surface-3',
             )}
           >
             {bp}
           </button>
         ))}
       </div>
-      <div className="text-[10px] text-gray-500">
+      <div className="text-[10px] text-ed-text-muted">
         writing to:{' '}
-        <span className="font-medium text-gray-700">
+        <span className="font-medium text-ed-text">
           {active === 'base' ? 'base (always applied)' : `${active} breakpoint and up`}
         </span>
       </div>

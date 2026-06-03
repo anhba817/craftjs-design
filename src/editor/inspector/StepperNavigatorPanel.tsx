@@ -38,7 +38,7 @@ export function StepperNavigatorPanel({
 
   if (steps.length === 0) {
     return (
-      <p className="text-[11px] text-gray-500">
+      <p className="text-[11px] text-ed-text-muted">
         Add steps in the Properties panel to start.
       </p>
     )
@@ -55,7 +55,7 @@ export function StepperNavigatorPanel({
   }
 
   const btn =
-    'inline-flex h-7 min-w-7 items-center justify-center rounded border border-gray-300 bg-white px-2 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-40'
+    'inline-flex h-7 min-w-7 items-center justify-center rounded border border-ed-border-2 bg-ed-surface px-2 text-xs text-ed-text hover:bg-ed-surface-2 disabled:opacity-40'
 
   return (
     <section className="space-y-2">
@@ -69,7 +69,7 @@ export function StepperNavigatorPanel({
         >
           ‹
         </button>
-        <span className="text-gray-600 tabular-nums">
+        <span className="text-ed-text-muted tabular-nums">
           {clamped + 1} / {steps.length}
         </span>
         <button
@@ -85,7 +85,7 @@ export function StepperNavigatorPanel({
       <select
         value={clamped}
         onChange={(e) => setStep(Number(e.target.value))}
-        className="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-xs text-gray-700"
+        className="w-full rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 text-xs text-ed-text"
       >
         {steps.map((s, i) => (
           <option key={i} value={i}>

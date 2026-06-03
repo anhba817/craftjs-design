@@ -49,7 +49,7 @@ function ColorField({
 }) {
   return (
     <div className="space-y-1 text-xs">
-      <div className="text-gray-600">{label}</div>
+      <div className="text-ed-text-muted">{label}</div>
       <div className="flex items-center gap-1.5">
         <OklchPicker value={value} onChange={(v) => onChange(v)} />
         <input
@@ -57,7 +57,7 @@ function ColorField({
           value={value ?? ''}
           placeholder="auto (derived)"
           onChange={(e) => onChange(e.target.value || undefined)}
-          className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-1.5 py-1 font-mono text-[11px] text-gray-700"
+          className="min-w-0 flex-1 rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 font-mono text-[11px] text-ed-text"
         />
       </div>
     </div>
@@ -73,6 +73,10 @@ function PreviewStrip({ variant }: { variant: Variant }) {
       data-theme={PREVIEW_THEME_ID}
       className={cn(variant === 'dark' && 'dark')}
     >
+      {/* Phase 19 — KEEP canvas tokens here (the exception to the chrome
+          sweep): this strip previews the DOCUMENT theme being edited, so it
+          must resolve the canvas tokens under the data-theme scope above,
+          not the editor-chrome --ed-* tokens. */}
       <div className="space-y-2 overflow-hidden rounded-lg border bg-background p-3 text-foreground">
         <div className="text-sm font-medium">Aa Heading</div>
         <p className="text-xs text-muted-foreground">
@@ -217,25 +221,25 @@ export function ThemeEditorDialog({
           {/* Left: controls */}
           <div className="min-w-0 space-y-3">
             <label className="flex items-center gap-2 text-xs">
-              <span className="w-24 shrink-0 text-gray-600">Name</span>
+              <span className="w-24 shrink-0 text-ed-text-muted">Name</span>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-gray-700"
+                className="min-w-0 flex-1 rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 text-sm text-ed-text"
               />
             </label>
 
             <div className="flex items-center justify-between">
-              <div className="flex rounded border border-gray-200 bg-gray-50 p-0.5 text-xs">
+              <div className="flex rounded border border-ed-border bg-ed-surface-2 p-0.5 text-xs">
                 <button
                   type="button"
                   onClick={() => setTab('light')}
                   className={cn(
                     'rounded px-2 py-0.5 transition-colors',
                     tab === 'light'
-                      ? 'bg-white text-gray-800 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700',
+                      ? 'bg-ed-surface text-ed-text-strong shadow-sm'
+                      : 'text-ed-text-muted hover:text-ed-text',
                   )}
                 >
                   Light
@@ -247,14 +251,14 @@ export function ThemeEditorDialog({
                   className={cn(
                     'rounded px-2 py-0.5 transition-colors disabled:opacity-40',
                     tab === 'dark'
-                      ? 'bg-white text-gray-800 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700',
+                      ? 'bg-ed-surface text-ed-text-strong shadow-sm'
+                      : 'text-ed-text-muted hover:text-ed-text',
                   )}
                 >
                   Dark
                 </button>
               </div>
-              <label className="flex items-center gap-1.5 text-xs text-gray-600">
+              <label className="flex items-center gap-1.5 text-xs text-ed-text-muted">
                 <input
                   type="checkbox"
                   checked={enableDark}
@@ -277,13 +281,13 @@ export function ThemeEditorDialog({
                 />
               ))}
               <label className="flex items-center gap-2 text-xs">
-                <span className="w-24 shrink-0 text-gray-600">Radius</span>
+                <span className="w-24 shrink-0 text-ed-text-muted">Radius</span>
                 <input
                   type="text"
                   value={radius}
                   placeholder="0.625rem"
                   onChange={(e) => setRadius(e.target.value)}
-                  className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-1.5 py-1 font-mono text-[11px] text-gray-700"
+                  className="min-w-0 flex-1 rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 font-mono text-[11px] text-ed-text"
                 />
               </label>
             </div>
@@ -291,29 +295,29 @@ export function ThemeEditorDialog({
 
           {/* Right: live preview */}
           <div className="min-w-0 space-y-3">
-            <div className="text-xs font-medium text-gray-600">
+            <div className="text-xs font-medium text-ed-text-muted">
               Preview ({variant})
             </div>
             <PreviewStrip variant={variant} />
-            <p className="text-[10px] text-gray-400">
+            <p className="text-[10px] text-ed-text-faint">
               The canvas behind this dialog also previews the theme live.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t border-gray-200 pt-3">
+        <div className="flex items-center justify-between border-t border-ed-border pt-3">
           <div className="flex gap-2 text-xs">
             <button
               type="button"
               onClick={copyCss}
-              className="rounded border border-gray-300 px-2 py-1 text-gray-700 hover:bg-gray-50"
+              className="rounded border border-ed-border-2 px-2 py-1 text-ed-text hover:bg-ed-surface-2"
             >
               {copied ? 'Copied!' : 'Copy CSS'}
             </button>
             <button
               type="button"
               onClick={downloadCss}
-              className="rounded border border-gray-300 px-2 py-1 text-gray-700 hover:bg-gray-50"
+              className="rounded border border-ed-border-2 px-2 py-1 text-ed-text hover:bg-ed-surface-2"
             >
               Download .css
             </button>
@@ -322,7 +326,7 @@ export function ThemeEditorDialog({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="rounded px-3 py-1 text-gray-600 hover:bg-gray-100"
+              className="rounded px-3 py-1 text-ed-text-muted hover:bg-ed-surface-3"
             >
               Cancel
             </button>
@@ -330,7 +334,7 @@ export function ThemeEditorDialog({
               type="button"
               onClick={save}
               disabled={!slugifyThemeId(name)}
-              className="rounded bg-primary px-3 py-1 text-primary-foreground hover:opacity-90 disabled:opacity-40"
+              className="rounded bg-ed-accent px-3 py-1 text-ed-accent-fg hover:opacity-90 disabled:opacity-40"
             >
               Save theme
             </button>

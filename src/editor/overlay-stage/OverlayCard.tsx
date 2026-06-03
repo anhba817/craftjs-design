@@ -12,10 +12,10 @@ interface OverlayCardProps {
 
 export function OverlayCard({ label, name, children }: OverlayCardProps) {
   return (
-    <section className="rounded-md border border-gray-200 bg-white shadow-sm">
-      <header className="flex items-center justify-between border-b border-gray-100 px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-gray-500">
-        <span className="font-medium text-gray-700">{label}</span>
-        <code className="text-gray-500">{name}</code>
+    <section className="rounded-md border border-ed-border bg-ed-surface shadow-sm">
+      <header className="flex items-center justify-between border-b border-ed-border px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-ed-text-muted">
+        <span className="font-medium text-ed-text">{label}</span>
+        <code className="text-ed-text-muted">{name}</code>
       </header>
       <div className="p-3">{children}</div>
     </section>

@@ -79,7 +79,7 @@ export function InspectorBreadcrumbs() {
     isLast ? (
       <span
         aria-current="true"
-        className="truncate rounded px-1.5 py-0.5 text-xs font-medium text-gray-900"
+        className="truncate rounded px-1.5 py-0.5 text-xs font-medium text-ed-text-strong"
       >
         {label}
       </span>
@@ -87,7 +87,7 @@ export function InspectorBreadcrumbs() {
       <button
         type="button"
         onClick={() => actions.selectNode(id)}
-        className="truncate rounded px-1.5 py-0.5 text-xs text-gray-600 hover:bg-muted hover:text-gray-900"
+        className="truncate rounded px-1.5 py-0.5 text-xs text-ed-text-muted hover:bg-ed-surface-3 hover:text-ed-text-strong"
       >
         {label}
       </button>
@@ -96,18 +96,18 @@ export function InspectorBreadcrumbs() {
   return (
     <nav
       aria-label="Selection breadcrumbs"
-      className="flex min-w-0 items-center gap-0.5 border-b border-gray-200 px-2 py-1.5 text-xs"
+      className="flex min-w-0 items-center gap-0.5 border-b border-ed-border px-2 py-1.5 text-xs"
     >
       {head && (
         <>
           <Chip id={head.id} label={head.label} isLast={false} />
-          <ChevronRight aria-hidden className="size-3 shrink-0 text-gray-300" />
+          <ChevronRight aria-hidden className="size-3 shrink-0 text-ed-text-faint" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 aria-label={`Show ${middle.length} hidden ancestors`}
-                className="rounded px-1.5 py-0.5 text-xs text-gray-500 hover:bg-muted"
+                className="rounded px-1.5 py-0.5 text-xs text-ed-text-muted hover:bg-ed-surface-3"
               >
                 …
               </button>
@@ -123,7 +123,7 @@ export function InspectorBreadcrumbs() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <ChevronRight aria-hidden className="size-3 shrink-0 text-gray-300" />
+          <ChevronRight aria-hidden className="size-3 shrink-0 text-ed-text-faint" />
         </>
       )}
       {tail.map((node, idx) => {
@@ -134,7 +134,7 @@ export function InspectorBreadcrumbs() {
             {!isLast && (
               <ChevronRight
                 aria-hidden
-                className="size-3 shrink-0 text-gray-300"
+                className="size-3 shrink-0 text-ed-text-faint"
               />
             )}
           </span>

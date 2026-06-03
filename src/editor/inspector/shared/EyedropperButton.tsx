@@ -49,7 +49,7 @@ export function EyedropperButton({
       onClick={handleClick}
       aria-label="Pick color from screen"
       title="Pick color from screen"
-      className="flex h-7 w-7 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+      className="flex h-7 w-7 items-center justify-center rounded border border-ed-border-2 bg-ed-surface text-ed-text-muted hover:bg-ed-surface-2"
     >
       <Pipette size={13} />
     </button>

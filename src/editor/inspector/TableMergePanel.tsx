@@ -145,11 +145,11 @@ export function TableMergePanel({
   return (
     <section className="space-y-2 text-xs">
       {cells.length === 0 ? (
-        <p className="text-[11px] text-gray-500">
+        <p className="text-[11px] text-ed-text-muted">
           Select cells (Cmd / Ctrl-click for multi) to merge or unmerge.
         </p>
       ) : (
-        <p className="text-[11px] text-gray-500">
+        <p className="text-[11px] text-ed-text-muted">
           {cells.length} cell{cells.length === 1 ? '' : 's'} selected
           {sameParent ? '' : ' (across multiple tables)'}
         </p>
@@ -173,10 +173,10 @@ export function TableMergePanel({
             onClick={apply}
             disabled={!canMerge}
             className={cn(
-              'rounded px-2 py-1 text-primary-foreground',
+              'rounded px-2 py-1 text-ed-accent-fg',
               canMerge
-                ? 'bg-primary hover:opacity-90'
-                : 'cursor-not-allowed bg-primary/40',
+                ? 'bg-ed-accent hover:opacity-90'
+                : 'cursor-not-allowed bg-ed-accent/40',
             )}
           >
             Merge {candidate ? `${candidate.rowSpan}×${candidate.colSpan}` : ''}
@@ -186,7 +186,7 @@ export function TableMergePanel({
           <button
             type="button"
             onClick={unmerge}
-            className="rounded border border-gray-300 px-2 py-1 text-gray-700 hover:bg-gray-50"
+            className="rounded border border-ed-border-2 px-2 py-1 text-ed-text hover:bg-ed-surface-2"
           >
             Unmerge
           </button>

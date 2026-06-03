@@ -316,7 +316,7 @@ function Handle({
   return (
     <div
       onMouseDown={onMouseDown}
-      className="pointer-events-auto absolute h-2.5 w-2.5 rounded-sm border border-primary bg-background"
+      className="pointer-events-auto absolute h-2.5 w-2.5 rounded-sm border border-ed-accent bg-ed-surface"
       style={HANDLE_POSITION[kind]}
     />
   )

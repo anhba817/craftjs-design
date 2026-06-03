@@ -223,55 +223,55 @@ export function NodeContextMenu({ children }: NodeContextMenuProps) {
         </div>
       </ContextMenu.Trigger>
       <ContextMenu.Portal>
-        <ContextMenu.Content className="z-50 min-w-[12rem] rounded-lg border border-border bg-popover p-1 text-sm text-popover-foreground shadow-md outline-none">
+        <ContextMenu.Content className="z-50 min-w-[12rem] rounded-lg border border-ed-border bg-ed-surface p-1 text-sm text-ed-text-strong shadow-md outline-none">
           <ContextMenu.Item
             disabled={!canCutCopy}
             onSelect={handleCut}
-            className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-muted data-[disabled]:opacity-40"
+            className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-ed-surface-3 data-[disabled]:opacity-40"
           >
             <Scissors size={12} aria-hidden /> Cut
-            <span className="ml-auto text-[10px] text-muted-foreground">⌘X</span>
+            <span className="ml-auto text-[10px] text-ed-text-muted">⌘X</span>
           </ContextMenu.Item>
           <ContextMenu.Item
             disabled={!canCutCopy}
             onSelect={handleCopy}
-            className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-muted data-[disabled]:opacity-40"
+            className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-ed-surface-3 data-[disabled]:opacity-40"
           >
             <ClipboardCopy size={12} aria-hidden /> Copy
-            <span className="ml-auto text-[10px] text-muted-foreground">⌘C</span>
+            <span className="ml-auto text-[10px] text-ed-text-muted">⌘C</span>
           </ContextMenu.Item>
           <ContextMenu.Item
             disabled={!canPaste}
             onSelect={handlePaste}
-            className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-muted data-[disabled]:opacity-40"
+            className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-ed-surface-3 data-[disabled]:opacity-40"
           >
             <ClipboardPaste size={12} aria-hidden /> Paste
-            <span className="ml-auto text-[10px] text-muted-foreground">⌘V</span>
+            <span className="ml-auto text-[10px] text-ed-text-muted">⌘V</span>
           </ContextMenu.Item>
           <ContextMenu.Item
             disabled={!canCutCopy}
             onSelect={handleDuplicate}
-            className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-muted data-[disabled]:opacity-40"
+            className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-ed-surface-3 data-[disabled]:opacity-40"
           >
             <CopyIcon size={12} aria-hidden /> Duplicate
-            <span className="ml-auto text-[10px] text-muted-foreground">⌘D</span>
+            <span className="ml-auto text-[10px] text-ed-text-muted">⌘D</span>
           </ContextMenu.Item>
-          <ContextMenu.Separator className="my-1 h-px bg-border" />
+          <ContextMenu.Separator className="my-1 h-px bg-ed-border" />
           <ContextMenu.Item
             disabled={!canWrap}
             onSelect={() => handleWrap('stack')}
-            className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-muted data-[disabled]:opacity-40"
+            className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-ed-surface-3 data-[disabled]:opacity-40"
           >
             <Group size={12} aria-hidden /> Wrap in Stack
           </ContextMenu.Item>
           <ContextMenu.Item
             disabled={!canWrap}
             onSelect={() => handleWrap('box')}
-            className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-muted data-[disabled]:opacity-40"
+            className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-ed-surface-3 data-[disabled]:opacity-40"
           >
             <Group size={12} aria-hidden /> Wrap in Box
           </ContextMenu.Item>
-          <ContextMenu.Separator className="my-1 h-px bg-border" />
+          <ContextMenu.Separator className="my-1 h-px bg-ed-border" />
           {/* Phase 13 § 5.3 — Attach overlay (only for triggerable
               components). Submenu lists every overlay canonical;
               picking one creates it parented to ROOT and links it
@@ -279,20 +279,20 @@ export function NodeContextMenu({ children }: NodeContextMenuProps) {
           <ContextMenu.Sub>
             <ContextMenu.SubTrigger
               disabled={!canAttachOverlay}
-              className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-muted data-[disabled]:opacity-40"
+              className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-ed-surface-3 data-[disabled]:opacity-40"
             >
               <PanelRightOpen size={12} aria-hidden /> Attach overlay
               <ChevronRight size={12} aria-hidden className="ml-auto" />
             </ContextMenu.SubTrigger>
             <ContextMenu.Portal>
-              <ContextMenu.SubContent className="z-50 min-w-[10rem] rounded-lg border border-border bg-popover p-1 text-sm text-popover-foreground shadow-md outline-none">
+              <ContextMenu.SubContent className="z-50 min-w-[10rem] rounded-lg border border-ed-border bg-ed-surface p-1 text-sm text-ed-text-strong shadow-md outline-none">
                 {OVERLAY_KINDS.map((kind) => {
                   const Icon = kind.icon
                   return (
                     <ContextMenu.Item
                       key={kind.id}
                       onSelect={() => handleAttachOverlay(kind)}
-                      className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-muted"
+                      className="flex cursor-default items-center gap-2 rounded px-2 py-1 outline-none data-[highlighted]:bg-ed-surface-3"
                     >
                       <Icon size={12} aria-hidden /> {kind.label}
                     </ContextMenu.Item>
@@ -301,14 +301,14 @@ export function NodeContextMenu({ children }: NodeContextMenuProps) {
               </ContextMenu.SubContent>
             </ContextMenu.Portal>
           </ContextMenu.Sub>
-          <ContextMenu.Separator className="my-1 h-px bg-border" />
+          <ContextMenu.Separator className="my-1 h-px bg-ed-border" />
           <ContextMenu.Item
             disabled={!canCutCopy}
             onSelect={handleDelete}
-            className="flex cursor-default items-center gap-2 rounded px-2 py-1 text-destructive outline-none data-[highlighted]:bg-destructive/10 data-[disabled]:opacity-40"
+            className="flex cursor-default items-center gap-2 rounded px-2 py-1 text-ed-danger outline-none data-[highlighted]:bg-ed-danger/10 data-[disabled]:opacity-40"
           >
             <Trash2 size={12} aria-hidden /> Delete
-            <span className="ml-auto text-[10px] text-muted-foreground">Del</span>
+            <span className="ml-auto text-[10px] text-ed-text-muted">Del</span>
           </ContextMenu.Item>
         </ContextMenu.Content>
       </ContextMenu.Portal>

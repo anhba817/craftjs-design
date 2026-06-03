@@ -45,15 +45,15 @@ export function EmptyCanvasHint() {
       aria-label="Empty canvas hint"
       className="pointer-events-none absolute inset-0 flex items-center justify-center"
     >
-      <div className="pointer-events-auto flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/80 px-8 py-6 text-center backdrop-blur-sm">
+      <div className="pointer-events-auto flex flex-col items-center gap-3 rounded-lg border border-dashed border-ed-border bg-ed-surface/80 px-8 py-6 text-center backdrop-blur-sm">
         <MousePointerClick
-          className="size-10 text-muted-foreground"
+          className="size-10 text-ed-text-muted"
           aria-hidden
         />
-        <div className="text-sm font-medium text-foreground">
+        <div className="text-sm font-medium text-ed-text-strong">
           Drop a component to start
         </div>
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-ed-text-muted">
           Drag from the Components tab on the left.
         </div>
         <div className="mt-1">

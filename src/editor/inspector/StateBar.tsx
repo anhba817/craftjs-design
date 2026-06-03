@@ -25,7 +25,7 @@ export function StateBar() {
   const activeBreakpoint = useEditorStore((s) => s.activeBreakpoint)
 
   return (
-    <div className="space-y-1 border-b border-gray-200 px-2 py-2">
+    <div className="space-y-1 border-b border-ed-border px-2 py-2">
       <div className="flex gap-1">
         {STYLE_STATES.map((st) => (
           <button
@@ -35,8 +35,8 @@ export function StateBar() {
             className={cn(
               'rounded px-2 py-1 text-xs tracking-wide transition-colors',
               active === st
-                ? 'bg-primary text-primary-foreground'
-                : 'text-gray-600 hover:bg-muted',
+                ? 'bg-ed-accent text-ed-accent-fg'
+                : 'text-ed-text-muted hover:bg-ed-surface-3',
             )}
           >
             {LABELS[st]}
@@ -44,9 +44,9 @@ export function StateBar() {
         ))}
       </div>
       {active !== 'base' && (
-        <div className="text-[10px] text-gray-500">
+        <div className="text-[10px] text-ed-text-muted">
           editing{' '}
-          <span className="font-medium text-gray-700">
+          <span className="font-medium text-ed-text">
             :{active}
             {activeBreakpoint !== 'base' ? ` @ ${activeBreakpoint}` : ''}
           </span>{' '}

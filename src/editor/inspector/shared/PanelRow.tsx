@@ -22,7 +22,7 @@ export function PanelRow({
           rather than overflow into the control column. `pt-1` re-centers
           the (potentially wrapped) label against the control's standard
           row height. */}
-      <span className="w-20 shrink-0 whitespace-normal break-words pt-1 text-xs leading-tight text-gray-500">
+      <span className="w-20 shrink-0 whitespace-normal break-words pt-1 text-xs leading-tight text-ed-text-muted">
         {label}
       </span>
       <div className="min-w-0 flex-1">{children}</div>

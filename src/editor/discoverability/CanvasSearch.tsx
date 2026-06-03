@@ -177,8 +177,8 @@ export function CanvasSearch() {
       aria-label="Search canvas"
       className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center"
     >
-      <div className="pointer-events-auto flex items-center gap-2 rounded-lg border border-border bg-popover px-3 py-2 text-sm shadow-md">
-        <Search className="size-3.5 text-muted-foreground" aria-hidden />
+      <div className="pointer-events-auto flex items-center gap-2 rounded-lg border border-ed-border bg-ed-surface px-3 py-2 text-sm shadow-md">
+        <Search className="size-3.5 text-ed-text-muted" aria-hidden />
         <input
           ref={inputRef}
           type="text"
@@ -186,10 +186,10 @@ export function CanvasSearch() {
           onChange={(e) => setTerm(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Search nodes…"
-          className="w-64 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+          className="w-64 bg-transparent text-sm outline-none placeholder:text-ed-text-muted"
           aria-keyshortcuts={SHORTCUT_HINT}
         />
-        <span className="min-w-12 text-right text-[10px] text-muted-foreground">
+        <span className="min-w-12 text-right text-[10px] text-ed-text-muted">
           {matches.length === 0
             ? term.trim().length > 0
               ? 'no matches'

@@ -94,29 +94,29 @@ export function MalformedDocumentBanner() {
   return (
     <div
       role="alert"
-      className="m-6 max-w-2xl rounded-lg border border-destructive/40 bg-destructive/5 p-5"
+      className="m-6 max-w-2xl rounded-lg border border-ed-danger/40 bg-ed-danger/5 p-5"
     >
       <div className="flex items-start gap-3">
         <AlertOctagon
           size={24}
-          className="mt-0.5 shrink-0 text-destructive"
+          className="mt-0.5 shrink-0 text-ed-danger"
           aria-hidden
         />
         <div className="min-w-0 flex-1">
-          <h2 className="text-base font-semibold text-foreground">
+          <h2 className="text-base font-semibold text-ed-text-strong">
             This document can't be opened
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-ed-text-muted">
             The saved craftJson failed to deserialize. The document's
             contents are still in storage — choose an action below to
             inspect, export, or reset to a blank canvas. Resetting
             archives the broken version under
-            <code className="ml-1 rounded bg-muted px-1 text-[11px]">
+            <code className="ml-1 rounded bg-ed-surface-3 px-1 text-[11px]">
               {archiveKeyFor(malformed.docId, 0).replace(/:0$/, ':<timestamp>')}
             </code>
             .
           </p>
-          <pre className="mt-3 max-h-32 overflow-auto rounded border border-border bg-background p-2 font-mono text-[11px]">
+          <pre className="mt-3 max-h-32 overflow-auto rounded border border-ed-border bg-ed-surface p-2 font-mono text-[11px]">
             {malformed.error.message}
           </pre>
 
@@ -124,7 +124,7 @@ export function MalformedDocumentBanner() {
             <button
               type="button"
               onClick={() => setShowRaw((v) => !v)}
-              className="inline-flex items-center gap-1.5 rounded border border-gray-300 bg-background px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center gap-1.5 rounded border border-ed-border-2 bg-ed-surface px-2.5 py-1.5 text-xs text-ed-text hover:bg-ed-surface-2"
             >
               <FileText size={12} />
               {showRaw ? 'Hide raw JSON' : 'Show raw JSON'}
@@ -132,7 +132,7 @@ export function MalformedDocumentBanner() {
             <button
               type="button"
               onClick={handleExportRaw}
-              className="inline-flex items-center gap-1.5 rounded border border-gray-300 bg-background px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center gap-1.5 rounded border border-ed-border-2 bg-ed-surface px-2.5 py-1.5 text-xs text-ed-text hover:bg-ed-surface-2"
             >
               <Download size={12} />
               Export raw
@@ -140,7 +140,7 @@ export function MalformedDocumentBanner() {
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex items-center gap-1.5 rounded bg-destructive px-2.5 py-1.5 text-xs font-medium text-destructive-foreground hover:bg-destructive/90"
+              className="inline-flex items-center gap-1.5 rounded bg-ed-danger px-2.5 py-1.5 text-xs font-medium text-ed-danger-fg hover:bg-ed-danger/90"
             >
               <RefreshCcw size={12} />
               Reset to empty
@@ -148,12 +148,12 @@ export function MalformedDocumentBanner() {
           </div>
 
           {resetState.kind === 'error' && (
-            <p className="mt-3 text-xs text-destructive">
+            <p className="mt-3 text-xs text-ed-danger">
               Reset failed: {resetState.message}
             </p>
           )}
           {resetState.kind === 'success' && (
-            <p className="mt-3 text-xs text-muted-foreground">
+            <p className="mt-3 text-xs text-ed-text-muted">
               Document reset; broken version archived in localStorage.
             </p>
           )}
@@ -161,7 +161,7 @@ export function MalformedDocumentBanner() {
           {showRaw && (
             <pre
               aria-label="Raw envelope JSON"
-              className="mt-3 max-h-96 overflow-auto rounded border border-border bg-background p-2 font-mono text-[11px]"
+              className="mt-3 max-h-96 overflow-auto rounded border border-ed-border bg-ed-surface p-2 font-mono text-[11px]"
             >
               {JSON.stringify(malformed.envelope, null, 2)}
             </pre>

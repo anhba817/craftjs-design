@@ -7,18 +7,18 @@ import type { ErrorFallbackProps } from './ErrorBoundary'
 
 export function TopShellErrorFallback({ error, reset }: ErrorFallbackProps) {
   return (
-    <div className="flex h-screen flex-col items-center justify-center gap-4 bg-background p-8">
-      <AlertOctagon size={48} className="text-destructive" />
+    <div className="flex h-screen flex-col items-center justify-center gap-4 bg-ed-surface p-8">
+      <AlertOctagon size={48} className="text-ed-danger" />
       <div className="max-w-md text-center">
-        <h1 className="text-lg font-semibold text-foreground">
+        <h1 className="text-lg font-semibold text-ed-text-strong">
           The editor crashed
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-sm text-ed-text-muted">
           An unrecoverable error reached the top of the editor. Reloading
           usually clears the state; if it doesn't, the editor's localStorage
           may be corrupt — see the developer console for details.
         </p>
-        <pre className="mt-3 max-h-32 overflow-auto rounded border border-border bg-muted p-2 text-left font-mono text-[11px]">
+        <pre className="mt-3 max-h-32 overflow-auto rounded border border-ed-border bg-ed-surface-3 p-2 text-left font-mono text-[11px]">
           {error.message}
         </pre>
       </div>
@@ -26,14 +26,14 @@ export function TopShellErrorFallback({ error, reset }: ErrorFallbackProps) {
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="rounded bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          className="rounded bg-ed-accent px-3 py-1.5 text-sm font-medium text-ed-accent-fg hover:bg-ed-accent/90"
         >
           Reload page
         </button>
         <button
           type="button"
           onClick={reset}
-          className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          className="rounded border border-ed-border-2 px-3 py-1.5 text-sm text-ed-text hover:bg-ed-surface-2"
         >
           Try again
         </button>
@@ -44,24 +44,24 @@ export function TopShellErrorFallback({ error, reset }: ErrorFallbackProps) {
 
 export function CanvasErrorFallback({ error, reset }: ErrorFallbackProps) {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 bg-muted/30 p-6">
-      <AlertTriangle size={28} className="text-destructive" />
+    <div className="flex h-full flex-col items-center justify-center gap-3 bg-ed-surface-3/30 p-6">
+      <AlertTriangle size={28} className="text-ed-danger" />
       <div className="max-w-sm text-center">
-        <p className="text-sm font-medium text-foreground">
+        <p className="text-sm font-medium text-ed-text-strong">
           The canvas couldn't render
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-xs text-ed-text-muted">
           A node threw during render. Other documents are unaffected; switch
           documents or click Retry to re-mount this one.
         </p>
-        <pre className="mt-2 max-h-24 overflow-auto rounded border border-border bg-background p-1.5 text-left font-mono text-[10px]">
+        <pre className="mt-2 max-h-24 overflow-auto rounded border border-ed-border bg-ed-surface p-1.5 text-left font-mono text-[10px]">
           {error.message}
         </pre>
       </div>
       <button
         type="button"
         onClick={reset}
-        className="flex items-center gap-1.5 rounded border border-gray-300 bg-background px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50"
+        className="flex items-center gap-1.5 rounded border border-ed-border-2 bg-ed-surface px-2.5 py-1 text-xs text-ed-text hover:bg-ed-surface-2"
       >
         <RefreshCcw size={12} /> Retry
       </button>
@@ -71,16 +71,16 @@ export function CanvasErrorFallback({ error, reset }: ErrorFallbackProps) {
 
 export function PanelErrorFallback({ error, reset }: ErrorFallbackProps) {
   return (
-    <div className="space-y-1.5 rounded border border-destructive/40 bg-destructive/5 p-2">
-      <div className="flex items-center gap-1.5 text-xs font-medium text-destructive">
+    <div className="space-y-1.5 rounded border border-ed-danger/40 bg-ed-danger/5 p-2">
+      <div className="flex items-center gap-1.5 text-xs font-medium text-ed-danger">
         <AlertTriangle size={12} />
         Panel failed
       </div>
-      <p className="text-[11px] text-gray-600">{error.message}</p>
+      <p className="text-[11px] text-ed-text-muted">{error.message}</p>
       <button
         type="button"
         onClick={reset}
-        className="flex items-center gap-1 text-[11px] text-primary hover:underline"
+        className="flex items-center gap-1 text-[11px] text-ed-accent hover:underline"
       >
         <RefreshCcw size={10} /> Retry
       </button>
@@ -90,16 +90,16 @@ export function PanelErrorFallback({ error, reset }: ErrorFallbackProps) {
 
 export function ToolboxErrorFallback({ error, reset }: ErrorFallbackProps) {
   return (
-    <div className="m-3 space-y-1.5 rounded border border-destructive/40 bg-destructive/5 p-2">
-      <div className="flex items-center gap-1.5 text-xs font-medium text-destructive">
+    <div className="m-3 space-y-1.5 rounded border border-ed-danger/40 bg-ed-danger/5 p-2">
+      <div className="flex items-center gap-1.5 text-xs font-medium text-ed-danger">
         <AlertTriangle size={12} />
         Toolbox failed
       </div>
-      <p className="text-[11px] text-gray-600">{error.message}</p>
+      <p className="text-[11px] text-ed-text-muted">{error.message}</p>
       <button
         type="button"
         onClick={reset}
-        className="flex items-center gap-1 text-[11px] text-primary hover:underline"
+        className="flex items-center gap-1 text-[11px] text-ed-accent hover:underline"
       >
         <RefreshCcw size={10} /> Retry
       </button>

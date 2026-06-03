@@ -55,7 +55,7 @@ function PropFieldImpl({
         type="text"
         value={(value as string | undefined) ?? ''}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-gray-700"
+        className="w-full rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 text-sm text-ed-text"
       />
     )
   }
@@ -65,7 +65,7 @@ function PropFieldImpl({
         type="checkbox"
         checked={!!value}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-gray-300"
+        className="h-4 w-4 rounded border-ed-border-2"
       />
     )
   }
@@ -77,7 +77,7 @@ function PropFieldImpl({
         onChange={(e) =>
           onChange(e.target.value === '' ? undefined : Number(e.target.value))
         }
-        className="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-gray-700"
+        className="w-full rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 text-sm text-ed-text"
       />
     )
   }
@@ -100,7 +100,7 @@ function PropFieldImpl({
     )
   }
   return (
-    <span className="text-xs text-destructive">
+    <span className="text-xs text-ed-danger">
       unsupported Zod kind ({schema.constructor.name})
     </span>
   )

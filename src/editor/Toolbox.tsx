@@ -305,10 +305,10 @@ export function Toolbox() {
             onFocus={() => setFocusedIndex(rovingIdx)}
             tabIndex={isRovingFocused ? 0 : -1}
             title={def.displayName}
-            className="flex w-full cursor-grab flex-col items-center justify-center gap-1.5 rounded-md border border-gray-200 bg-white px-1 py-3 transition-colors hover:border-gray-300 hover:bg-gray-50 active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="flex w-full cursor-grab flex-col items-center justify-center gap-1.5 rounded-md border border-ed-border bg-ed-surface px-1 py-3 transition-colors hover:border-ed-border-2 hover:bg-ed-surface-2 active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-accent"
           >
-            <Icon size={22} strokeWidth={1.75} className="text-gray-500" aria-hidden />
-            <span className="w-full truncate text-center text-[11px] leading-tight text-gray-600">
+            <Icon size={22} strokeWidth={1.75} className="text-ed-text-muted" aria-hidden />
+            <span className="w-full truncate text-center text-[11px] leading-tight text-ed-text-muted">
               {def.displayName}
             </span>
           </button>
@@ -321,7 +321,7 @@ export function Toolbox() {
             // until hover / focus-within unless the tile is already favorited.
             tabIndex={-1}
             className={cn(
-              'absolute right-1 top-1 rounded p-0.5 text-gray-300 opacity-0 transition-opacity hover:text-yellow-500 group-hover:opacity-100 group-focus-within:opacity-100',
+              'absolute right-1 top-1 rounded p-0.5 text-ed-text-faint opacity-0 transition-opacity hover:text-yellow-500 group-hover:opacity-100 group-focus-within:opacity-100',
               isFavorite && 'opacity-100',
             )}
           >
@@ -437,7 +437,7 @@ export function Toolbox() {
       role="region"
       className="flex min-h-0 flex-1 flex-col"
     >
-      <div className="border-b border-gray-200 p-2">
+      <div className="border-b border-ed-border p-2">
         <label className="relative block">
           {/* Visually-hidden accessible name. The placeholder doubles as a
               visual hint but isn't reliable as the input's accessible name
@@ -445,7 +445,7 @@ export function Toolbox() {
           <span className="sr-only">Search components</span>
           <Search
             size={14}
-            className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"
+            className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-ed-text-faint"
             aria-hidden
           />
           <input
@@ -455,7 +455,7 @@ export function Toolbox() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleSearchKeyDown}
             placeholder="Search components…"
-            className="w-full rounded border border-gray-200 bg-white py-1.5 pl-7 pr-2 text-sm placeholder:text-gray-400 focus:border-gray-400 focus:outline-none"
+            className="w-full rounded border border-ed-border bg-ed-surface py-1.5 pl-7 pr-2 text-sm placeholder:text-ed-text-faint focus:border-ed-border-strong focus:outline-none"
           />
         </label>
       </div>
@@ -468,12 +468,12 @@ export function Toolbox() {
         className="flex-1 space-y-4 overflow-y-auto p-3 focus:outline-none"
       >
         {isEmpty && (
-          <div className="text-xs text-gray-500">No components match.</div>
+          <div className="text-xs text-ed-text-muted">No components match.</div>
         )}
 
         {favoriteDefs.length > 0 && (
           <div className="space-y-1.5">
-            <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-500">
+            <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-ed-text-muted">
               Favorites
             </div>
             <div className="grid grid-cols-2 gap-1.5">
@@ -486,7 +486,7 @@ export function Toolbox() {
 
         {recentDefs.length > 0 && (
           <div className="space-y-1.5">
-            <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-500">
+            <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-ed-text-muted">
               Recently used
             </div>
             <div className="grid grid-cols-2 gap-1.5">
@@ -507,7 +507,7 @@ export function Toolbox() {
             cursor += defs.length
             return (
               <div key={category} className="space-y-1.5">
-                <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-gray-500">
+                <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-ed-text-muted">
                   {CATEGORY_LABEL[category] ?? category}
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">

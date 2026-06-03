@@ -89,7 +89,7 @@ export function PropsPanel({ nodeId }: { nodeId: string }) {
   if (!shape) {
     return (
       <section className="space-y-2">
-        <div className="text-xs text-gray-400">
+        <div className="text-xs text-ed-text-faint">
           {displayName}'s propsSchema isn't a ZodObject — no form generated.
         </div>
       </section>

@@ -95,11 +95,11 @@ export function AssetLibraryPanel() {
   }
 
   if (assets === null) {
-    return <div className="px-1 py-2 text-xs text-gray-400">Loading…</div>
+    return <div className="px-1 py-2 text-xs text-ed-text-faint">Loading…</div>
   }
   if (assets.length === 0) {
     return (
-      <div className="px-1 py-2 text-xs text-gray-400">
+      <div className="px-1 py-2 text-xs text-ed-text-faint">
         No assets in the library yet.
       </div>
     )
@@ -110,7 +110,7 @@ export function AssetLibraryPanel() {
       {assets.map((asset) => (
         <div
           key={asset.url}
-          className="group relative aspect-square overflow-hidden rounded border border-gray-200"
+          className="group relative aspect-square overflow-hidden rounded border border-ed-border"
         >
           <img
             src={asset.thumbnail ?? asset.url}
@@ -122,7 +122,7 @@ export function AssetLibraryPanel() {
               type="button"
               title="Insert as Image"
               onClick={() => insertImage(asset.url)}
-              className="flex size-6 items-center justify-center rounded bg-white/90 text-gray-700 hover:bg-white"
+              className="flex size-6 items-center justify-center rounded bg-ed-surface/90 text-ed-text hover:bg-ed-surface"
             >
               <Plus size={12} aria-hidden />
             </button>
@@ -131,8 +131,8 @@ export function AssetLibraryPanel() {
               title="Copy URL"
               onClick={() => copy(asset.url)}
               className={cn(
-                'flex size-6 items-center justify-center rounded bg-white/90 text-gray-700 hover:bg-white',
-                copied === asset.url && 'bg-primary text-primary-foreground',
+                'flex size-6 items-center justify-center rounded bg-ed-surface/90 text-ed-text hover:bg-ed-surface',
+                copied === asset.url && 'bg-ed-accent text-ed-accent-fg',
               )}
             >
               <Copy size={12} aria-hidden />

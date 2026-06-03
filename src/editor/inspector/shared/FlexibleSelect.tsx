@@ -58,14 +58,14 @@ export function FlexibleSelect({
           }
         }}
         placeholder={placeholder ?? '—'}
-        className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-gray-700"
+        className="min-w-0 flex-1 rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 text-sm text-ed-text"
       />
       <Popover>
         <PopoverTrigger asChild>
           <button
             type="button"
             aria-label="Pick a preset value"
-            className="flex h-7 w-5 shrink-0 items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
+            className="flex h-7 w-5 shrink-0 items-center justify-center rounded border border-ed-border-2 text-ed-text-muted hover:bg-ed-surface-2"
           >
             ▾
           </button>
@@ -80,7 +80,7 @@ export function FlexibleSelect({
               setLocal('')
               commit('')
             }}
-            className="flex w-full items-center rounded px-2 py-1 text-xs text-gray-500 hover:bg-muted"
+            className="flex w-full items-center rounded px-2 py-1 text-xs text-ed-text-muted hover:bg-ed-surface-3"
           >
             (clear)
           </button>
@@ -93,8 +93,8 @@ export function FlexibleSelect({
                 commit(p)
               }}
               className={cn(
-                'flex w-full break-all rounded px-2 py-1 text-left text-xs hover:bg-muted',
-                value === p && 'bg-primary/10 text-primary',
+                'flex w-full break-all rounded px-2 py-1 text-left text-xs hover:bg-ed-surface-3',
+                value === p && 'bg-ed-accent/10 text-ed-accent',
               )}
             >
               {p}

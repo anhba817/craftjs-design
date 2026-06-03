@@ -102,7 +102,7 @@ export function SaveLoadBar() {
   return (
     <header
       data-onboarding-target="savebar"
-      className="flex items-center gap-2 border-b border-gray-200 px-3 py-2"
+      className="flex items-center gap-2 border-b border-ed-border px-3 py-2"
     >
       {/* WCAG SC 2.4.6 / axe `page-has-heading-one` — screen readers
           expect an h1 per page. Lives inside the banner landmark so
@@ -129,28 +129,28 @@ export function SaveLoadBar() {
       <button
         type="button"
         onClick={handleImportClick}
-        className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700 hover:bg-gray-50"
+        className="rounded border border-ed-border-2 px-2 py-1 text-sm text-ed-text hover:bg-ed-surface-2"
       >
         Import
       </button>
       <button
         type="button"
         onClick={handleExport}
-        className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700 hover:bg-gray-50"
+        className="rounded border border-ed-border-2 px-2 py-1 text-sm text-ed-text hover:bg-ed-surface-2"
       >
         Export
       </button>
       <button
         type="button"
         onClick={handleSave}
-        className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700 hover:bg-gray-50"
+        className="rounded border border-ed-border-2 px-2 py-1 text-sm text-ed-text hover:bg-ed-surface-2"
       >
         Save
       </button>
       <button
         type="button"
         onClick={handleLoad}
-        className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700 hover:bg-gray-50"
+        className="rounded border border-ed-border-2 px-2 py-1 text-sm text-ed-text hover:bg-ed-surface-2"
       >
         Load
       </button>

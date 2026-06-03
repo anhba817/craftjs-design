@@ -37,6 +37,9 @@ jobs:
       - name: Test
         run: npx vitest run
 
+      - name: Chrome token guard
+        run: npm run check:chrome
+
       - name: Adapter matrix (built-in coverage)
         run: npm run docs:matrix -- --check
 

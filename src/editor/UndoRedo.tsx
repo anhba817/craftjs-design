@@ -48,7 +48,7 @@ export function UndoRedo() {
         disabled={!canUndo}
         aria-label="Undo"
         title="Undo (⌘Z)"
-        className="rounded border border-gray-300 px-1.5 py-1 text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+        className="rounded border border-ed-border-2 px-1.5 py-1 text-ed-text hover:bg-ed-surface-2 disabled:opacity-40"
       >
         <Undo2 size={14} />
       </button>
@@ -58,7 +58,7 @@ export function UndoRedo() {
         disabled={!canRedo}
         aria-label="Redo"
         title="Redo (⌘⇧Z)"
-        className="rounded border border-gray-300 px-1.5 py-1 text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+        className="rounded border border-ed-border-2 px-1.5 py-1 text-ed-text hover:bg-ed-surface-2 disabled:opacity-40"
       >
         <Redo2 size={14} />
       </button>

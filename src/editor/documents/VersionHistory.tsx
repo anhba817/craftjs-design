@@ -43,7 +43,7 @@ export function VersionHistory({ activeId }: { activeId: string | null }) {
     <>
       <DropdownMenuSeparator />
       <div className="flex items-center justify-between px-2 py-1">
-        <DropdownMenuLabel className="flex items-center gap-1.5 px-0 text-xs uppercase tracking-wide text-gray-400">
+        <DropdownMenuLabel className="flex items-center gap-1.5 px-0 text-xs uppercase tracking-wide text-ed-text-faint">
           <History size={12} /> Versions
         </DropdownMenuLabel>
         <button
@@ -52,13 +52,13 @@ export function VersionHistory({ activeId }: { activeId: string | null }) {
             e.preventDefault()
             handleSave()
           }}
-          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-gray-600 hover:bg-muted"
+          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-ed-text-muted hover:bg-ed-surface-3"
         >
           <Save size={11} /> Save version
         </button>
       </div>
       {versions.length === 0 ? (
-        <div className="px-2 pb-1.5 text-[11px] text-gray-400">
+        <div className="px-2 pb-1.5 text-[11px] text-ed-text-faint">
           No saved versions yet.
         </div>
       ) : (
@@ -69,10 +69,10 @@ export function VersionHistory({ activeId }: { activeId: string | null }) {
               className="flex items-center justify-between gap-2 px-2 py-1 text-xs"
             >
               <div className="min-w-0 flex-1">
-                <div className="truncate text-gray-700">
+                <div className="truncate text-ed-text">
                   {v.label ?? (v.kind === 'manual' ? 'Save point' : 'Autosave')}
                 </div>
-                <div className="text-[10px] text-gray-400">
+                <div className="text-[10px] text-ed-text-faint">
                   {new Date(v.created).toLocaleString()}
                 </div>
               </div>
@@ -82,7 +82,7 @@ export function VersionHistory({ activeId }: { activeId: string | null }) {
                   e.preventDefault()
                   handleRestore(v.versionId)
                 }}
-                className="flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-gray-600 hover:bg-muted"
+                className="flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-ed-text-muted hover:bg-ed-surface-3"
               >
                 <RotateCcw size={11} /> Restore
               </button>

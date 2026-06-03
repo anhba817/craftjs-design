@@ -56,7 +56,7 @@ export function ConcurrentEditBanner() {
       <button
         type="button"
         onClick={handleReload}
-        className="rounded border border-amber-400 bg-white px-2 py-0.5 text-xs text-amber-900 hover:bg-amber-100"
+        className="rounded border border-amber-400 bg-ed-surface px-2 py-0.5 text-xs text-amber-900 hover:bg-amber-100"
       >
         Reload other tab's version
       </button>

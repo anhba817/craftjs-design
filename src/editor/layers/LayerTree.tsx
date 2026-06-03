@@ -326,7 +326,7 @@ export function LayerTree() {
 
   if (rows.length === 0) {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center text-xs text-gray-500">
+      <div className="flex min-h-0 flex-1 items-center justify-center text-xs text-ed-text-muted">
         Empty document
       </div>
     )
@@ -436,9 +436,9 @@ function LayerRow({
       className={[
         'group relative flex h-6 cursor-default items-center gap-1 pr-2 text-xs select-none',
         selected
-          ? 'bg-primary/10 text-primary'
-          : 'text-gray-700 hover:bg-muted',
-        indicatorInside ? 'ring-1 ring-primary/60 ring-inset' : '',
+          ? 'bg-ed-accent/10 text-ed-accent'
+          : 'text-ed-text hover:bg-ed-surface-3',
+        indicatorInside ? 'ring-1 ring-ed-accent/60 ring-inset' : '',
       ].join(' ')}
       style={{
         paddingLeft: 4 + row.depth * 12,
@@ -448,13 +448,13 @@ function LayerRow({
       {indicatorAbove && (
         <span
           aria-hidden
-          className="pointer-events-none absolute -top-px left-0 right-0 h-0.5 bg-primary"
+          className="pointer-events-none absolute -top-px left-0 right-0 h-0.5 bg-ed-accent"
         />
       )}
       {indicatorBelow && (
         <span
           aria-hidden
-          className="pointer-events-none absolute -bottom-px left-0 right-0 h-0.5 bg-primary"
+          className="pointer-events-none absolute -bottom-px left-0 right-0 h-0.5 bg-ed-accent"
         />
       )}
       {row.hasChildren ? (
@@ -474,7 +474,7 @@ function LayerRow({
             onChevronClick()
           }}
           aria-label={collapsed ? 'Expand' : 'Collapse'}
-          className="flex h-4 w-4 shrink-0 items-center justify-center text-gray-400 hover:text-gray-700"
+          className="flex h-4 w-4 shrink-0 items-center justify-center text-ed-text-faint hover:text-ed-text"
         >
           {collapsed ? (
             <ChevronRight size={12} aria-hidden />
@@ -487,7 +487,7 @@ function LayerRow({
       )}
       <span className="truncate">
         {row.linkedSlot && (
-          <span className="mr-1 text-[10px] uppercase tracking-wide text-gray-400">
+          <span className="mr-1 text-[10px] uppercase tracking-wide text-ed-text-faint">
             {row.linkedSlot}:
           </span>
         )}

@@ -58,7 +58,7 @@ function Channel({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="w-3 text-[10px] font-medium uppercase text-gray-500">
+      <span className="w-3 text-[10px] font-medium uppercase text-ed-text-muted">
         {label}
       </span>
       <input
@@ -70,7 +70,7 @@ function Channel({
         className="h-2 flex-1 cursor-pointer appearance-none rounded outline-none"
         style={{ background: trackBackground }}
       />
-      <span className="w-9 text-right text-[11px] tabular-nums text-gray-700">
+      <span className="w-9 text-right text-[11px] tabular-nums text-ed-text">
         {value}
       </span>
     </div>

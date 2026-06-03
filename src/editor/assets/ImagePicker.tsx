@@ -114,14 +114,14 @@ export function ImagePicker({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="https://…"
-        className="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-gray-700"
+        className="w-full rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 text-sm text-ed-text"
       />
       <div className="flex gap-1.5">
         <button
           type="button"
           disabled={uploading}
           onClick={() => fileInputRef.current?.click()}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded border border-dashed border-gray-300 px-2 py-1.5 text-xs text-gray-600 hover:border-gray-400 hover:bg-gray-50 disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded border border-dashed border-ed-border-2 px-2 py-1.5 text-xs text-ed-text-muted hover:border-ed-border-strong hover:bg-ed-surface-2 disabled:opacity-50"
         >
           <ImageUp size={12} aria-hidden />
           {uploading ? 'Uploading…' : 'Upload'}
@@ -129,7 +129,7 @@ export function ImagePicker({
         <button
           type="button"
           onClick={() => setLibraryOpen(true)}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded border border-gray-300 px-2 py-1.5 text-xs text-gray-600 hover:border-gray-400 hover:bg-gray-50"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded border border-ed-border-2 px-2 py-1.5 text-xs text-ed-text-muted hover:border-ed-border-strong hover:bg-ed-surface-2"
         >
           <Images size={12} aria-hidden />
           Library
@@ -149,7 +149,7 @@ export function ImagePicker({
             <DialogTitle>Image library</DialogTitle>
           </DialogHeader>
           {assets.length === 0 ? (
-            <div className="py-16 text-center text-sm text-muted-foreground">
+            <div className="py-16 text-center text-sm text-ed-text-muted">
               No images yet. Upload one or paste a URL.
             </div>
           ) : (
@@ -166,8 +166,8 @@ export function ImagePicker({
                   className={cn(
                     'aspect-square overflow-hidden rounded border',
                     asset.url === value
-                      ? 'border-primary ring-2 ring-primary/40'
-                      : 'border-gray-200 hover:border-gray-400',
+                      ? 'border-ed-accent ring-2 ring-ed-accent/40'
+                      : 'border-ed-border hover:border-ed-border-strong',
                   )}
                 >
                   <img

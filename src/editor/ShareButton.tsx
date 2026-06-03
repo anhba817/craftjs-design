@@ -31,7 +31,7 @@ export function ShareButton() {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700 hover:bg-gray-50"
+          className="rounded border border-ed-border-2 px-2 py-1 text-sm text-ed-text hover:bg-ed-surface-2"
         >
           Share
         </button>
@@ -69,17 +69,17 @@ function ShareContent({ buildEnvelope }: { buildEnvelope: () => EditorDocument }
       copyToClipboard(JSON.stringify(buildEnvelope(), null, 2))
     return (
       <div className="space-y-2">
-        <p className="text-xs text-gray-700">
+        <p className="text-xs text-ed-text">
           This document is too large to share via URL (
           {result.byteLength.toLocaleString()} of {SHARE_URL_MAX_PAYLOAD.toLocaleString()} chars).
         </p>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-ed-text-muted">
           Copy as JSON instead — paste into another editor's Import.
         </p>
         <button
           type="button"
           onClick={jsonForClipboard}
-          className="flex w-full items-center justify-center gap-1.5 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          className="flex w-full items-center justify-center gap-1.5 rounded border border-ed-border-2 bg-ed-surface px-2 py-1.5 text-sm text-ed-text hover:bg-ed-surface-2"
         >
           {copied ? <Check size={14} /> : <Copy size={14} />}
           {copied ? 'Copied!' : 'Copy as JSON'}
@@ -90,7 +90,7 @@ function ShareContent({ buildEnvelope }: { buildEnvelope: () => EditorDocument }
 
   return (
     <div className="space-y-2">
-      <p className="text-xs text-gray-700">
+      <p className="text-xs text-ed-text">
         Anyone who opens this URL gets a copy of the current document.
       </p>
       <input
@@ -99,17 +99,17 @@ function ShareContent({ buildEnvelope }: { buildEnvelope: () => EditorDocument }
         value={result.url}
         onFocus={(e) => e.currentTarget.select()}
         onClick={(e) => e.currentTarget.select()}
-        className="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-xs text-gray-700"
+        className="w-full rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 text-xs text-ed-text"
       />
       <button
         type="button"
         onClick={() => copyToClipboard(result.url)}
-        className="flex w-full items-center justify-center gap-1.5 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+        className="flex w-full items-center justify-center gap-1.5 rounded border border-ed-border-2 bg-ed-surface px-2 py-1.5 text-sm text-ed-text hover:bg-ed-surface-2"
       >
         {copied ? <Check size={14} /> : <Copy size={14} />}
         {copied ? 'Copied!' : 'Copy link'}
       </button>
-      <p className="text-[10px] text-gray-400">
+      <p className="text-[10px] text-ed-text-faint">
         The document is encoded in the URL fragment — it isn't private. Anyone
         with the link (or browser history) can read it.
       </p>

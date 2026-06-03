@@ -15,8 +15,8 @@ export function SlotPicker({
   onChange: (s: string) => void
 }) {
   return (
-    <div className="space-y-1 border-b border-gray-200 px-2 py-2">
-      <div className="text-[10px] uppercase tracking-wide text-gray-500">Slot</div>
+    <div className="space-y-1 border-b border-ed-border px-2 py-2">
+      <div className="text-[10px] uppercase tracking-wide text-ed-text-muted">Slot</div>
       <div className="flex flex-wrap gap-1">
         {slots.map((s) => (
           <button
@@ -26,8 +26,8 @@ export function SlotPicker({
             className={cn(
               'rounded px-2 py-1 text-xs tracking-wide transition-colors',
               active === s
-                ? 'bg-secondary text-secondary-foreground'
-                : 'text-gray-600 hover:bg-muted',
+                ? 'bg-ed-surface-3 text-ed-text-strong'
+                : 'text-ed-text-muted hover:bg-ed-surface-3',
             )}
           >
             {s}

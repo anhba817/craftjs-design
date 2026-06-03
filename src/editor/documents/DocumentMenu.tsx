@@ -75,12 +75,12 @@ export function DocumentMenu() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded px-2 py-1 text-sm hover:bg-gray-100"
+          className="flex items-center gap-1.5 rounded px-2 py-1 text-sm hover:bg-ed-surface-3"
         >
-          <span className="font-medium text-gray-800">
+          <span className="font-medium text-ed-text-strong">
             {activeSummary?.name ?? 'Untitled'}
           </span>
-          <ChevronDown size={14} className="text-gray-500" />
+          <ChevronDown size={14} className="text-ed-text-muted" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-72" align="start">
@@ -97,10 +97,10 @@ export function DocumentMenu() {
                 if (e.key === 'Enter') commitRename()
                 else if (e.key === 'Escape') setRenaming(false)
               }}
-              className="w-full rounded border border-gray-300 px-1.5 py-0.5 text-sm text-gray-800"
+              className="w-full rounded border border-ed-border-2 px-1.5 py-0.5 text-sm text-ed-text-strong"
             />
           ) : (
-            <DropdownMenuLabel className="px-0 text-xs uppercase tracking-wide text-gray-400">
+            <DropdownMenuLabel className="px-0 text-xs uppercase tracking-wide text-ed-text-faint">
               Active document
             </DropdownMenuLabel>
           )}
@@ -115,7 +115,7 @@ export function DocumentMenu() {
                 setRenameInput(activeSummary.name)
                 setRenaming(true)
               }}
-              className="flex flex-1 items-center gap-1.5 rounded px-1.5 py-1 text-xs text-gray-600 hover:bg-muted"
+              className="flex flex-1 items-center gap-1.5 rounded px-1.5 py-1 text-xs text-ed-text-muted hover:bg-ed-surface-3"
             >
               <Pencil size={11} /> Rename
             </button>
@@ -126,7 +126,7 @@ export function DocumentMenu() {
                   switchTo(newId),
                 )
               }}
-              className="flex flex-1 items-center gap-1.5 rounded px-1.5 py-1 text-xs text-gray-600 hover:bg-muted"
+              className="flex flex-1 items-center gap-1.5 rounded px-1.5 py-1 text-xs text-ed-text-muted hover:bg-ed-surface-3"
             >
               <Copy size={11} /> Duplicate
             </button>
@@ -143,7 +143,7 @@ export function DocumentMenu() {
                 }
                 deleteDocument(activeSummary.id)
               }}
-              className="flex flex-1 items-center gap-1.5 rounded px-1.5 py-1 text-xs text-destructive hover:bg-destructive/10"
+              className="flex flex-1 items-center gap-1.5 rounded px-1.5 py-1 text-xs text-ed-danger hover:bg-ed-danger/10"
             >
               <Trash2 size={11} /> Delete
             </button>
@@ -157,7 +157,7 @@ export function DocumentMenu() {
             createBlank(nextUntitledName())
           }}
         >
-          <FilePlus size={14} className="text-gray-500" />
+          <FilePlus size={14} className="text-ed-text-muted" />
           New blank document
         </DropdownMenuItem>
 
@@ -177,14 +177,14 @@ export function DocumentMenu() {
             localStorage flag and re-fires the show-onboarding
             event so OnboardingTour reopens at step 1. */}
         <DropdownMenuItem onSelect={() => reopenOnboardingTour()}>
-          <HelpCircle size={14} className="text-gray-500" />
+          <HelpCircle size={14} className="text-ed-text-muted" />
           Show tour again
         </DropdownMenuItem>
 
         {documents.length > 1 && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-xs uppercase tracking-wide text-gray-400">
+            <DropdownMenuLabel className="text-xs uppercase tracking-wide text-ed-text-faint">
               Switch to
             </DropdownMenuLabel>
             <div className="max-h-48 overflow-y-auto">
@@ -196,8 +196,8 @@ export function DocumentMenu() {
                     onSelect={() => switchTo(d.id)}
                     className={cn('flex flex-col items-start gap-0')}
                   >
-                    <span className="text-sm text-gray-800">{d.name}</span>
-                    <span className="text-[10px] text-gray-400">
+                    <span className="text-sm text-ed-text-strong">{d.name}</span>
+                    <span className="text-[10px] text-ed-text-faint">
                       updated {new Date(d.updated).toLocaleDateString()}
                     </span>
                   </DropdownMenuItem>

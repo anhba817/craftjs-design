@@ -46,7 +46,7 @@ function ArrayFieldImpl({
 
   if (element instanceof z.ZodArray) {
     return (
-      <span className="text-xs text-destructive">
+      <span className="text-xs text-ed-danger">
         unsupported deep nesting (z.array of z.array)
       </span>
     )
@@ -125,20 +125,20 @@ function ArrayFieldImpl({
         onDrop={(e) => onDrop(e, index)}
         onDragEnd={onDragEnd}
         className={cn(
-          'space-y-1 rounded border border-gray-200 bg-white p-1.5 transition-colors',
+          'space-y-1 rounded border border-ed-border bg-ed-surface p-1.5 transition-colors',
           isDragging && 'opacity-40',
           isDropTarget &&
             dropPosition === 'before' &&
-            'border-t-2 border-t-primary',
+            'border-t-2 border-t-ed-accent',
           isDropTarget &&
             dropPosition === 'after' &&
-            'border-b-2 border-b-primary',
+            'border-b-2 border-b-ed-accent',
         )}
       >
-        <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-gray-400">
+        <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-ed-text-faint">
           <GripVertical
             size={12}
-            className="cursor-grab text-gray-400 active:cursor-grabbing"
+            className="cursor-grab text-ed-text-faint active:cursor-grabbing"
             aria-hidden
           />
           <span>Item {index + 1}</span>
@@ -147,7 +147,7 @@ function ArrayFieldImpl({
               type="button"
               onClick={() => stepMove(index, -1)}
               disabled={index === 0}
-              className="rounded p-0.5 hover:bg-gray-100 disabled:opacity-30"
+              className="rounded p-0.5 hover:bg-ed-surface-3 disabled:opacity-30"
               aria-label="Move up"
             >
               <ChevronUp size={12} />
@@ -156,7 +156,7 @@ function ArrayFieldImpl({
               type="button"
               onClick={() => stepMove(index, 1)}
               disabled={index === items.length - 1}
-              className="rounded p-0.5 hover:bg-gray-100 disabled:opacity-30"
+              className="rounded p-0.5 hover:bg-ed-surface-3 disabled:opacity-30"
               aria-label="Move down"
             >
               <ChevronDown size={12} />
@@ -164,7 +164,7 @@ function ArrayFieldImpl({
             <button
               type="button"
               onClick={() => remove(index)}
-              className="rounded p-0.5 text-destructive hover:bg-destructive/10"
+              className="rounded p-0.5 text-ed-danger hover:bg-ed-danger/10"
               aria-label="Remove"
             >
               <Trash2 size={12} />
@@ -191,13 +191,13 @@ function ArrayFieldImpl({
   return (
     <div className="space-y-1.5">
       {items.length === 0 && (
-        <div className="text-[11px] text-gray-400">No items.</div>
+        <div className="text-[11px] text-ed-text-faint">No items.</div>
       )}
       {items.map(renderItem)}
       <button
         type="button"
         onClick={add}
-        className="flex w-full items-center justify-center gap-1 rounded border border-dashed border-gray-300 px-2 py-1 text-xs text-gray-600 hover:border-gray-400 hover:bg-gray-50"
+        className="flex w-full items-center justify-center gap-1 rounded border border-dashed border-ed-border-2 px-2 py-1 text-xs text-ed-text-muted hover:border-ed-border-strong hover:bg-ed-surface-2"
       >
         <Plus size={12} /> Add item
       </button>

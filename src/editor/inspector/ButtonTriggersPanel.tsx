@@ -61,7 +61,7 @@ export function ButtonTriggersPanel({
 
   if (overlays.length === 0) {
     return (
-      <p className="text-[11px] text-gray-500">
+      <p className="text-[11px] text-ed-text-muted">
         No overlays in this document. Drop a Modal / Drawer / Toast /
         Alert and give it a name to trigger from this button.
       </p>
@@ -70,7 +70,7 @@ export function ButtonTriggersPanel({
 
   return (
     <section className="space-y-1.5 text-xs">
-      <p className="text-[11px] text-gray-500">
+      <p className="text-[11px] text-ed-text-muted">
         Check the overlays this button should open / close on click
         (runtime only — clicks in editor mode are inert).
       </p>
@@ -81,7 +81,7 @@ export function ButtonTriggersPanel({
             key={o.id}
             className={cn(
               'flex cursor-pointer items-center gap-2 rounded border px-2 py-1.5',
-              isOn ? 'border-primary bg-primary/5' : 'border-gray-200',
+              isOn ? 'border-ed-accent bg-ed-accent/5' : 'border-ed-border',
             )}
           >
             <input
@@ -89,8 +89,8 @@ export function ButtonTriggersPanel({
               checked={isOn}
               onChange={() => toggle(o.name)}
             />
-            <span className="font-medium text-gray-700">{o.type}</span>
-            <span className="text-gray-500">
+            <span className="font-medium text-ed-text">{o.type}</span>
+            <span className="text-ed-text-muted">
               name=<code>{o.name}</code>
             </span>
           </label>

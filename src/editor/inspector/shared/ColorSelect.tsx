@@ -26,7 +26,7 @@ export function ColorSelect({
     <div className="flex items-center gap-2">
       <div
         aria-hidden
-        className="h-5 w-5 shrink-0 rounded border border-gray-300"
+        className="h-5 w-5 shrink-0 rounded border border-ed-border-2"
         // Empty value renders a transparent swatch; non-empty resolves through
         // the active theme's CSS variable cascade.
         style={{ backgroundColor: value ? `var(--${value})` : 'transparent' }}
@@ -40,7 +40,7 @@ export function ColorSelect({
               : (e.target.value as TokenColor),
           )
         }
-        className="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-gray-700"
+        className="w-full rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 text-sm text-ed-text"
       >
         <option value="">—</option>
         {options.map((c) => (
