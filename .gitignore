@@ -17,6 +17,10 @@ dist-ssr
 .cli-check
 .cli-tmp
 
+# Generated showcase builds (deployed to Pages /try + /gallery by docs.yml)
+dist-demo
+dist-gallery
+
 # Phase 4 — regenerated from src/style/tw-classes.ts on every dev/build via the
 # `gen-safelist` npm script. See scripts/gen-safelist.ts.
 src/style/safelist.generated.css

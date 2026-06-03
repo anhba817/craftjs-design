@@ -427,6 +427,8 @@ a:hover{color:var(--accent-deep);text-decoration:underline;text-underline-offset
           <button id="copyBtn" aria-label="Copy install command">Copy</button>
         </div>
         <div class="hero-links">
+          <a href="try/">Try it live →</a>
+          <a href="gallery/">Component gallery →</a>
           <a href="#quick-start">Quick start →</a>
           <a href="#sdk">SDK reference →</a>
           ${repoUrl ? `<a href="${esc(repoUrl)}" target="_blank" rel="noopener">GitHub ↗</a>` : ''}

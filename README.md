@@ -5,6 +5,10 @@ Pick your design system — shadcn/ui, MUI, or plain HTML (or write your own
 adapter) — drop the editor into a React app, and ship. Documents are plain
 JSON, rendered live by the active adapter.
 
+**[Try it live](https://anhba817.github.io/craftjs-design/try/)** ·
+**[Component gallery](https://anhba817.github.io/craftjs-design/gallery/)** ·
+**[Docs](https://anhba817.github.io/craftjs-design/)**
+
 > **Stable.** `1.0.0` is the first stable release. The public SDK surface is
 > frozen under SemVer — removing or renaming an export is a breaking,
 > major-version change. See the [CHANGELOG](./CHANGELOG.md).

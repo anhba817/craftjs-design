@@ -41,12 +41,21 @@ jobs:
       - name: Build API reference (TypeDoc HTML)
         run: npm run docs:html # → _site/
 
-      - name: Assemble Pages site (guides at /, API at /api)
+      - name: Build live demo editor (/try)
+        run: npm run build:demo # → dist-demo/ (demo.html, relative asset base)
+
+      - name: Build component gallery (/gallery)
+        run: npm run build:gallery # → dist-gallery/index.html
+
+      - name: Assemble Pages site (guides at /, API at /api, demo at /try, gallery at /gallery)
         run: |
           rm -rf _pages
-          mkdir -p _pages/api
+          mkdir -p _pages/api _pages/try _pages/gallery
           cp -R _site/. _pages/api/
           cp -R docs-site/. _pages/   # index.html + robots.txt + sitemap.xml
+          cp -R dist-demo/. _pages/try/
+          mv _pages/try/demo.html _pages/try/index.html   # so /try/ serves it
+          cp -R dist-gallery/. _pages/gallery/
           touch _pages/.nojekyll
 
       - uses: actions/upload-pages-artifact@v3
