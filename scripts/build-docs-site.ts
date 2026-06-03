@@ -108,12 +108,61 @@ function rewriteLinks(html: string, sourceFile: string): string {
 
 marked.setOptions({ gfm: true, breaks: false })
 
-const sections = GUIDES.map((g) => {
+// kebab-case anchor fragment from heading text (HTML stripped). Prefixed per
+// guide by the caller so identical headings across guides ("Install") stay
+// unique across the single page.
+const slugifyHeading = (s: string) =>
+  s
+    .replace(/<[^>]+>/g, '')
+    .replace(/&(?:[a-z]+|#\d+);/gi, ' ')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-+|-+$)/g, '')
+
+interface SubItem {
+  id: string
+  text: string
+}
+
+// Convert one guide: inject a stable `id` on every heading (so the sidebar
+// sub-menu can deep-link), and pick the sub-menu entries — the shallowest
+// heading level BELOW the guide title. Most guides title with `#` and
+// section with `##`; FAQ skips `##` and uses `###`, so we can't hardcode a
+// level — we take the minimum level among the non-title headings.
+function processGuide(g: Guide): { html: string; subitems: SubItem[] } {
   const md = readFileSync(resolve(ROOT, g.file), 'utf8')
-  const body = demoteHeadings(rewriteLinks(marked.parse(md) as string, g.file))
+  let html = rewriteLinks(marked.parse(md) as string, g.file)
+  const headings: { level: number; text: string; id: string }[] = []
+  const seen = new Set<string>()
+  html = html.replace(
+    /<h([1-6])((?:\s[^>]*)?)>([\s\S]*?)<\/h\1>/g,
+    (_m, lvl: string, attrs: string, inner: string) => {
+      const text = inner.replace(/<[^>]+>/g, '').trim()
+      const base = `${g.slug}--${slugifyHeading(text) || 'section'}`
+      let id = base
+      for (let n = 2; seen.has(id); n++) id = `${base}-${n}`
+      seen.add(id)
+      headings.push({ level: Number(lvl), text, id })
+      return `<h${lvl}${attrs} id="${id}">${inner}</h${lvl}>`
+    },
+  )
+  html = demoteHeadings(html)
+  // Skip the first heading (the guide title); the sub-menu is the next level.
+  const rest = headings.slice(1)
+  const minLevel = rest.length ? Math.min(...rest.map((h) => h.level)) : Infinity
+  const subitems = rest
+    .filter((h) => h.level === minLevel)
+    .map((h) => ({ id: h.id, text: h.text }))
+  return { html, subitems }
+}
+
+const subBySlug = new Map<string, SubItem[]>()
+const sections = GUIDES.map((g) => {
+  const { html, subitems } = processGuide(g)
+  subBySlug.set(g.slug, subitems)
   return `<section id="${g.slug}" class="doc">
   <div class="doc-eyebrow">${esc(g.group)}</div>
-  ${body}
+  ${html}
 </section>`
 }).join('\n')
 
@@ -125,14 +174,28 @@ for (const g of GUIDES) {
   grp.items.push(g)
 }
 const nav = groups
-  .map(
-    (grp) => `<div class="nav-group">
+  .map((grp) => {
+    const items = grp.items
+      .map((g) => {
+        const subs = subBySlug.get(g.slug) ?? []
+        const sub = subs.length
+          ? `\n      <div class="nav-sub">${subs
+              .map(
+                (s) =>
+                  `<a class="nav-sublink" href="#${s.id}" data-sub="${s.id}">${s.text}</a>`,
+              )
+              .join('')}</div>`
+          : ''
+        return `<div class="nav-item" data-slug="${g.slug}">
+      <a class="nav-link" href="#${g.slug}" data-slug="${g.slug}">${esc(g.title)}</a>${sub}
+    </div>`
+      })
+      .join('\n    ')
+    return `<div class="nav-group">
     <div class="nav-group-title">${esc(grp.name)}</div>
-    ${grp.items
-      .map((g) => `<a class="nav-link" href="#${g.slug}" data-slug="${g.slug}">${esc(g.title)}</a>`)
-      .join('\n    ')}
-  </div>`,
-  )
+    ${items}
+  </div>`
+  })
   .join('\n  ')
 
 const installCmd = `npm install ${pkg.name} react@19 react-dom@19 @craftjs/core@^0.2.12`
@@ -249,6 +312,19 @@ a:hover{color:var(--accent-deep);text-decoration:underline;text-underline-offset
 }
 .nav-link:hover{background:var(--paper-2);color:var(--ink);text-decoration:none}
 .nav-link.active{background:var(--accent-tint);color:var(--accent-deep);border-left-color:var(--accent);font-weight:600}
+
+/* sub-menu: a guide's sections. Collapsed by default; the active guide's
+   sub-menu expands (scroll-spy driven + on click). */
+.nav-item{margin:.05rem 0}
+.nav-sub{overflow:hidden;max-height:0;transition:max-height .26s ease;margin-left:.95rem;border-left:1px solid var(--line)}
+.nav-item.expanded .nav-sub{max-height:60rem}
+.nav-sublink{
+  display:block;padding:.22rem .55rem .22rem .7rem;
+  color:var(--ink-faint);font-size:.8rem;line-height:1.35;font-weight:500;
+  border-left:2px solid transparent;margin-left:-1px;transition:background .12s,color .12s;
+}
+.nav-sublink:hover{background:var(--paper-2);color:var(--ink);text-decoration:none}
+.nav-sublink.active{color:var(--accent-deep);border-left-color:var(--accent);font-weight:600}
 
 /* ---- main ---- */
 .main{padding:0 clamp(1.25rem,5vw,4.5rem) 7rem;min-width:0}
@@ -385,20 +461,42 @@ a:hover{color:var(--accent-deep);text-decoration:underline;text-underline-offset
   function closeNav(){ body.classList.remove('nav-open') }
   menuBtn && menuBtn.addEventListener('click', function(){ body.classList.toggle('nav-open') });
   scrim && scrim.addEventListener('click', closeNav);
-  document.querySelectorAll('.nav-link').forEach(function(a){ a.addEventListener('click', closeNav) });
+  document.querySelectorAll('.nav-link, .nav-sublink').forEach(function(a){ a.addEventListener('click', closeNav) });
 
-  // scroll-spy: highlight the nav link of the section nearest the top
+  // expand a guide's sub-menu (collapsing the others)
+  var items = Array.prototype.slice.call(document.querySelectorAll('.nav-item'));
+  function expand(slug){
+    items.forEach(function(it){ it.classList.toggle('expanded', it.dataset.slug === slug) });
+  }
+
+  // section scroll-spy: highlight + expand the guide nearest the top
   var links = Array.prototype.slice.call(document.querySelectorAll('.nav-link'));
   var bySlug = {}; links.forEach(function(a){ bySlug[a.dataset.slug] = a });
   var spy = new IntersectionObserver(function(entries){
     entries.forEach(function(e){
       if (e.isIntersecting){
         links.forEach(function(a){ a.classList.remove('active') });
-        var a = bySlug[e.target.id]; if (a){ a.classList.add('active'); }
+        var a = bySlug[e.target.id]; if (a){ a.classList.add('active'); expand(e.target.id); }
       }
     });
   }, { rootMargin: '-10% 0px -80% 0px', threshold: 0 });
   document.querySelectorAll('section.doc').forEach(function(s){ spy.observe(s) });
+
+  // clicking a guide expands it immediately (don't wait for the scroll-spy)
+  links.forEach(function(a){ a.addEventListener('click', function(){ expand(a.dataset.slug) }) });
+
+  // sub-heading scroll-spy: highlight the section nearest the top within a guide
+  var subLinks = Array.prototype.slice.call(document.querySelectorAll('.nav-sublink'));
+  var bySub = {}; subLinks.forEach(function(a){ bySub[a.dataset.sub] = a });
+  var subSpy = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting){
+        subLinks.forEach(function(a){ a.classList.remove('active') });
+        var a = bySub[e.target.id]; if (a){ a.classList.add('active'); }
+      }
+    });
+  }, { rootMargin: '-12% 0px -80% 0px', threshold: 0 });
+  subLinks.forEach(function(a){ var el = document.getElementById(a.dataset.sub); if (el) subSpy.observe(el); });
 </script>
 </body>
 </html>
