@@ -13,6 +13,10 @@ export default defineConfig([
     'dist-gallery',
     '.cli-check',
     '.cli-tmp',
+    // Standalone sub-project: its own tsconfig/vite/package.json (a second
+    // candidate TSConfig root the parser can't disambiguate). Excluded from
+    // the repo's tsc build too; drift-checked separately by `check:example`.
+    'examples/minimal-host',
   ]),
   {
     files: ['**/*.{ts,tsx}'],
@@ -24,6 +28,12 @@ export default defineConfig([
     ],
     languageOptions: {
       globals: globals.browser,
+      // examples/minimal-host is a standalone project with its own tsconfig,
+      // so two candidate TSConfig roots exist; pin the parser to the repo root
+      // explicitly (typescript-eslint can't auto-pick between them).
+      parserOptions: {
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
     rules: {
       // `_`-prefixed bindings are intentional discards (rest-spread drops,
