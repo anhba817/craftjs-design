@@ -9,6 +9,13 @@ Effects, Properties) register themselves the same way. SDK consumers add
 custom panels via `registerPanel` — they show in the Inspector alongside
 the built-ins, sorted by `order`.
 
+> **Start from a skeleton.** Scaffold a panel (a `useNodeClasses`-backed
+> component, `registerPanel` call, and a passing smoke test) and customize it:
+> ```bash
+> npx @crafted-design/editor scaffold panel notes
+> ```
+> This tutorial explains how the generated panel works and how to extend it.
+
 ## Step 1 — Author the panel component
 
 A panel is a React component that receives `{ nodeId, slot }`. For panels

@@ -7,6 +7,13 @@ build a `Stepper` — a horizontal progress indicator with `currentStep` and
 The canonical contract is just data + a Zod schema. Adapters provide the
 actual rendering — see [`TUTORIAL_ADAPTER.md`](./TUTORIAL_ADAPTER.md).
 
+> **Start from a skeleton.** Scaffold a canonical (Zod schema, defaults,
+> applicable panels, and a passing smoke test) and adjust it:
+> ```bash
+> npx @crafted-design/editor scaffold canonical stepper
+> ```
+> This tutorial explains each field the skeleton sets.
+
 ## Step 1 — Define the props schema
 
 ```ts

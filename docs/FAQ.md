@@ -32,6 +32,21 @@ the switcher independently; with no props, the legacy behavior (switcher
 visible) is kept. See
 [INTEGRATION_GUIDE.md → Pinning the adapter](./INTEGRATION_GUIDE.md#pinning-the-adapter-host-chosen-design-system).
 
+### How do I start a new adapter / canonical / panel?
+
+Scaffold one — the CLI emits a typed skeleton already wired to
+`@crafted-design/editor/sdk`, with a passing smoke test:
+
+```bash
+npx @crafted-design/editor scaffold adapter   my-design-system
+npx @crafted-design/editor scaffold canonical pricing-table
+npx @crafted-design/editor scaffold panel     seo-meta
+```
+
+Then fill in the generated files and add the side-effect import before you
+render `<Editor />`. The
+[tutorials](./TUTORIAL_ADAPTER.md) walk through what each skeleton contains.
+
 ### Can I make the editor UI match my app's (dark) theme?
 
 Yes — `<Editor editorTheme="dark" />`, or pass a partial token map to brand

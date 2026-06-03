@@ -29,7 +29,8 @@ JSON, rendered live by the active adapter.
   behind a host-replaceable `StorageAdapter`; versioned schema migrations and
   document snapshots.
 - **SDK** for authoring canonicals, adapters, inspector panels, themes, and
-  templates without forking.
+  templates without forking — with a `scaffold` CLI that generates a wired-up,
+  test-passing skeleton (`npx @crafted-design/editor scaffold adapter my-ds`).
 
 ## Install
 

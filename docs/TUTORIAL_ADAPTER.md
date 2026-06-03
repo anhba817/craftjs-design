@@ -9,6 +9,13 @@ The completed example lives at
 [`examples/adapter-chakra/`](../examples/adapter-chakra/) — refer to it if
 you get stuck.
 
+> **Start from a skeleton.** Scaffold a wired-up adapter (a `Wrapper`, two
+> component impls, and a passing smoke test) and fill it in:
+> ```bash
+> npx @crafted-design/editor scaffold adapter my-design-system
+> ```
+> This tutorial explains what that skeleton contains and how to extend it.
+
 ## Prerequisites
 
 - Familiarity with React + TypeScript.

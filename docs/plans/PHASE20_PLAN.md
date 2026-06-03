@@ -1,6 +1,6 @@
 # Phase 20 — Developer experience & proof
 
-**Status:** planned
+**Status:** complete — shipped in 1.2.0 (2026-06-03)
 **Cuts as:** the next release after `1.1.0` (additive — `1.2.0` recommended,
 since the scaffolding CLI is a visible new capability).
 **Theme:** the editor is a feature-complete v1, but extending it (the whole

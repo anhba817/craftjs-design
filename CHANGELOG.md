@@ -124,6 +124,32 @@ App build (`npm run build`):
 
 (none yet)
 
+## [1.2.0] — 2026-06-03
+
+### Added
+
+- **Scaffolding CLI.** A `crafted-design` bin generates a typed, SDK-wired
+  skeleton for an adapter, canonical, or inspector panel:
+  ```bash
+  npx @crafted-design/editor scaffold adapter   my-design-system
+  npx @crafted-design/editor scaffold canonical pricing-table
+  npx @crafted-design/editor scaffold panel     seo-meta
+  ```
+  Generated code imports from `@crafted-design/editor/sdk` and ships with a
+  passing smoke test, so authoring an extension starts from working code. Zero
+  runtime dependencies (Node built-ins only). The authoring tutorials now lead
+  with it.
+- **Live demo + component gallery.** The docs site gained a clickable, in-browser
+  editor at `/try` and a `/gallery` cataloging every canonical with per-adapter
+  coverage, alongside the guides (`/`) and API reference (`/api`).
+- **Runnable minimal-host example.** `examples/minimal-host` is now a real,
+  copy-pasteable Vite + React 19 project (with an "Open in StackBlitz" link),
+  CI-typechecked against the built package so the minimal integration can't
+  drift from the shipped API.
+
+No public API changes — the frozen SDK surface is unchanged (the CLI is a `bin`,
+not an exported module).
+
 ## [1.1.0] — 2026-06-03
 
 ### Added
