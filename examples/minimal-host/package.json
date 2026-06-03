@@ -1,0 +1,24 @@
+{
+  "name": "crafted-design-minimal-host",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@crafted-design/editor": "^1.1.0",
+    "@craftjs/core": "^0.2.12",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6",
+    "typescript": "~5.6",
+    "vite": "^7"
+  }
+}

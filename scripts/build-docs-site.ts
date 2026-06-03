@@ -431,6 +431,7 @@ a:hover{color:var(--accent-deep);text-decoration:underline;text-underline-offset
           <a href="gallery/">Component gallery →</a>
           <a href="#quick-start">Quick start →</a>
           <a href="#sdk">SDK reference →</a>
+          ${ghOwner ? `<a href="https://stackblitz.com/github/${esc(ghOwner)}/${esc(ghRepo)}/tree/main/examples/minimal-host" target="_blank" rel="noopener">Open in StackBlitz ↗</a>` : ''}
           ${repoUrl ? `<a href="${esc(repoUrl)}" target="_blank" rel="noopener">GitHub ↗</a>` : ''}
         </div>
       </header>

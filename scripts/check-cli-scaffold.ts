@@ -63,6 +63,7 @@ function main() {
     ),
   )
 
+  // 1. The generated code TYPECHECKS against the real SDK types.
   try {
     execSync('npx tsc --noEmit -p .cli-check/tsconfig.json', {
       cwd: ROOT,
@@ -77,8 +78,45 @@ function main() {
     process.exit(1)
   }
 
+  // 2. The generated smoke tests PASS — run them in an ISOLATED vitest (its own
+  //    config + fresh registry singleton) so registering the scaffolded
+  //    adapter/canonical/panel doesn't pollute the main test suite. The
+  //    consumer SDK import is aliased to the in-repo source.
+  writeFileSync(
+    resolve(TMP, 'vitest.config.ts'),
+    `import path from 'node:path'
+import { defineConfig } from 'vitest/config'
+import react from '@vitejs/plugin-react'
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@crafted-design/editor/sdk': path.resolve(__dirname, '../src/sdk/index.ts'),
+      '@': path.resolve(__dirname, '../src'),
+    },
+  },
+  test: { include: ['**/*.test.{ts,tsx}'], root: __dirname },
+})
+`,
+  )
+  try {
+    execSync('npx vitest run --config .cli-check/vitest.config.ts', {
+      cwd: ROOT,
+      stdio: 'pipe',
+    })
+  } catch (err: unknown) {
+    const out = err as { stdout?: Buffer; stderr?: Buffer }
+    console.error('check:cli — generated smoke tests do NOT pass:\n')
+    console.error(out.stdout?.toString() ?? '')
+    console.error(out.stderr?.toString() ?? '')
+    rmSync(TMP, { recursive: true, force: true })
+    process.exit(1)
+  }
+
   rmSync(TMP, { recursive: true, force: true })
-  console.log('check:cli — OK (scaffolded adapter/canonical/panel typecheck against the SDK)')
+  console.log(
+    'check:cli — OK (scaffolded adapter/canonical/panel typecheck AND their smoke tests pass)',
+  )
 }
 
 main()

@@ -2,15 +2,29 @@
 
 The smallest real integration: install → render `<Editor />` → it persists,
 saves, loads, and shares on its own. Uses the lean **`/core`** entry, so no MUI
-in the bundle and nothing extra to install. Copy these three files into a fresh
-Vite + React 19 + TS app.
+in the bundle and nothing extra to install.
 
-> Not built by this repo's CI — it's a copy-pasteable reference using the
-> published import paths. For the in-tree authoring examples see
+This is a **runnable project** — the files live next to this README
+(`package.json`, `index.html`, `src/main.tsx`, `src/App.tsx`). Run it in place,
+**[open it in StackBlitz](https://stackblitz.com/github/anhba817/craftjs-design/tree/main/examples/minimal-host)**,
+or copy the files into a fresh Vite + React 19 + TS app.
+
+> Its source is typechecked against the built package in CI
+> (`npm run check:example`), so this minimal integration can't drift from the
+> real API. For the in-tree authoring examples see
 > [`examples/adapter-chakra`](../adapter-chakra) and
 > [`examples/sdk-smoke`](../sdk-smoke).
 
-## Install
+## Run it
+
+```bash
+git clone https://github.com/anhba817/craftjs-design
+cd craftjs-design/examples/minimal-host
+npm install
+npm run dev
+```
+
+## Or start fresh
 
 ```bash
 npm create vite@latest my-editor -- --template react-ts

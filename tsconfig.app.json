@@ -27,5 +27,7 @@
       "@design/sdk": ["./src/sdk/index.ts"]
     }
   },
-  "include": ["src", "examples"]
+  "include": ["src", "examples"],
+  "//exclude": "minimal-host is a standalone, copy-pasteable project that imports the PUBLISHED package paths (@crafted-design/editor/*); it has its own tsconfig and is drift-checked against dist-lib by `npm run check:example`, not by the repo build.",
+  "exclude": ["examples/minimal-host"]
 }
