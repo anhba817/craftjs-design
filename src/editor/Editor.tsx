@@ -10,6 +10,8 @@ import {
 import { _markEditorMounted, getComponent } from '../registry/registry'
 import { useEditorStore } from '../state/editorStore'
 import { ThemeProvider } from '../themes/ThemeProvider'
+import { resolveChromeTheme } from './chromeTheme'
+import type { EditorChromeTheme } from './chromeTheme'
 import { CanvasKeyboardRegion } from './canvas/CanvasKeyboardRegion'
 import { ResizeOverlay } from './canvas/ResizeOverlay'
 import { SecondarySelectionOutlines } from './canvas/SecondarySelectionOutlines'
@@ -61,9 +63,24 @@ export interface EditorProps {
    * based, so they render under whichever adapter the host chose).
    */
   allowUserToSwitchAdapter?: boolean
+  /**
+   * Host-chosen editor-chrome theme — the look of the editor's own UI
+   * (toolbox, inspector, toolbar, panels, banners). A built-in preset
+   * (`'light'` default, `'dark'`) or a partial {@link EditorChromeTokens}
+   * map (optionally extending a preset via its `preset` field). This is NOT
+   * the document theme system: `registerTheme` / the canvas ThemeSwitcher /
+   * `colorMode` style the CONTENT end users design, and stay independent —
+   * dark chrome around a light document works, Figma-style. Like `adapter`,
+   * this is host policy: end users get no chrome-theme control.
+   */
+  editorTheme?: EditorChromeTheme
 }
 
-export function Editor({ adapter, allowUserToSwitchAdapter }: EditorProps = {}) {
+export function Editor({
+  adapter,
+  allowUserToSwitchAdapter,
+  editorTheme,
+}: EditorProps = {}) {
   // Phase 6 — flip the registry's post-mount flag so any registerCanonical
   // calls after this point warn instead of silently failing to appear.
   useEffect(() => {
@@ -93,6 +110,30 @@ export function Editor({ adapter, allowUserToSwitchAdapter }: EditorProps = {}) 
     }
     store.setAllowAdapterSwitch(allowSwitch)
   }, [adapter, allowSwitch])
+
+  // Phase 19 — apply the chrome theme on <html>, not the editor root div:
+  // chrome renders OUTSIDE the root too (sibling overlays above — banners,
+  // modals, resize handles — and Radix content portaled to <body>), and CSS
+  // variables only cascade downward. The --ed-* variables are inert outside
+  // chrome markup, so the host page is unaffected. Layout effect → applied
+  // before first paint, no light flash. Serialized dep so an inline token
+  // map object doesn't re-run the effect every render. Last mounted editor
+  // wins if several mount at once (documented).
+  const chromeThemeKey = JSON.stringify(editorTheme ?? null)
+  useLayoutEffect(() => {
+    const { preset, vars } = resolveChromeTheme(
+      (JSON.parse(chromeThemeKey) ?? undefined) as EditorChromeTheme | undefined,
+    )
+    const html = document.documentElement
+    html.setAttribute('data-editor-theme', preset)
+    for (const [cssVar, value] of Object.entries(vars)) {
+      html.style.setProperty(cssVar, value)
+    }
+    return () => {
+      html.removeAttribute('data-editor-theme')
+      for (const cssVar of Object.keys(vars)) html.style.removeProperty(cssVar)
+    }
+  }, [chromeThemeKey])
 
   // Phase 14 § 6.2 — bootstrap the async document store on mount: runs the
   // adapter's one-time init (legacy migration / IDB import), reads the index,
@@ -150,17 +191,15 @@ export function Editor({ adapter, allowUserToSwitchAdapter }: EditorProps = {}) 
         {/* Phase 9 § 1.7 — blocking modal when localStorage save fails
             with QuotaExceededError. */}
         <StorageQuotaErrorModal />
-        {/* Phase 19 — `cd-editor-chrome` + data-editor-theme scope the
-            editor-chrome theme tokens (--ed-*). Light defaults live on
-            :root (so portaled chrome inherits them); this attribute is
-            where presets/host token maps apply (dynamic in Group C).
-            NOTE for Group C: sibling overlays above (ResizeOverlay,
-            banners, modals) render outside this div — non-default themes
-            must cover them too. */}
-        <div
-          className="cd-editor-chrome flex h-screen flex-col"
-          data-editor-theme="light"
-        >
+        {/* Phase 19 — `cd-editor-chrome` marks the editor shell (a styling
+            hook for chrome-wide CSS like scrollbars). The chrome THEME is
+            applied higher up — data-editor-theme + --ed-* variables go on
+            <html> via the layout effect above, so sibling overlays and
+            body-portaled chrome are themed too. bg-ed-surface is the shell
+            backdrop: panels (SaveLoadBar, LeftAside, Inspector) are
+            intentionally transparent and historically showed the white
+            <body> through — the backdrop is what themes them. */}
+        <div className="cd-editor-chrome flex h-screen flex-col bg-ed-surface">
           <SaveLoadBar />
           {/* Phase 9 § 1.7 — non-blocking warning when usage ≥ 80%. */}
           <StorageQuotaBanner />

@@ -161,8 +161,27 @@ body {
   --ed-danger-fg: oklch(0.985 0 0);
 }
 
-/* The `dark` preset — values authored in Phase 19 Group C. Stub. */
+/* The `dark` preset — <Editor editorTheme="dark" />. Applied via the
+   data-editor-theme attribute the Editor sets on <html>, so it also covers
+   chrome portaled to <body>. Neutral grays with a whisper of the same cool
+   hue as the light palette; hierarchy inverts (elevated = lighter). The
+   accent flips near-white (like shadcn's dark `primary`) so selection
+   outlines, focus rings, and primary chrome buttons read on dark surfaces. */
 [data-editor-theme='dark'] {
+  --ed-surface: oklch(21% 0.012 260);
+  --ed-surface-2: oklch(24.5% 0.012 260);
+  --ed-surface-3: oklch(28.5% 0.013 260);
+  --ed-border: oklch(31% 0.014 260);
+  --ed-border-2: oklch(37% 0.016 260);
+  --ed-border-strong: oklch(48% 0.02 260);
+  --ed-text-strong: oklch(93% 0.006 260);
+  --ed-text: oklch(86% 0.01 260);
+  --ed-text-muted: oklch(68% 0.018 260);
+  --ed-text-faint: oklch(50% 0.02 260);
+  --ed-accent: oklch(92% 0.005 260);
+  --ed-accent-fg: oklch(20.5% 0.01 260);
+  --ed-danger: oklch(70.4% 0.191 22.216);
+  --ed-danger-fg: oklch(98.5% 0 0);
 }
 
 .dark {

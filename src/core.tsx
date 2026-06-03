@@ -30,6 +30,10 @@ import './persistence/templates'
 // Editor runtime surface.
 export { Editor, ErrorBoundary, TopShellErrorFallback } from './editor/Editor'
 export type { EditorProps } from './editor/Editor'
+export type {
+  EditorChromeTheme,
+  EditorChromeTokens,
+} from './editor/chromeTheme'
 export type { ErrorFallbackProps } from './editor/errors/ErrorBoundary'
 
 // Full SDK — re-exported so consumers don't need a separate

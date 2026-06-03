@@ -37,7 +37,7 @@ export default function App() {
   return (
     <ErrorBoundary fallback={TopShellErrorFallback}>
       <EditorColorVariablesProvider variables={DEMO_COLOR_VARIABLES}>
-        <Editor />
+        <Editor editorTheme="dark" />
       </EditorColorVariablesProvider>
     </ErrorBoundary>
   )
