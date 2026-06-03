@@ -124,6 +124,33 @@ App build (`npm run build`):
 
 (none yet)
 
+## [1.1.0] — 2026-06-03
+
+### Added
+
+- **Host-themable editor chrome** — `<Editor editorTheme="dark" />` (or a
+  partial token map, e.g. `editorTheme={{ accent: '#7aa2f7', surface:
+  '#16161e' }}`) themes the editor's own UI — toolbox, inspector, toolbar,
+  panels, banners. `editorTheme` is `'light'` (default) | `'dark'` | an
+  `EditorChromeTokens` map (which may extend a preset via its `preset`
+  field). Applied as CSS variables on `<html>`, so chrome that portals to
+  `<body>` (dropdowns, modals) is themed too, while the host page is
+  untouched. Like the `adapter` prop this is **host policy** — there's no
+  end-user chrome switcher. It is independent of the document theme system
+  (`registerTheme` / the canvas theme switcher / `colorMode`), which styles
+  the canvas content end users design — dark chrome around a light document
+  works. New type-only exports `EditorChromeTheme` and `EditorChromeTokens`
+  (the frozen runtime surface is unchanged).
+
+### Changed
+
+- The editor chrome now styles itself through a dedicated `--ed-*` token set
+  (light preset is byte-identical to the previous hardcoded grays — no visual
+  change for the default `editorTheme`). Previously the chrome borrowed the
+  document/canvas theme tokens in places, so switching the document theme or
+  color mode could subtly shift the editor UI; the chrome and the document
+  theme are now fully decoupled. A `check:chrome` CI guard keeps it that way.
+
 ## [1.0.2] — 2026-06-02
 
 ### Fixed

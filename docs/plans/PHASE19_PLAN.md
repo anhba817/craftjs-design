@@ -1,6 +1,6 @@
 # Phase 19 — Host-themable editor chrome
 
-**Status:** planned
+**Status:** complete — shipped in 1.1.0 (2026-06-03)
 **Cuts as:** the next release after `1.0.1` (additive feature — minor/patch per
 the CHANGELOG bump policy; `1.1.0` recommended since it's a visible new
 capability).

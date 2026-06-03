@@ -301,6 +301,10 @@ Token values live in `src/index.css`:
 - `[data-theme="<id>"] { … }` — overrides for non-default themes. Only override tokens that *differ* from default; the cascade handles the rest.
 - `.mui-bridge { … }` — bridges MUI's generated `--mui-palette-*` variables to the same tokens (see [§ MUI palette bridge](#mui-palette-bridge)).
 
+These are the **document/canvas** tokens (`--primary`, `--background`, …) — they style the content end users design.
+
+**Editor-chrome theme (`--ed-*`, Phase 19) is a separate, independent system.** The chrome — toolbox, inspector, toolbar, panels, banners — references only `--ed-*` tokens (`bg-ed-surface`, `text-ed-text-muted`, …), never the canvas tokens above. The host sets it via the `Editor` `editorTheme` prop (`'light'` | `'dark'` | a partial `EditorChromeTokens` map), resolved by `src/editor/chromeTheme.ts` and applied as `data-editor-theme` + inline `--ed-*` variables on `<html>` (so body-portaled chrome is themed too). `:root` holds the light preset (byte-identical to the grays the chrome used pre-Phase-19), `[data-editor-theme='dark']` the dark preset. The canvas is carved out of the chrome theme via the `.cd-canvas` hook (set by `ThemeProvider`) so a dark chrome never restyles a light document. `scripts/check-chrome-tokens.ts` (CI `check:chrome`) forbids palette literals and canvas-token borrows under `src/editor/` so the two layers stay decoupled.
+
 ### Editor State (`src/state/`)
 
 Editor-side state that lives **outside** the Craft tree.

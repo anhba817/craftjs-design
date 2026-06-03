@@ -32,6 +32,17 @@ the switcher independently; with no props, the legacy behavior (switcher
 visible) is kept. See
 [INTEGRATION_GUIDE.md → Pinning the adapter](./INTEGRATION_GUIDE.md#pinning-the-adapter-host-chosen-design-system).
 
+### Can I make the editor UI match my app's (dark) theme?
+
+Yes — `<Editor editorTheme="dark" />`, or pass a partial token map to brand
+it: `<Editor editorTheme={{ accent: '#7aa2f7', surface: '#16161e' }} />`.
+This themes the editor **chrome** (toolbox, inspector, toolbar, panels) and
+is host policy — there's no end-user chrome switcher. It's separate from the
+document theme: `registerTheme` / the canvas theme switcher / `colorMode`
+style the content your users design, and stay independent (dark chrome around
+a light page is fine). See
+[INTEGRATION_GUIDE.md → Theming the editor chrome](./INTEGRATION_GUIDE.md#theming-the-editor-chrome).
+
 ### Why is there no CommonJS / UMD build? Is it minified?
 
 The package is **ESM-only** (avoids the dual-package hazard; modern bundlers and

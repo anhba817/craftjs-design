@@ -448,21 +448,43 @@ Emitted metrics today: `document.bootstrap` (first index read) and
 
 ## Theming the editor chrome
 
-The editor's UI chrome (toolbar, toolbox, inspector) inherits from your host
-app's CSS — specifically the shadcn theme tokens (`--primary`,
-`--background`, etc.). Override these to match your design system:
+The editor's own UI — toolbox, inspector, toolbar, panels, banners ("the
+chrome") — is themed by the host through the `editorTheme` prop. Pass a
+built-in preset or a partial token map:
 
-```css
-/* host-app.css */
-:root {
-  --primary: oklch(0.6 0.25 280);  /* purple */
-  --background: oklch(0.98 0 0);
-  /* ...etc */
-}
+```tsx
+<Editor editorTheme="dark" />                                   // built-in dark
+<Editor editorTheme={{ surface: '#16161e', accent: '#7aa2f7' }} /> // brand tokens
+<Editor editorTheme={{ preset: 'dark', accent: '#7aa2f7' }} />   // dark + override
 ```
 
-The editor's `[data-theme="<id>"]` blocks only affect the canvas — chrome
-stays on `:root`. See `docs/ARCHITECTURE.md` § Themes for details.
+`editorTheme` is `'light'` (default) | `'dark'` | an `EditorChromeTokens`
+map. A token map sets only the tokens you name; the rest fall back to the
+`preset` (default `'light'`). Values are any CSS color — hex, `oklch(…)`,
+or even `var(--your-host-token)`.
+
+| Token | Role (light default) |
+|---|---|
+| `surface` | panel / toolbar background (white) |
+| `surface2` | subtle inset / hover background (gray-50) |
+| `surface3` | stronger inset / active, canvas viewport (gray-100) |
+| `border` / `border2` / `borderStrong` | hairline → input → emphasized borders |
+| `textStrong` / `text` / `textMuted` / `textFaint` | heading → body → secondary → disabled text |
+| `accent` / `accentFg` | selection, focus rings, primary chrome buttons + their text |
+| `danger` / `dangerFg` | destructive actions, error banners + their text |
+
+Like the `adapter` prop, `editorTheme` is **host policy** — there's no
+end-user chrome-theme switcher. The chrome theme is applied as CSS variables
+on `<html>` (so chrome that portals to `<body>` — dropdowns, modals — is
+themed too) and leaves the rest of your host page untouched.
+
+> **This is NOT the document theme.** `editorTheme` styles the editor
+> *around* the canvas. The canvas content your end users design is themed
+> separately by `registerTheme` / the canvas theme switcher / `colorMode`
+> (next section). The two are fully independent — a dark editor chrome
+> around a light document works, Figma-style — so don't reach for
+> `editorTheme` to restyle the canvas, or `registerTheme` to restyle the
+> chrome.
 
 ## Token themes, dark mode, color variables, safelist (0.3.0)
 
@@ -479,8 +501,10 @@ registerTheme({ id: 'forest', displayName: 'Forest',
 
 **Dark mode.** A Light / Dark / Auto toggle ships in the top bar; `Auto`
 follows `prefers-color-scheme`. The chosen mode persists in the saved
-document (`EditorDocument.colorMode`). The `ThemeProvider` applies `.dark`
-to the canvas wrapper only — your chrome theming is unaffected.
+document (`EditorDocument.colorMode`). This is the **document's** dark mode —
+`ThemeProvider` applies `.dark` to the canvas wrapper only. It's independent
+of the editor chrome theme (`editorTheme`, above): the canvas can be dark
+while the chrome is light, or vice-versa.
 
 **Your design tokens in the color picker.** Wrap the editor so designers
 can pick your CSS variables alongside the theme tokens:

@@ -18,6 +18,9 @@ JSON, rendered live by the active adapter.
   you can register your own.
 - **Style depth** — a breakpoint × pseudo-state matrix, transforms, filters,
   transitions, gradients, token-driven themes with light/dark.
+- **Host-themable editor chrome** — match the editor UI to your app with
+  `<Editor editorTheme="dark" />` or a brand token map; independent of the
+  document theme your users design.
 - **Multi-document persistence** on IndexedDB (with a localStorage fallback)
   behind a host-replaceable `StorageAdapter`; versioned schema migrations and
   document snapshots.
@@ -54,7 +57,9 @@ to skip MUI). **Pin your design system** so end users can't switch it:
 ```
 
 (For `adapter="mui"`, install the peers: `npm install @mui/material
-@emotion/react @emotion/styled`.) Customize **before** rendering `<Editor />`
+@emotion/react @emotion/styled`.) **Theme the editor UI** to match your app —
+`<Editor editorTheme="dark" />` or a brand token map (separate from the
+document theme your users design). Customize **before** rendering `<Editor />`
 via the SDK:
 
 ```tsx
