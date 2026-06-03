@@ -199,7 +199,7 @@ export function Editor({
             backdrop: panels (SaveLoadBar, LeftAside, Inspector) are
             intentionally transparent and historically showed the white
             <body> through — the backdrop is what themes them. */}
-        <div className="cd-editor-chrome flex h-screen flex-col bg-ed-surface">
+        <div className="cd-editor-chrome flex h-screen flex-col bg-ed-surface text-ed-text">
           <SaveLoadBar />
           {/* Phase 9 § 1.7 — non-blocking warning when usage ≥ 80%. */}
           <StorageQuotaBanner />

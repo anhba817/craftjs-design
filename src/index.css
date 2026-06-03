@@ -184,6 +184,33 @@ body {
   --ed-danger-fg: oklch(98.5% 0 0);
 }
 
+/* Phase 19 Group D — native UI follows the chrome theme. `color-scheme:
+   dark` flips UA scrollbars, native <select> popups, checkboxes, and form
+   control internals inside the editor shell. Scoped to dark only so the
+   default light chrome stays byte-identical to the pre-token editor (no
+   color-scheme property at all). The canvas is carved back out below: the
+   DOCUMENT's controls follow the document color mode (.cd-canvas / .dark
+   from ThemeProvider), not the chrome — dark chrome around a light page
+   must not dark-flip the page's own scrollbars and inputs. */
+[data-editor-theme='dark'] .cd-editor-chrome {
+  color-scheme: dark;
+}
+[data-editor-theme='dark'] .cd-editor-chrome .cd-canvas {
+  color-scheme: light;
+}
+[data-editor-theme='dark'] .cd-editor-chrome .cd-canvas.dark {
+  color-scheme: dark;
+}
+
+/* The chrome shell sets a default text color (text-ed-text) so un-classed
+   chrome text is legible in any theme. That would cascade into the canvas
+   and tint un-styled DOCUMENT text with the chrome color — reset the canvas
+   region to the document's own foreground so a dark chrome doesn't lighten
+   text on a light page. Scoped via .cd-canvas (ThemeProvider). */
+.cd-editor-chrome .cd-canvas {
+  color: var(--foreground);
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

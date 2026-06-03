@@ -21,9 +21,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // data-theme into the DOM hierarchy — CSS custom-property inheritance
   // follows the DOM tree, not the rendering tree.
   return (
+    // `cd-canvas` is a stable hook for chrome-vs-canvas CSS scoping (the
+    // data-theme attribute is absent for the default theme, so it can't be
+    // the hook). Phase 19 uses it to keep the document's `color-scheme`
+    // independent of a dark editor chrome.
     <div
       data-theme={dataTheme}
-      className={scheme === 'dark' ? 'dark' : undefined}
+      className={scheme === 'dark' ? 'cd-canvas dark' : 'cd-canvas'}
       style={{ display: 'contents' }}
     >
       {children}
