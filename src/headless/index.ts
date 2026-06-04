@@ -40,6 +40,11 @@ export {
   type DocumentIssue,
   type ValidationResult,
 } from './validate'
+export {
+  outlineDocument,
+  renderDocumentToHtml,
+  type RenderDocumentOptions,
+} from './render'
 
 // The envelope + import/registry seams headless consumers also need.
 export { parseDocumentJson } from '@/persistence/importDocument'

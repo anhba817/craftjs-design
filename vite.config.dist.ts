@@ -133,6 +133,10 @@ export default defineConfig({
         'react/jsx-runtime',
         'react-dom',
         'react-dom/client',
+        // Phase 21 — the headless static renderer imports the server
+        // renderer; bundling it would inline ~1MB of React internals (and
+        // reintroduce a CJS `require("react")` into the ESM output).
+        'react-dom/server',
         '@craftjs/core',
         // Phase 16 § 8.3 — the heavy UI libraries are OPTIONAL peer
         // dependencies, externalized rather than bundled. The MUI adapter
