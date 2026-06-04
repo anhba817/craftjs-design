@@ -235,6 +235,60 @@ the failing nodes → look again.**
 > Fonts: offline renders may substitute glyphs, but color, contrast, spacing,
 > and layout — what these tools are for — are faithful.
 
+### Verifying the Playwright tools
+
+`render_image` needs three things present: the MCP SDK, Playwright, and the
+render harness (`dist-lib/harness/`, produced by the build). Quick checklist:
+
+```bash
+npm i -D @modelcontextprotocol/sdk playwright
+npx playwright install chromium     # the browser render_image drives
+npm run build:dist                  # builds dist-lib/mcp.js AND dist-lib/harness/
+```
+
+(For a published install via `npx -y @crafted-design/editor crafted-design-mcp`,
+the harness already ships in the package — only the SDK + Playwright steps
+apply.)
+
+Then drive the built server over stdio and confirm a real PNG comes back —
+from the package root so the SDK resolves:
+
+```js
+// smoke.mjs — node smoke.mjs
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+const t = new StdioClientTransport({ command: 'node', args: ['dist-lib/mcp.js'] })
+const c = new Client({ name: 'smoke', version: '1' })
+await c.connect(t)
+await c.callTool({ name: 'create_document', arguments: { adapterId: 'shadcn' } })
+await c.callTool({
+  name: 'add_node',
+  arguments: { parentId: 'ROOT', canonical: 'heading', nodeProps: { content: 'Hello' } },
+})
+const img = await c.callTool({ name: 'render_image', arguments: {} })
+console.log(img.content[0].type, img.content[0].mimeType, 'b64 bytes:', img.content[0].data?.length)
+console.log((await c.callTool({ name: 'check_contrast', arguments: {} })).content[0].text.split('\n')[0])
+await c.close()
+```
+
+Expected: `image image/png b64 bytes: ~10000` and a `check_contrast` line that
+begins **`exact (rendered)`** (proving the in-browser audit engaged). If you
+instead see a "render_image needs Playwright" message, Playwright isn't
+installed; a harness error means the build didn't include `dist-lib/harness/`
+(use `npm run build:dist`, not a partial build).
+
+**Troubleshooting**
+
+- *Headless Linux / CI:* chromium may need system libraries —
+  `npx playwright install-deps chromium` (requires root). The server launches
+  with `--no-sandbox` already.
+- *First call is slow (~1–2s):* the browser launches lazily on the first
+  `render_image`, then is reused for the server's lifetime — later renders are
+  fast.
+- *Renders are hermetic:* the page is network-blocked except the loopback
+  harness, so no external fetches; web fonts may be substituted (colors and
+  layout are unaffected).
+
 ## What it is and isn't
 
 - **`render_image` is structure + style faithful, not a design mockup** — it's
