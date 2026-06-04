@@ -187,8 +187,17 @@ const nav = groups
               )
               .join('')}</div>`
           : ''
+        // Items with sub-sections get a chevron toggle that expands/collapses
+        // WITHOUT navigating (the link still navigates). Items without subs
+        // render just the link.
+        const toggle = subs.length
+          ? `<button class="nav-toggle" type="button" aria-label="Toggle ${esc(g.title)} sections" aria-expanded="false" data-toggle="${g.slug}">▸</button>`
+          : ''
         return `<div class="nav-item" data-slug="${g.slug}">
-      <a class="nav-link" href="#${g.slug}" data-slug="${g.slug}">${esc(g.title)}</a>${sub}
+      <div class="nav-row">
+        <a class="nav-link" href="#${g.slug}" data-slug="${g.slug}">${esc(g.title)}</a>
+        ${toggle}
+      </div>${sub}
     </div>`
       })
       .join('\n    ')
@@ -306,16 +315,25 @@ a:hover{color:var(--accent-deep);text-decoration:underline;text-underline-offset
   font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.13em;
   color:var(--ink-faint);margin:0 0 .5rem .55rem;
 }
+.nav-row{display:flex;align-items:stretch;margin:.05rem 0}
 .nav-link{
-  display:block;padding:.32rem .55rem;margin:.05rem 0;border-radius:7px;
+  flex:1;min-width:0;display:block;padding:.32rem .55rem;border-radius:7px;
   color:var(--ink-soft);font-size:.875rem;font-weight:500;
   border-left:2px solid transparent;transition:background .12s,color .12s;
 }
 .nav-link:hover{background:var(--paper-2);color:var(--ink);text-decoration:none}
 .nav-link.active{background:var(--accent-tint);color:var(--accent-deep);border-left-color:var(--accent);font-weight:600}
 
-/* sub-menu: a guide's sections. Collapsed by default; the active guide's
-   sub-menu expands (scroll-spy driven + on click). */
+/* Chevron toggle: expand/collapse a guide's sub-sections WITHOUT navigating. */
+.nav-toggle{
+  flex:none;width:1.6rem;border:none;background:none;cursor:pointer;border-radius:7px;
+  color:var(--ink-faint);font-size:.7rem;line-height:1;transition:transform .18s,background .12s,color .12s;
+}
+.nav-toggle:hover{background:var(--paper-2);color:var(--ink)}
+.nav-item.expanded > .nav-row > .nav-toggle{transform:rotate(90deg);color:var(--ink-soft)}
+
+/* sub-menu: a guide's sections. Collapsed by default; toggled by the chevron
+   (or revealed when its guide link is clicked). */
 .nav-item{margin:.05rem 0}
 .nav-sub{overflow:hidden;max-height:0;transition:max-height .26s ease;margin-left:.95rem;border-left:1px solid var(--line)}
 .nav-item.expanded .nav-sub{max-height:60rem}
@@ -468,27 +486,43 @@ a:hover{color:var(--accent-deep);text-decoration:underline;text-underline-offset
   scrim && scrim.addEventListener('click', closeNav);
   document.querySelectorAll('.nav-link, .nav-sublink').forEach(function(a){ a.addEventListener('click', closeNav) });
 
-  // expand a guide's sub-menu (collapsing the others)
+  // Expansion is USER-controlled: the chevron toggles a guide's sub-menu with
+  // no navigation, so you can peek at a section's contents without jumping to
+  // it. The scroll-spy below only sets the active highlight — it never opens
+  // or closes a menu, so what you expand stays exactly as you left it.
   var items = Array.prototype.slice.call(document.querySelectorAll('.nav-item'));
-  function expand(slug){
-    items.forEach(function(it){ it.classList.toggle('expanded', it.dataset.slug === slug) });
+  var byItem = {}; items.forEach(function(it){ byItem[it.dataset.slug] = it });
+  function setExpanded(it, on){
+    it.classList.toggle('expanded', on);
+    var tog = it.querySelector('.nav-toggle');
+    if (tog) tog.setAttribute('aria-expanded', on ? 'true' : 'false');
   }
+  document.querySelectorAll('.nav-toggle').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.preventDefault(); e.stopPropagation(); // toggle only — do NOT navigate
+      var it = byItem[btn.dataset.toggle];
+      if (it) setExpanded(it, !it.classList.contains('expanded'));
+    });
+  });
 
-  // section scroll-spy: highlight + expand the guide nearest the top
+  // section scroll-spy: highlight the guide nearest the top (no expand/collapse)
   var links = Array.prototype.slice.call(document.querySelectorAll('.nav-link'));
   var bySlug = {}; links.forEach(function(a){ bySlug[a.dataset.slug] = a });
   var spy = new IntersectionObserver(function(entries){
     entries.forEach(function(e){
       if (e.isIntersecting){
         links.forEach(function(a){ a.classList.remove('active') });
-        var a = bySlug[e.target.id]; if (a){ a.classList.add('active'); expand(e.target.id); }
+        var a = bySlug[e.target.id]; if (a) a.classList.add('active');
       }
     });
   }, { rootMargin: '-10% 0px -80% 0px', threshold: 0 });
   document.querySelectorAll('section.doc').forEach(function(s){ spy.observe(s) });
 
-  // clicking a guide expands it immediately (don't wait for the scroll-spy)
-  links.forEach(function(a){ a.addEventListener('click', function(){ expand(a.dataset.slug) }) });
+  // Navigating to a guide (clicking its label) reveals its sub-menu too, so
+  // you land with the section's contents open. Other items are left as-is.
+  links.forEach(function(a){ a.addEventListener('click', function(){
+    var it = byItem[a.dataset.slug]; if (it) setExpanded(it, true);
+  }) });
 
   // sub-heading scroll-spy: highlight the section nearest the top within a guide
   var subLinks = Array.prototype.slice.call(document.querySelectorAll('.nav-sublink'));
