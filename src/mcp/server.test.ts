@@ -20,7 +20,7 @@ describe('createMcpServer', () => {
     // rather than reach into those, assert construction didn't throw and the
     // tool catalog the server iterates is non-trivial.
     const toolCount = createTools(new DesignSession()).length
-    expect(toolCount).toBeGreaterThanOrEqual(18)
+    expect(toolCount).toBeGreaterThanOrEqual(20)
     // connect() is the only async surface; constructing is synchronous and
     // must not throw for any tool's inputSchema (a bad zod raw shape would).
   })

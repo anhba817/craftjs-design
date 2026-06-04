@@ -45,6 +45,15 @@ export {
   renderDocumentToHtml,
   type RenderDocumentOptions,
 } from './render'
+export {
+  analyzeDocumentContrast,
+  analyzeThemeContrast,
+  resolveThemePalette,
+  type ContrastPair,
+  type DocumentContrastReport,
+  type NodeContrast,
+  type ThemeContrastReport,
+} from './contrast'
 
 // The envelope + import/registry seams headless consumers also need.
 export { parseDocumentJson } from '@/persistence/importDocument'

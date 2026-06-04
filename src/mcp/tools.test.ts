@@ -103,6 +103,28 @@ describe('build a document through the tools', () => {
     expect(call('remove_node', { nodeId: 'ROOT' }).isError).toBe(true)
   })
 
+  it('theme_palette + check_contrast give the agent color awareness', () => {
+    const { call } = harness()
+    call('create_document', { adapterId: 'html' })
+    call('add_node', {
+      parentId: 'ROOT',
+      canonical: 'heading',
+      nodeProps: { content: 'Hi' },
+    })
+    const palette = call('theme_palette')
+    expect(palette.isError).toBeFalsy()
+    expect(palette.text).toContain('body text')
+    expect(palette.text).toMatch(/\d+(\.\d+)?:1/) // a ratio
+
+    const contrast = call('check_contrast')
+    expect(contrast.isError).toBeFalsy()
+    expect(contrast.text).toContain('heading-1')
+
+    // A literal-color node is flagged indeterminate, not graded.
+    call('update_node_style', { nodeId: 'heading-1', classes: { root: 'text-gray-400' } })
+    expect(call('check_contrast').text).toContain('indeterminate')
+  })
+
   it('apply_template + validate', () => {
     const { call } = harness()
     const applied = call('apply_template', { id: 'landing-page' })

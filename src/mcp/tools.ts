@@ -74,6 +74,7 @@ export function createTools(session: DesignSession): ToolDef[] {
             '   • Pattern B (card, tabs, table): pass parentId + slot (see describe_canonical → canvasSlots).',
             '4. update_node_props / update_node_style / move_node / remove_node — refine.',
             '5. outline_document (cheap) or render_html (structural HTML) to see the result.',
+            '   • theme_palette / check_contrast — know your colors and whether text is legible (WCAG).',
             '6. validate_document, then get_document for the final EditorDocument JSON.',
             '',
             'Every mutating tool returns the validation status + a fresh outline, so you stay oriented.',
@@ -343,6 +344,53 @@ export function createTools(session: DesignSession): ToolDef[] {
             ...result.issues.map(
               (i) => `${i.severity}${i.nodeId ? ` [${i.nodeId}]` : ''}: ${i.message}`,
             ),
+          ].join('\n'),
+        )
+      },
+    },
+
+    {
+      name: 'theme_palette',
+      title: 'Theme colors & contrast',
+      description:
+        "The document's theme resolved to colors, with WCAG contrast ratios + grades for the key semantic pairs (body text, muted text, primary button, …). Use it to know whether the theme itself is legible.",
+      inputShape: {},
+      handler: () => {
+        const r = session.themeContrast()
+        const lines = [
+          `theme: ${r.themeId} · scheme: ${r.scheme}`,
+          ...r.pairs.map(
+            (p) =>
+              `  ${p.label}: ${p.foreground} on ${p.background} — ${p.ratio}:1 (${p.grade})`,
+          ),
+        ]
+        return ok(lines.join('\n'))
+      },
+    },
+
+    {
+      name: 'check_contrast',
+      title: 'Check text contrast',
+      description:
+        'Per-text-node foreground/background colors + WCAG ratio and grade, worst-first. Nodes using literal or arbitrary colors are flagged "indeterminate" — verify those with render_image. (Deterministic, token-based; an exact in-browser audit is used when a renderer is available.)',
+      inputShape: {},
+      handler: () => {
+        const r = session.documentContrast()
+        if (r.nodes.length === 0) return ok('No text nodes to check.')
+        const sorted = [...r.nodes].sort(
+          (a, b) => (a.ratio ?? Infinity) - (b.ratio ?? Infinity),
+        )
+        const lines = sorted.map((n) => {
+          if (n.indeterminate) {
+            return `  [${n.nodeId}] ${n.canonical}: indeterminate — ${n.note}`
+          }
+          return `  [${n.nodeId}] ${n.canonical}: ${n.foreground} on ${n.background} — ${n.ratio}:1 (${n.grade})`
+        })
+        const fails = sorted.filter((n) => n.grade === 'Fail').length
+        return ok(
+          [
+            `scheme: ${r.scheme}${fails ? ` · ${fails} failing` : ''}`,
+            ...lines,
           ].join('\n'),
         )
       },

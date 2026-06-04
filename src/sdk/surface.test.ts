@@ -114,8 +114,11 @@ const CORE_SURFACE = [...SDK_SURFACE, ...CORE_EDITOR_ONLY].sort()
 // SemVer promise (1.3.0+).
 const HEADLESS_SURFACE = [
   'addNode',
+  'analyzeDocumentContrast',
+  'analyzeThemeContrast',
   'buildDocument',
   'canonicalIdOf',
+  'resolveThemePalette',
   'describeCanonical',
   'describeCanonicals',
   'getComponent',

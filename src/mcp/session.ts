@@ -5,6 +5,8 @@
 // failed op throws and the prior document stands.
 import {
   addNode,
+  analyzeDocumentContrast,
+  analyzeThemeContrast,
   buildDocument,
   moveNode,
   outlineDocument,
@@ -14,8 +16,10 @@ import {
   updateNodeProps,
   updateNodeStyle,
   validateDocument,
+  type DocumentContrastReport,
   type EditorDocument,
   type HeadlessNodeSpec,
+  type ThemeContrastReport,
 } from '@/headless'
 import type { NodeStyle } from '@/registry/types'
 import { getAdapter } from '@/adapters/AdapterContext'
@@ -100,6 +104,16 @@ export class DesignSession {
 
   validate() {
     return validateDocument(this.doc)
+  }
+
+  /** WCAG ratios for the document's theme's semantic token pairs. */
+  themeContrast(): ThemeContrastReport {
+    return analyzeThemeContrast(this.doc.themeId, this.doc.colorMode ?? 'light')
+  }
+
+  /** Deterministic per-text-node contrast (token colors; flags literals). */
+  documentContrast(): DocumentContrastReport {
+    return analyzeDocumentContrast(this.doc)
   }
 
   outline(): string {
