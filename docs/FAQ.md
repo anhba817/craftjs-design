@@ -68,8 +68,16 @@ bundler minifies the final app. See
 ### Can I export my design to React/JSX source code?
 
 No — and it's not planned. The editor is a runtime component + a JSON document
-model; a source-code generator isn't part of that model. Persist and re-render
-the document instead (it's portable JSON).
+model; a source-code generator isn't part of that model. Persist the document
+(it's portable JSON) and display it with the standalone renderer instead:
+
+```tsx
+import { DocumentRenderer } from '@crafted-design/editor/renderer'
+<DocumentRenderer document={savedEnvelope} />
+```
+
+No editor chrome, a fraction of the editor's bundle — see
+[INTEGRATION_GUIDE.md → Rendering saved documents](./INTEGRATION_GUIDE.md#rendering-saved-documents-production-pages).
 
 ### How do I save documents to my own backend?
 

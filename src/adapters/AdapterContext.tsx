@@ -146,8 +146,22 @@ const AdapterCtx = createContext<Adapter | null>(null);
 // Future adapters with side-effecting Wrappers (global CSS reset, document-
 // level event listeners) would need a different strategy — Phase 6's plugin
 // SDK can address that by adding a `globalSideEffects` flag to the manifest.
-export function AdapterProvider({ children }: { children: ReactNode }) {
-  const adapterId = useEditorStore((s) => s.activeAdapterId);
+export function AdapterProvider({
+  children,
+  adapterId: pinnedAdapterId,
+}: {
+  children: ReactNode;
+  /**
+   * Phase 21 — per-instance adapter pin. When set, this provider serves THAT
+   * adapter regardless of the global editorStore.activeAdapterId — used by
+   * <DocumentRenderer> so standalone renders (possibly several on one page,
+   * each with a different adapter) don't fight over the global store. The
+   * editor itself omits it and keeps following the store (AdapterSwitcher).
+   */
+  adapterId?: string;
+}) {
+  const storeAdapterId = useEditorStore((s) => s.activeAdapterId);
+  const adapterId = pinnedAdapterId ?? storeAdapterId;
   const adapter = getAdapter(adapterId) ?? getAdapter("shadcn");
   if (!adapter) {
     throw new Error(

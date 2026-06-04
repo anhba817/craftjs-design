@@ -28,6 +28,9 @@ JSON, rendered live by the active adapter.
 - **Multi-document persistence** on IndexedDB (with a localStorage fallback)
   behind a host-replaceable `StorageAdapter`; versioned schema migrations and
   document snapshots.
+- **Standalone rendering** — display saved documents on production pages with
+  `<DocumentRenderer />` (`/renderer`, no editor chrome, ~5× smaller), and
+  build/edit/validate documents server-side with the `/headless` API.
 - **SDK** for authoring canonicals, adapters, inspector panels, themes, and
   templates without forking — with a `scaffold` CLI that generates a wired-up,
   test-passing skeleton (`npx @crafted-design/editor scaffold adapter my-ds`).

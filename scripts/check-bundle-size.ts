@@ -45,6 +45,10 @@ const BUDGETS: Budget[] = [
   // (data + zod, no React UI), so it's mid-sized; it must NOT pull the editor
   // chrome or adapters into its graph.
   { label: 'headless (headless.js)', entry: 'headless.js', maxGzipKB: 60 },
+  // Phase 21 — standalone document renderer: canonical registry + the Craft
+  // render path (CanonicalNode/resolver) but NO editor chrome (toolbox,
+  // inspector, persistence UI). A blow-past here means chrome leaked in.
+  { label: 'renderer (renderer.js)', entry: 'renderer.js', maxGzipKB: 130 },
   { label: 'vite-plugin', entry: 'vite-plugin.js', maxGzipKB: 5 },
   // Phase 20 — the scaffolding CLI (`bin`). Node built-ins only; must stay tiny
   // and must NEVER pull the editor runtime/React into its graph. A regression

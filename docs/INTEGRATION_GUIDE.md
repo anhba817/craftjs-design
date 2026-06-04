@@ -321,6 +321,35 @@ The `EditorImageProviderValue` contract:
 Read the active provider from a custom panel or component with
 `useEditorImageProvider()`.
 
+## Rendering saved documents (production pages)
+
+Display a saved document on a public route **without the editor** — no
+toolbox/inspector/toolbar, no editing interactions, a fraction of the bundle
+(~48 KB gz + your adapter vs ~256 KB for the editor):
+
+```tsx
+import { DocumentRenderer } from '@crafted-design/editor/renderer'
+import '@crafted-design/editor/adapters/shadcn' // your design system
+import '@crafted-design/editor/index.css'       // the stylesheet
+
+<DocumentRenderer document={savedEnvelope} />
+```
+
+- `document` — the `EditorDocument` envelope (or its JSON string). It runs
+  through the same validation + version migrations as an editor import, so
+  anything the editor loads, the renderer renders.
+- `adapter` — optional override of the envelope's `adapterId`. Adapters are
+  **per instance**: several renderers with different adapters can coexist on
+  one page.
+- The envelope's `themeId` + `colorMode` apply automatically, scoped to the
+  renderer's wrapper. Overlays behave as at runtime (modals open on their
+  triggers, portal to `<body>`).
+- A malformed document or unregistered adapter renders a small inline
+  `role="alert"` fallback (and logs details) instead of crashing the page.
+
+Rendering is identical to the editor's preview mode — same canonical
+resolver, same adapter impls — so what designers previewed is what ships.
+
 ## Persistence
 
 The editor persists documents to **IndexedDB by default** (0.5.0+), behind

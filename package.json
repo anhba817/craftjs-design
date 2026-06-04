@@ -46,6 +46,10 @@
       "types": "./dist-lib/headless/index.d.ts",
       "import": "./dist-lib/headless.js"
     },
+    "./renderer": {
+      "types": "./dist-lib/renderer/index.d.ts",
+      "import": "./dist-lib/renderer.js"
+    },
     "./vite-plugin": {
       "types": "./dist-lib/vite/safelistPlugin.d.ts",
       "import": "./dist-lib/vite-plugin.js"

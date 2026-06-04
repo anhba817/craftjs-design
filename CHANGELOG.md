@@ -122,7 +122,22 @@ App build (`npm run build`):
 
 ## [Unreleased]
 
-(none yet)
+### Added
+
+- **`@crafted-design/editor/headless`** — build, edit, validate, and introspect
+  editor documents with no React/DOM/Craft runtime: `buildDocument` (spec tree →
+  envelope, incl. Pattern B multi-canvas slots and dynamic slot lists,
+  schema-checked props, deterministic readable node ids), immutable edit ops
+  (`addNode` / `updateNodeProps` / `updateNodeStyle` / `removeNode` /
+  `moveNode`), `describeCanonicals` (per-canonical JSON Schema via zod), and
+  `validateDocument`. Round-trip-tested against the real Craft editor.
+- **`@crafted-design/editor/renderer`** — `<DocumentRenderer document={…} />`
+  displays a saved document on a production page **without the editor**: no
+  chrome, no editing, ~48 KB gz + your adapter (vs ~256 KB for the editor).
+  Accepts the envelope or its JSON string (validated + migrated like an editor
+  import), pins its adapter per instance (`adapter` prop, several renderers per
+  page), applies the envelope's theme + color mode scoped to its wrapper, and
+  falls back to an inline alert on malformed input instead of crashing the page.
 
 ## [1.2.1] — 2026-06-03
 

@@ -1,6 +1,16 @@
 # Phase 21 — MCP server: let an AI build designs with the library
 
-**Status:** planned
+**Status:** Group A shipped (the `/headless` document API). REPRIORITIZED
+mid-phase: the standalone **`<DocumentRenderer>`** (`/renderer` entry — render
+saved documents on production pages without the editor; Craft `enabled=false`
+preview pipeline, per-instance adapter pin) was pulled forward and shipped
+before the remaining MCP groups. Groups B–E (headless static-HTML render, the
+MCP server bin, AI ergonomics, docs) are ON HOLD until resumed. Note for
+Group B: the static-HTML render cannot reuse the Craft-mounted renderer
+(Frame deserializes in an effect — SSR markup would be empty); it needs the
+direct node-map walk as originally planned, plus a runtime-mode seam for
+`EditableText`/`useStartTextEdit` (they call Craft's `useNode`
+unconditionally today).
 **Cuts as:** the next release after `1.2.0` (additive — new public headless API
 + a new `bin`; `1.3.0` recommended).
 **Theme:** expose the editor's document model + canonical registry over the

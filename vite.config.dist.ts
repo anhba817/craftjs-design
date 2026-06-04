@@ -108,6 +108,9 @@ export default defineConfig({
         // (no React/DOM/Craft). Registers canonicals+themes+templates on
         // import; consumed by the MCP server and server-side tooling.
         headless: path.resolve(__dirname, 'src/headless/index.ts'),
+        // Phase 21 — standalone runtime renderer for saved documents
+        // (production pages; no editor chrome).
+        renderer: path.resolve(__dirname, 'src/renderer/index.ts'),
         // Phase 12 § 4.1 — optional, node-only build-time safelist plugin.
         // Separate entry (not in the browser SDK) since it imports node:fs.
         'vite-plugin': path.resolve(__dirname, 'src/vite/safelistPlugin.ts'),

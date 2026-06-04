@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import * as core from '@/core'
 import * as headless from '@/headless'
+import * as renderer from '@/renderer'
 import * as sdk from '@/sdk'
 
 // Phase 17 § Group C — the FROZEN public runtime surface (the 1.0 gate).
@@ -155,6 +156,11 @@ describe('frozen public surface', () => {
 
   it('the headless entry exports exactly the frozen set', () => {
     expect(Object.keys(headless).sort()).toEqual(HEADLESS_SURFACE)
+  })
+
+  it('the renderer entry exports exactly the frozen set', () => {
+    // Phase 21 — `/renderer`: the standalone <DocumentRenderer> only.
+    expect(Object.keys(renderer).sort()).toEqual(['DocumentRenderer'])
   })
 
   it('leaks no internal renderer / resolver into either entry', () => {
