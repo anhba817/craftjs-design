@@ -122,6 +122,30 @@ App build (`npm run build`):
 
 ## [Unreleased]
 
+(none yet)
+
+## [1.5.0] — 2026-06-04
+
+### Added
+
+- **Visual feedback for the MCP agent — colors & contrast.** Three new tools so
+  an AI building a document can perceive it, not just its structure:
+  - `theme_palette` — the document theme resolved to colors, with WCAG ratios +
+    grades for the key semantic pairs (body/muted/card text, primary/secondary/
+    accent buttons). Deterministic, no browser.
+  - `check_contrast` — per-text-node foreground/background + WCAG ratio + grade,
+    worst-first. Exact (in-browser computed styles) when Playwright is
+    installed; a deterministic token-based report otherwise (flagging
+    literal/arbitrary colors for the visual path).
+  - `render_image` — a PNG screenshot, rendered by a persistent headless page
+    mounting the real `<DocumentRenderer>` through the document's design system
+    (the same output a host ships). Returns MCP image content the multimodal
+    client sees. **`playwright` is an optional peer** (the rest of the server
+    works without it).
+
+  New `@crafted-design/editor/headless` exports back them: `analyzeThemeContrast`,
+  `analyzeDocumentContrast`, `resolveThemePalette`. See [MCP_GUIDE.md](./docs/MCP_GUIDE.md).
+
 ### Fixed
 
 - **`<DocumentRenderer>` no longer errors when the document's adapter isn't

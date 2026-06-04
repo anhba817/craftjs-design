@@ -1,6 +1,12 @@
 # Phase 22 — Visual feedback for the MCP agent (colors & contrast)
 
-**Status:** planned
+**Status:** COMPLETE — shipped in 1.5.0 (2026-06-04). Groups B+C were built
+together (one warm renderer serves both screenshot and exact contrast); the
+deterministic Group A is the no-browser fallback. Notable: the harness must
+register canonicals/themes EXPLICITLY (entry side-effects tree-shake away in
+the app build), ES modules are CORS-blocked over file:// (so the harness is
+served over loopback HTTP), and `react-dom/server` + `playwright` had to be
+externalized from the dist.
 **Cuts as:** the next release after `1.4.0` (additive — new MCP tools + new
 `/headless` exports + a new optional peer; `1.5.0` recommended).
 **Theme:** today an AI agent driving the MCP server builds *blind to

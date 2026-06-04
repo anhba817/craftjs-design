@@ -19,6 +19,14 @@ MCP SDK, an **optional peer** (the editor itself doesn't need it):
 npm install @crafted-design/editor @modelcontextprotocol/sdk
 ```
 
+For the `render_image` tool (and the exact, in-browser `check_contrast`), also
+install Playwright + a browser — both are optional; the rest of the server
+works without them:
+
+```bash
+npm i -D playwright && npx playwright install chromium
+```
+
 ## Connect a client
 
 **Claude Code:**
@@ -133,11 +141,11 @@ Call `get_capabilities` first — it returns this in-band. The shape:
      `describe_canonical` → `canvasSlots`).
 4. **Refine** — `update_node_props`, `update_node_style`, `move_node`,
    `remove_node`.
-5. **See it** — `outline_document` (cheap text tree) or `render_html`
-   (structure-faithful HTML via the plain-HTML adapter — real elements +
-   Tailwind classes, not a pixel screenshot; overlays render their closed
-   state).
-6. **Finish** — `validate_document`, then `get_document` for the
+5. **See it** — `render_image` (a PNG you can look at), `outline_document`
+   (cheap text tree), or `render_html` (structure-faithful HTML).
+6. **Check colors** — `theme_palette` (the theme's pairs) + `check_contrast`
+   (per text node, worst-first) so you don't ship illegible text.
+7. **Finish** — `validate_document`, then `get_document` for the
    `EditorDocument` JSON.
 
 Every mutating tool returns the validation status + a fresh outline, so the
@@ -162,6 +170,9 @@ node) comes back as a recoverable tool error, not a crash.
 | `set_adapter` / `set_theme` | Set the document's design system / canvas theme. |
 | `outline_document` | Compact id · canonical tree. |
 | `render_html` | Static structural HTML preview. |
+| `render_image` | A PNG screenshot of the design (needs Playwright). |
+| `theme_palette` | The theme's token colors + WCAG ratios for key pairs. |
+| `check_contrast` | Per-text-node contrast + grade, worst-first. |
 | `validate_document` | Structural + semantic issues. |
 | `get_document` | The full `EditorDocument` JSON. |
 | `load_document` / `reset_document` | Replace from JSON / start over. |
@@ -188,7 +199,8 @@ add_node               { parentId: "card-1", slot: "header", canonical: "heading
                          nodeProps: { content: "Pro", level: "3" } }     → heading-2
 add_node               { parentId: "card-1", slot: "footer", canonical: "button",
                          nodeProps: { label: "Subscribe" } }            → button-1
-render_html                                                              # eyeball structure
+render_image                                                             # SEE it
+check_contrast                                                           # is the text legible?
 get_document                                                             # → EditorDocument JSON
 ```
 
@@ -199,11 +211,35 @@ import { DocumentRenderer } from '@crafted-design/editor/renderer'
 <DocumentRenderer document={generated} />
 ```
 
+## Seeing colors & contrast
+
+Structure tools (`outline_document`, `render_html`) tell the agent *what* it
+built, not *how it looks*. Three tools close that gap:
+
+- **`render_image`** → a PNG, rendered by a persistent headless page that
+  mounts the real `<DocumentRenderer>` through the document's design system
+  (the same output a host ships). The multimodal client sees it inline.
+  Requires Playwright (optional); without it the tool returns a hint.
+- **`theme_palette`** → the theme's token colors with WCAG ratios for the key
+  pairs (body / muted / card text, primary / secondary / accent buttons). No
+  browser needed.
+- **`check_contrast`** → every text node's foreground/background + ratio +
+  grade, worst-first. Exact (in-browser computed styles) when Playwright is
+  installed; a deterministic token-based report otherwise — which flags nodes
+  using literal/arbitrary colors as `indeterminate` (verify those with
+  `render_image`).
+
+The loop: **build → `render_image` (look) → `check_contrast` (measure) → fix
+the failing nodes → look again.**
+
+> Fonts: offline renders may substitute glyphs, but color, contrast, spacing,
+> and layout — what these tools are for — are faithful.
+
 ## What it is and isn't
 
-- **Documents, not screenshots.** `render_html` is structure-faithful (real
-  DOM + the document's Tailwind classes); pair it with the editor stylesheet
-  for visual fidelity. There's no headless-browser pixel render.
+- **`render_image` is structure + style faithful, not a design mockup** — it's
+  exactly what `<DocumentRenderer>` produces. `render_html` is the lighter,
+  no-browser structural view (real DOM + classes, no resolved colors).
 - **Stateless across sessions.** The server holds one in-progress document per
   process; persisting it is the host's job (`get_document` → your storage /
   `StorageAdapter`).
