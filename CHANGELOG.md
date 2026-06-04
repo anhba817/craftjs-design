@@ -122,6 +122,10 @@ App build (`npm run build`):
 
 ## [Unreleased]
 
+(none yet)
+
+## [1.3.0] — 2026-06-04
+
 ### Added
 
 - **`@crafted-design/editor/headless`** — build, edit, validate, and introspect
