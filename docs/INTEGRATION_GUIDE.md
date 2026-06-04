@@ -350,6 +350,11 @@ import '@crafted-design/editor/index.css'       // the stylesheet
 Rendering is identical to the editor's preview mode — same canonical
 resolver, same adapter impls — so what designers previewed is what ships.
 
+A runnable example (latest Vite + React 19 + TS, rendering a real exported
+document) lives at
+[`examples/renderer-host`](../examples/renderer-host) — the display-page
+counterpart to `examples/minimal-host`.
+
 ## Persistence
 
 The editor persists documents to **IndexedDB by default** (0.5.0+), behind

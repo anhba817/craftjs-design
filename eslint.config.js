@@ -13,10 +13,11 @@ export default defineConfig([
     'dist-gallery',
     '.cli-check',
     '.cli-tmp',
-    // Standalone sub-project: its own tsconfig/vite/package.json (a second
-    // candidate TSConfig root the parser can't disambiguate). Excluded from
+    // Standalone sub-projects: their own tsconfig/vite/package.json (extra
+    // candidate TSConfig roots the parser can't disambiguate). Excluded from
     // the repo's tsc build too; drift-checked separately by `check:example`.
     'examples/minimal-host',
+    'examples/renderer-host',
   ]),
   {
     files: ['**/*.{ts,tsx}'],
