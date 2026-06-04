@@ -23,7 +23,12 @@ async function main() {
 
   // Imported after the SDK check (createMcpServer imports the SDK too).
   const { createMcpServer } = await import('./server')
-  const server = createMcpServer()
+  const { isRenderImageAvailable } = await import('./renderImage')
+  // Probe once at startup: only expose render_image (+ browser-exact
+  // check_contrast) when Playwright + the harness are present, so the agent
+  // sees a screenshot tool only when it actually works.
+  const imageRendering = await isRenderImageAvailable()
+  const server = createMcpServer({ imageRendering })
   const transport = new StdioServerTransport()
   await server.connect(transport)
   // stdio transport keeps the process alive; nothing else to do.

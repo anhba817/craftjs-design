@@ -10,7 +10,7 @@ import '@crafted-design/editor/index.css'
 // A real document exported from the editor (Export → .json). Passed as a
 // string so the renderer runs it through the same validation + version
 // migrations as an editor import. (`?raw` keeps it a string at build time.)
-import documentJson from './document.json?raw'
+import documentJson from './portfolio_sample.json?raw'
 
 export default function App() {
   return (

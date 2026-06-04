@@ -53,7 +53,20 @@ function specFromArgs(args: Record<string, unknown>): HeadlessNodeSpec {
   return spec
 }
 
-export function createTools(session: DesignSession): ToolDef[] {
+export interface ToolOptions {
+  /** True when render_image / browser-exact contrast are available (Playwright
+   * + harness present). Drives the capabilities guidance + the check_contrast
+   * nudge so the agent is steered to `render_image` only when it actually works. */
+  imageRendering?: boolean
+}
+
+export function createTools(
+  session: DesignSession,
+  opts: ToolOptions = {},
+): ToolDef[] {
+  const seeStep = opts.imageRendering
+    ? '5. **See it** — ALWAYS call render_image after building (and whenever colors, contrast, or layout matter): it renders a real PNG you can look at. outline_document / render_html are cheaper text views.'
+    : '5. **See it** — outline_document (cheap text tree) or render_html (structural HTML).'
   return [
     {
       name: 'get_capabilities',
@@ -73,9 +86,8 @@ export function createTools(session: DesignSession): ToolDef[] {
             '   • Pattern A containers (box, stack, section): pass parentId.',
             '   • Pattern B (card, tabs, table): pass parentId + slot (see describe_canonical → canvasSlots).',
             '4. update_node_props / update_node_style / move_node / remove_node — refine.',
-            '5. outline_document (cheap) or render_html (structural HTML) to see the result.',
+            seeStep,
             '   • theme_palette / check_contrast — know your colors and whether text is legible (WCAG).',
-            '   • render_image — SEE the design as a PNG (real design system; needs Playwright).',
             '6. validate_document, then get_document for the final EditorDocument JSON.',
             '',
             'Every mutating tool returns the validation status + a fresh outline, so you stay oriented.',
@@ -388,10 +400,14 @@ export function createTools(session: DesignSession): ToolDef[] {
           return `  [${n.nodeId}] ${n.canonical}: ${n.foreground} on ${n.background} — ${n.ratio}:1 (${n.grade})`
         })
         const fails = sorted.filter((n) => n.grade === 'Fail').length
+        const tip = opts.imageRendering
+          ? ['', 'Tip: call render_image to see these colors in context.']
+          : []
         return ok(
           [
             `scheme: ${r.scheme}${fails ? ` · ${fails} failing` : ''}`,
             ...lines,
+            ...tip,
           ].join('\n'),
         )
       },

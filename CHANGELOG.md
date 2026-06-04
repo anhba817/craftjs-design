@@ -141,7 +141,9 @@ App build (`npm run build`):
     mounting the real `<DocumentRenderer>` through the document's design system
     (the same output a host ships). Returns MCP image content the multimodal
     client sees. **`playwright` is an optional peer** (the rest of the server
-    works without it).
+    works without it) — `render_image` is exposed (and prescribed in
+    `get_capabilities`, with `check_contrast` nudging toward it) only when a
+    browser is actually available, so the agent never sees a tool it can't use.
 
   New `@crafted-design/editor/headless` exports back them: `analyzeThemeContrast`,
   `analyzeDocumentContrast`, `resolveThemePalette`. See [MCP_GUIDE.md](./docs/MCP_GUIDE.md).

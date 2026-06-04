@@ -77,6 +77,26 @@ function serveHarness(dir: string): Promise<{ server: Server; origin: string }> 
   })
 }
 
+/**
+ * True when render_image / browser-exact check_contrast CAN run — Playwright
+ * is importable and the harness was built — WITHOUT launching a browser. The
+ * server uses this to decide whether to expose render_image and to prescribe
+ * it in get_capabilities, so the agent only ever sees a tool that works.
+ */
+export async function isRenderImageAvailable(): Promise<boolean> {
+  try {
+    await import('playwright')
+  } catch {
+    return false
+  }
+  try {
+    locateHarnessDir()
+    return true
+  } catch {
+    return false
+  }
+}
+
 export interface RenderOptions {
   adapterId?: string
   /** Viewport width in px (height auto-grows to content). Default 1280. */

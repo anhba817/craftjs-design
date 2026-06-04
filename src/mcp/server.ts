@@ -21,14 +21,25 @@ function toCallToolResult(r: ToolResult) {
   }
 }
 
+export interface McpServerOptions {
+  /**
+   * Whether to expose render_image + the browser-exact check_contrast. Pass
+   * the result of `isRenderImageAvailable()` (the bin does). When false,
+   * render_image is NOT registered at all — the agent never sees a tool it
+   * can't use, and the capabilities guidance omits it. Default false.
+   */
+  imageRendering?: boolean
+}
+
 /** Build a fully-configured McpServer over a fresh session (no transport). */
-export function createMcpServer(): McpServer {
+export function createMcpServer(opts: McpServerOptions = {}): McpServer {
+  const imageRendering = opts.imageRendering ?? false
   const server = new McpServer({
     name: SERVER_NAME,
     version: SERVER_VERSION,
   })
   const session = new DesignSession()
-  const tools = createTools(session)
+  const tools = createTools(session, { imageRendering })
   const byName = new Map<string, ToolDef>(tools.map((t) => [t.name, t]))
 
   // A persistent screenshot renderer (Playwright optional peer). Launched
@@ -42,10 +53,11 @@ export function createMcpServer(): McpServer {
     return rendererPromise
   }
 
-  // check_contrast is registered below as an ASYNC, browser-upgrading tool;
-  // the catalog's (deterministic) handler is the no-browser fallback.
+  // Register the catalog. When image rendering is available, check_contrast is
+  // re-registered below as the ASYNC browser-exact tool, so skip it here;
+  // otherwise the catalog's deterministic check_contrast is the one exposed.
   for (const tool of tools) {
-    if (tool.name === 'check_contrast') continue
+    if (imageRendering && tool.name === 'check_contrast') continue
     server.registerTool(
       tool.name,
       {
@@ -58,15 +70,20 @@ export function createMcpServer(): McpServer {
     )
   }
 
+  // render_image + browser-exact check_contrast — registered ONLY when a
+  // renderer is available, so the agent never sees a tool it can't use (and
+  // the capabilities text prescribes render_image only in this case).
+  if (!imageRendering) return server
+
   // render_image — a PNG the multimodal client can SEE (MCP image content).
   // Rendered by the persistent <DocumentRenderer> page through the document's
-  // real adapter. Falls back to a text hint when Playwright isn't installed.
+  // real design system.
   server.registerTool(
     'render_image',
     {
       title: 'Render to an image',
       description:
-        'A PNG screenshot of the current document, rendered through its real design system — use it to SEE colors, contrast, spacing, layout. Requires Playwright (an optional peer); falls back to a hint if absent.',
+        'Render the current document to a PNG you can SEE — its real design system, real colors, real layout. Call this after building, and whenever you change colors/spacing/layout: structure tools (outline_document, render_html) do NOT show how it looks. Returns an image.',
       inputSchema: {
         width: z.number().int().min(200).max(2400).optional(),
       },
@@ -75,7 +92,7 @@ export function createMcpServer(): McpServer {
       const renderer = await getRenderer()
       if (!renderer) {
         return toCallToolResult({
-          text: 'render_image needs Playwright. Install it: `npm i -D playwright && npx playwright install chromium`. Meanwhile use render_html (structure) + check_contrast (colors).',
+          text: 'render_image failed to launch a browser. Try `npx playwright install chromium` (and `npx playwright install-deps chromium` on headless Linux).',
           isError: true,
         })
       }
@@ -114,6 +131,8 @@ export function createMcpServer(): McpServer {
           ...results.map(
             (r) => `  [${r.nodeId}]: ${r.fg} on ${r.bg} — ${r.ratio}:1 (${r.grade})`,
           ),
+          '',
+          'Tip: call render_image to see these colors in context.',
         ].join('\n'),
       })
     },
