@@ -122,6 +122,10 @@ App build (`npm run build`):
 
 ## [Unreleased]
 
+(none yet)
+
+## [1.4.0] — 2026-06-04
+
 ### Added
 
 - **`crafted-design-mcp` — an MCP server for AI-driven design.** A
@@ -134,7 +138,9 @@ App build (`npm run build`):
   `<Editor />` or `<DocumentRenderer />`. `@modelcontextprotocol/sdk` is an
   **optional peer** (the editor doesn't need it). Build it with the headless
   static-render helpers `renderDocumentToHtml` / `outlineDocument` (also new on
-  `@crafted-design/editor/headless`). See [MCP_GUIDE.md](./docs/MCP_GUIDE.md).
+  `@crafted-design/editor/headless`). Works with any MCP client (Claude
+  Code/Desktop, VS Code, Cursor, Windsurf, Codex, Gemini CLI, custom agents) —
+  see [MCP_GUIDE.md](./docs/MCP_GUIDE.md).
 
 ## [1.3.0] — 2026-06-04
 

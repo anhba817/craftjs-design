@@ -43,6 +43,81 @@ claude mcp add crafted-design -- npx -y @crafted-design/editor crafted-design-mc
 (Both spawn the `crafted-design-mcp` bin over stdio. If the MCP SDK isn't
 installed, the bin prints an install hint and exits.)
 
+## Other MCP clients
+
+Nothing here is Claude-specific — this is a standard **stdio** MCP server, so
+any MCP client registers it with the *same command and args*:
+
+```
+command: npx   args: ["-y", "@crafted-design/editor", "crafted-design-mcp"]
+```
+
+(Before the package is published, point at the built bin instead:
+`command: node`, `args: ["<abs>/dist-lib/mcp.js"]`.) Only the config file and
+its key differ per client:
+
+| Client | Where | Key |
+|---|---|---|
+| **VS Code** (Copilot agent) | `.vscode/mcp.json` | `servers` |
+| **Cursor** | `.cursor/mcp.json` (or `~/.cursor/mcp.json`) | `mcpServers` |
+| **Windsurf** | `~/.codeium/windsurf/mcp_config.json` | `mcpServers` |
+| **Cline / Roo** (VS Code) | extension "MCP Servers" settings | `mcpServers` |
+| **Continue.dev** | `~/.continue/config.yaml` | `mcpServers:` |
+| **Zed** | `settings.json` | `context_servers` |
+| **Gemini CLI** | `~/.gemini/settings.json` | `mcpServers` |
+
+Most use the JSON shape:
+
+```jsonc
+{
+  "mcpServers": {
+    "crafted-design": {
+      "command": "npx",
+      "args": ["-y", "@crafted-design/editor", "crafted-design-mcp"]
+    }
+  }
+}
+```
+
+**Codex** (OpenAI CLI) uses **TOML**, with a snake_case key — `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.crafted-design]
+command = "npx"
+args = ["-y", "@crafted-design/editor", "crafted-design-mcp"]
+```
+
+(or `codex mcp add crafted-design -- npx -y @crafted-design/editor crafted-design-mcp`).
+
+**Custom agents / frameworks** connect programmatically — no config file. Pass
+the same stdio command to an MCP client SDK or an agent framework's MCP
+adapter:
+
+```python
+# OpenAI Agents SDK
+from agents.mcp import MCPServerStdio
+server = MCPServerStdio(params={
+    "command": "npx",
+    "args": ["-y", "@crafted-design/editor", "crafted-design-mcp"],
+})
+```
+
+```ts
+// Raw MCP TypeScript SDK
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+const transport = new StdioClientTransport({
+  command: 'npx',
+  args: ['-y', '@crafted-design/editor', 'crafted-design-mcp'],
+})
+```
+
+The same works with LangChain (`langchain-mcp-adapters`), LlamaIndex,
+Pydantic-AI, and others.
+
+> **Transport:** the server speaks **stdio** (every desktop / CLI client
+> supports it). A client that needs HTTP/SSE can't connect directly — open an
+> issue if you need a streamable-HTTP transport.
+
 ## The workflow
 
 Call `get_capabilities` first — it returns this in-band. The shape:
