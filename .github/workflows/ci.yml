@@ -62,3 +62,32 @@ jobs:
         # Vuln scan on production deps. Advisory (|| true) so a transitive
         # advisory doesn't block merges; review the output in the run.
         run: npm audit --omit=dev || true
+
+  # Phase 22 — the MCP screenshot / exact-contrast path needs a real browser,
+  # which the main `verify` job deliberately lacks (so it stays fast and the
+  # renderImage suite skips there). This dedicated job installs Chromium + the
+  # render harness and runs ONLY that suite, so the browser path stays covered
+  # in CI rather than only locally.
+  browser-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Chromium (+ system deps)
+        run: npx playwright install --with-deps chromium
+
+      - name: Build render harness
+        # renderImage loads dist-lib/harness/; build:harness emits just that
+        # (not the full dist), so this job stays lean.
+        run: npm run build:harness
+
+      - name: Browser render + contrast tests
+        run: npx vitest run src/mcp/renderImage.test.ts
