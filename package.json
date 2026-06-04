@@ -15,7 +15,8 @@
   "main": "./dist-lib/index.js",
   "types": "./dist-lib/main-app.d.ts",
   "bin": {
-    "crafted-design": "./dist-lib/cli.js"
+    "crafted-design": "./dist-lib/cli.js",
+    "crafted-design-mcp": "./dist-lib/mcp.js"
   },
   "exports": {
     ".": {
@@ -111,11 +112,15 @@
     "@craftjs/core": "^0.2.12",
     "@emotion/react": "^11",
     "@emotion/styled": "^11",
+    "@modelcontextprotocol/sdk": "^1",
     "@mui/material": "^9",
     "react": "^19",
     "react-dom": "^19"
   },
   "peerDependenciesMeta": {
+    "@modelcontextprotocol/sdk": {
+      "optional": true
+    },
     "@mui/material": {
       "optional": true
     },
@@ -149,6 +154,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@eslint/js": "^10.0.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@mui/material": "^9.0.1",
     "@tailwindcss/vite": "^4.3.0",
     "@types/node": "^24.12.3",

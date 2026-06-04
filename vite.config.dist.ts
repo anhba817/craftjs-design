@@ -111,6 +111,9 @@ export default defineConfig({
         // Phase 21 — standalone runtime renderer for saved documents
         // (production pages; no editor chrome).
         renderer: path.resolve(__dirname, 'src/renderer/index.ts'),
+        // Phase 21 — the MCP server bin (`crafted-design-mcp`). Node-only;
+        // @modelcontextprotocol/sdk is an externalized optional peer.
+        mcp: path.resolve(__dirname, 'src/mcp/bin.ts'),
         // Phase 12 § 4.1 — optional, node-only build-time safelist plugin.
         // Separate entry (not in the browser SDK) since it imports node:fs.
         'vite-plugin': path.resolve(__dirname, 'src/vite/safelistPlugin.ts'),
@@ -150,13 +153,17 @@ export default defineConfig({
         // builtins external rather than bundling them into the package.
         'vite',
         /^node:/,
+        // Phase 21 — the MCP server's SDK is an optional peer; never bundle it.
+        /^@modelcontextprotocol\//,
       ],
       output: {
         // Phase 20 — the CLI entry is an executable; prepend a shebang to
         // cli.js only (the package `bin` points at it). Other entries are
         // libraries imported by bundlers and must NOT carry a shebang.
         banner: (chunk) =>
-          chunk.fileName === 'cli.js' ? '#!/usr/bin/env node' : '',
+          chunk.fileName === 'cli.js' || chunk.fileName === 'mcp.js'
+            ? '#!/usr/bin/env node'
+            : '',
       },
     },
     // Don't minify by default — easier to debug post-install. Hosts that want

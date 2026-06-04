@@ -49,6 +49,12 @@ const BUDGETS: Budget[] = [
   // render path (CanonicalNode/resolver) but NO editor chrome (toolbox,
   // inspector, persistence UI). A blow-past here means chrome leaked in.
   { label: 'renderer (renderer.js)', entry: 'renderer.js', maxGzipKB: 130 },
+  // Phase 21 — the MCP server bin. It pulls the headless API + the HTML
+  // adapter (for render previews); the MCP SDK + react-dom/server are
+  // externalized, so this should stay modest.
+  // Not browser-delivered (a Node bin) — the budget guards accidental bloat,
+  // not page weight.
+  { label: 'MCP server (mcp.js)', entry: 'mcp.js', maxGzipKB: 110 },
   { label: 'vite-plugin', entry: 'vite-plugin.js', maxGzipKB: 5 },
   // Phase 20 — the scaffolding CLI (`bin`). Node built-ins only; must stay tiny
   // and must NEVER pull the editor runtime/React into its graph. A regression
