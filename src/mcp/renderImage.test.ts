@@ -2,25 +2,22 @@
 // Playwright being installed AND the harness built (dist-lib/harness): these
 // are heavy/optional, so the suite skips cleanly in environments without a
 // browser instead of failing.
-import { existsSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { buildDocument } from '@/headless/build'
-import { createImageRenderer, type ImageRenderer } from './renderImage'
+import {
+  createImageRenderer,
+  isRenderImageAvailable,
+  type ImageRenderer,
+} from './renderImage'
 
 await import('@/registry/components') // node-side registry for buildDocument
 
-let hasPlaywright = false
-try {
-  await import('playwright')
-  hasPlaywright = true
-} catch {
-  hasPlaywright = false
-}
-const harnessBuilt = existsSync(
-  resolve(import.meta.dirname, '../../dist-lib/harness/harness.html'),
-)
-const runIf = hasPlaywright && harnessBuilt ? describe : describe.skip
+// Gate on the SAME check the server uses: Playwright package + an actually-
+// installed browser binary + the built harness. In CI the package is present
+// but the browser isn't (`playwright install` not run), so this is false and
+// the heavy suite skips cleanly instead of failing on launch.
+const available = await isRenderImageAvailable()
+const runIf = available ? describe : describe.skip
 
 const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47] // ‰PNG
 
@@ -88,8 +85,9 @@ runIf('createImageRenderer (real chromium)', () => {
 })
 
 describe('renderImage availability', () => {
-  it('this environment has the browser + harness (else the suite above skips)', () => {
-    // Informational — surfaces whether the heavy path was exercised.
-    expect(typeof hasPlaywright).toBe('boolean')
+  it('isRenderImageAvailable() is a boolean (gates the heavy suite above)', () => {
+    // Informational — surfaces whether the browser path was exercised. When
+    // false (e.g. CI without `playwright install`), the suite above skips.
+    expect(typeof available).toBe('boolean')
   })
 })

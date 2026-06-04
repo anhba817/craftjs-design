@@ -84,8 +84,19 @@ function serveHarness(dir: string): Promise<{ server: Server; origin: string }> 
  * it in get_capabilities, so the agent only ever sees a tool that works.
  */
 export async function isRenderImageAvailable(): Promise<boolean> {
+  let chromium: typeof import('playwright').chromium
   try {
-    await import('playwright')
+    ;({ chromium } = await import('playwright'))
+  } catch {
+    return false // package not installed
+  }
+  // The package being importable does NOT mean the browser binary is
+  // installed (a common CI state: `playwright` present, `playwright install`
+  // not run). Verify the executable exists so we never expose render_image —
+  // or run the browser tests — where launch would throw.
+  try {
+    const exe = chromium.executablePath()
+    if (!exe || !existsSync(exe)) return false
   } catch {
     return false
   }
