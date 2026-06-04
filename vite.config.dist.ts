@@ -155,6 +155,9 @@ export default defineConfig({
         /^node:/,
         // Phase 21 — the MCP server's SDK is an optional peer; never bundle it.
         /^@modelcontextprotocol\//,
+        // Phase 22 — the screenshot renderer's browser driver is an optional
+        // peer (node-only, native deps); never bundle it.
+        'playwright',
       ],
       output: {
         // Phase 20 — the CLI entry is an executable; prepend a shebang to

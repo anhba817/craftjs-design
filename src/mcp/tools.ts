@@ -75,6 +75,7 @@ export function createTools(session: DesignSession): ToolDef[] {
             '4. update_node_props / update_node_style / move_node / remove_node — refine.',
             '5. outline_document (cheap) or render_html (structural HTML) to see the result.',
             '   • theme_palette / check_contrast — know your colors and whether text is legible (WCAG).',
+            '   • render_image — SEE the design as a PNG (real design system; needs Playwright).',
             '6. validate_document, then get_document for the final EditorDocument JSON.',
             '',
             'Every mutating tool returns the validation status + a fresh outline, so you stay oriented.',
