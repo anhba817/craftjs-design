@@ -22,7 +22,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { AdapterProvider, getAdapter } from '@/adapters/AdapterContext'
+import { AdapterProvider, getAdapter, listAdapters } from '@/adapters/AdapterContext'
 import { getResolver } from '@/craft/resolver'
 import { parseDocumentJson } from '@/persistence/importDocument'
 import type { EditorDocument } from '@/persistence/schema'
@@ -120,20 +120,53 @@ export function DocumentRenderer({
     )
   }
 
-  const adapterId = adapter ?? parsed.doc.adapterId
+  // Resolve the adapter:
+  //   - explicit `adapter` prop → must be registered (the host asked for it).
+  //   - otherwise prefer the document's `adapterId`, but if that isn't
+  //     registered, FALL BACK to any registered adapter. Documents are
+  //     canonical-id based and render under any adapter, so a host that
+  //     imported a different adapter than the document was saved with should
+  //     still render (a common case: export with `html`, host uses `shadcn`).
+  //     Only erroring when NO adapter is registered at all.
+  const requested = adapter ?? parsed.doc.adapterId
+  let adapterId = requested
   if (!getAdapter(adapterId)) {
-    console.error(
-      `[DocumentRenderer] adapter "${adapterId}" is not registered — ` +
-        `side-effect-import it before rendering (e.g. ` +
-        `import '@crafted-design/editor/adapters/${adapterId}').`,
-    )
-    return (
-      <div role="alert" className={className}>
-        <div className="rounded border border-destructive/40 p-4 text-sm text-destructive">
-          Adapter “{adapterId}” is not registered.
+    if (adapter !== undefined) {
+      // Explicit prop: don't second-guess the host — surface the mistake.
+      console.error(
+        `[DocumentRenderer] adapter "${adapterId}" is not registered — ` +
+          `side-effect-import it first (e.g. ` +
+          `import '@crafted-design/editor/adapters/${adapterId}').`,
+      )
+      return (
+        <div role="alert" className={className}>
+          <div className="rounded border border-destructive/40 p-4 text-sm text-destructive">
+            Adapter “{adapterId}” is not registered.
+          </div>
         </div>
-      </div>
+      )
+    }
+    const fallback = listAdapters()[0]
+    if (!fallback) {
+      console.error(
+        `[DocumentRenderer] no adapter is registered — side-effect-import one ` +
+          `before rendering (e.g. import '@crafted-design/editor/adapters/shadcn').`,
+      )
+      return (
+        <div role="alert" className={className}>
+          <div className="rounded border border-destructive/40 p-4 text-sm text-destructive">
+            No adapter is registered.
+          </div>
+        </div>
+      )
+    }
+    console.warn(
+      `[DocumentRenderer] the document's adapter "${requested}" is not ` +
+        `registered; rendering with "${fallback.id}" instead. Import ` +
+        `'@crafted-design/editor/adapters/${requested}' for a faithful render, ` +
+        `or pass the adapter prop to choose explicitly.`,
     )
+    adapterId = fallback.id
   }
 
   const theme = parsed.doc.themeId ? getTheme(parsed.doc.themeId) : undefined

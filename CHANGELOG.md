@@ -122,7 +122,16 @@ App build (`npm run build`):
 
 ## [Unreleased]
 
-(none yet)
+### Fixed
+
+- **`<DocumentRenderer>` no longer errors when the document's adapter isn't
+  registered** — it falls back to a registered adapter (with a console warning)
+  instead. Documents are canonical-id based and render under any adapter, so a
+  host that imported a different adapter than the document was saved with (e.g.
+  export with `html`, host uses `shadcn`) now renders rather than showing
+  "Adapter is not registered". An explicit `adapter` prop that isn't registered
+  still errors (the host asked for it); only erroring on the implicit path when
+  NO adapter is registered at all.
 
 ## [1.4.0] — 2026-06-04
 

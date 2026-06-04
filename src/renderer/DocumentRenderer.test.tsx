@@ -90,9 +90,18 @@ describe('DocumentRenderer', () => {
     expect(container.textContent).toContain('Launch page')
   })
 
-  it('falls back gracefully on an unregistered adapter', () => {
-    const d = { ...doc(), adapterId: 'not-registered' }
+  it('falls back to a registered adapter when the document’s adapter is missing', () => {
+    // Document saved with shadcn, but only html is registered in this test —
+    // common when a host imports a different adapter than the doc was saved
+    // with. It should render (via html), not error.
+    const d = { ...doc(), adapterId: 'shadcn' }
     mount(<DocumentRenderer document={d} />)
+    expect(container.querySelector('[role="alert"]')).toBeNull()
+    expect(container.textContent).toContain('Launch page')
+  })
+
+  it('errors when an EXPLICIT adapter prop is not registered', () => {
+    mount(<DocumentRenderer document={doc()} adapter="mui" />)
     expect(container.querySelector('[role="alert"]')).not.toBeNull()
     expect(container.textContent).toContain('not registered')
   })
