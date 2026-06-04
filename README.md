@@ -5,8 +5,15 @@ Pick your design system — shadcn/ui, MUI, or plain HTML (or write your own
 adapter) — drop the editor into a React app, and ship. Documents are plain
 JSON, rendered live by the active adapter.
 
+**AI-native:** it ships an [MCP](https://modelcontextprotocol.io) server, so a
+coding agent (Claude Code/Desktop, Codex, Cursor, …) can build designs through
+tools — and *see and contrast-check its own work* (it renders a real
+screenshot) — producing the same JSON a human would. Few page builders can be
+driven, and visually verified, by an agent.
+
 **[Try it live](https://anhba817.github.io/craftjs-design/try/)** ·
 **[Component gallery](https://anhba817.github.io/craftjs-design/gallery/)** ·
+**[AI / MCP](https://anhba817.github.io/craftjs-design/#mcp)** ·
 **[Docs](https://anhba817.github.io/craftjs-design/)**
 
 > **Stable.** `1.0.0` is the first stable release. The public SDK surface is
@@ -15,6 +22,13 @@ JSON, rendered live by the active adapter.
 
 ## Highlights
 
+- **Build designs with AI** — a built-in [MCP](https://modelcontextprotocol.io)
+  server (`crafted-design-mcp`) exposes the component registry + document model
+  as tools, so an agent can author a design from a prompt: discover components
+  (JSON-Schema-typed props), build the tree, **render it to a real screenshot**,
+  and **check WCAG contrast** before handing back JSON that loads unchanged into
+  `<Editor />` or `<DocumentRenderer />`. Works with Claude Code/Desktop, Codex,
+  Cursor, Windsurf, Gemini CLI, and any MCP client. See [MCP_GUIDE](./docs/MCP_GUIDE.md).
 - **48 canonical components** — layout, content, data display, navigation,
   overlays, feedback, time, media — each rendered by a chosen adapter.
 - **Three built-in adapters** (shadcn, MUI, and dependency-free plain HTML)
@@ -31,9 +45,6 @@ JSON, rendered live by the active adapter.
 - **Standalone rendering** — display saved documents on production pages with
   `<DocumentRenderer />` (`/renderer`, no editor chrome, ~5× smaller), and
   build/edit/validate documents server-side with the `/headless` API.
-- **AI-buildable** — an MCP server (`crafted-design-mcp`) lets an AI agent
-  author and edit documents through tools; the output loads into the editor or
-  the renderer unchanged. See [MCP_GUIDE](./docs/MCP_GUIDE.md).
 - **SDK** for authoring canonicals, adapters, inspector panels, themes, and
   templates without forking — with a `scaffold` CLI that generates a wired-up,
   test-passing skeleton (`npx @crafted-design/editor scaffold adapter my-ds`).

@@ -430,6 +430,7 @@ a:hover{color:var(--accent-deep);text-decoration:underline;text-underline-offset
         <div class="hero-links">
           <a href="try/">Try it live →</a>
           <a href="gallery/">Component gallery →</a>
+          <a href="#mcp">Build with AI (MCP) →</a>
           <a href="#quick-start">Quick start →</a>
           <a href="#sdk">SDK reference →</a>
           ${ghOwner ? `<a href="https://stackblitz.com/github/${esc(ghOwner)}/${esc(ghRepo)}/tree/main/examples/minimal-host" target="_blank" rel="noopener">Open in StackBlitz ↗</a>` : ''}
