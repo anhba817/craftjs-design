@@ -1,16 +1,16 @@
 # Phase 21 — MCP server: let an AI build designs with the library
 
-**Status:** Group A shipped (the `/headless` document API). REPRIORITIZED
-mid-phase: the standalone **`<DocumentRenderer>`** (`/renderer` entry — render
-saved documents on production pages without the editor; Craft `enabled=false`
-preview pipeline, per-instance adapter pin) was pulled forward and shipped
-before the remaining MCP groups. Groups B–E (headless static-HTML render, the
-MCP server bin, AI ergonomics, docs) are ON HOLD until resumed. Note for
-Group B: the static-HTML render cannot reuse the Craft-mounted renderer
-(Frame deserializes in an effect — SSR markup would be empty); it needs the
-direct node-map walk as originally planned, plus a runtime-mode seam for
-`EditableText`/`useStartTextEdit` (they call Craft's `useNode`
-unconditionally today).
+**Status:** COMPLETE. Shipped in 1.3.0 (headless `/headless` + the pulled-
+forward standalone `<DocumentRenderer>` `/renderer`) and in the [Unreleased]
+section (Group B headless static render `renderDocumentToHtml`/
+`outlineDocument`; Group C `crafted-design-mcp` server; Group D/E ergonomics +
+docs). Mid-phase the `<DocumentRenderer>` was pulled forward and `/renderer`
+released ahead of the MCP groups. Group B used the direct node-map walk (the
+Craft-mounted renderer can't SSR — Frame deserializes in an effect), and the
+only editor seam it needed was making `useIsEditing` headless-tolerant
+(EditableText/useStartTextEdit's `useNode` coupling didn't block the HTML
+adapter, so it stayed deferred). `react-dom/server` had to be added to the
+dist externals (it inlined ~1MB + reintroduced a CJS require otherwise).
 **Cuts as:** the next release after `1.2.0` (additive — new public headless API
 + a new `bin`; `1.3.0` recommended).
 **Theme:** expose the editor's document model + canonical registry over the

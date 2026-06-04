@@ -31,6 +31,9 @@ JSON, rendered live by the active adapter.
 - **Standalone rendering** — display saved documents on production pages with
   `<DocumentRenderer />` (`/renderer`, no editor chrome, ~5× smaller), and
   build/edit/validate documents server-side with the `/headless` API.
+- **AI-buildable** — an MCP server (`crafted-design-mcp`) lets an AI agent
+  author and edit documents through tools; the output loads into the editor or
+  the renderer unchanged. See [MCP_GUIDE](./docs/MCP_GUIDE.md).
 - **SDK** for authoring canonicals, adapters, inspector panels, themes, and
   templates without forking — with a `scaffold` CLI that generates a wired-up,
   test-passing skeleton (`npx @crafted-design/editor scaffold adapter my-ds`).

@@ -122,7 +122,19 @@ App build (`npm run build`):
 
 ## [Unreleased]
 
-(none yet)
+### Added
+
+- **`crafted-design-mcp` — an MCP server for AI-driven design.** A
+  [Model Context Protocol](https://modelcontextprotocol.io) server (shipped as
+  a `bin`) that exposes the component registry + document model as 21 tools, so
+  an AI client (Claude Code / Claude Desktop) can author and edit an
+  `EditorDocument` incrementally — discover components (with JSON-Schema
+  props), add/update/move/remove nodes (Pattern A + B), validate, render a
+  structural HTML preview, and export the JSON. The output loads unchanged into
+  `<Editor />` or `<DocumentRenderer />`. `@modelcontextprotocol/sdk` is an
+  **optional peer** (the editor doesn't need it). Build it with the headless
+  static-render helpers `renderDocumentToHtml` / `outlineDocument` (also new on
+  `@crafted-design/editor/headless`). See [MCP_GUIDE.md](./docs/MCP_GUIDE.md).
 
 ## [1.3.0] — 2026-06-04
 

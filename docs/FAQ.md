@@ -32,6 +32,19 @@ the switcher independently; with no props, the legacy behavior (switcher
 visible) is kept. See
 [INTEGRATION_GUIDE.md → Pinning the adapter](./INTEGRATION_GUIDE.md#pinning-the-adapter-host-chosen-design-system).
 
+### Can an AI build designs with this?
+
+Yes — `crafted-design-mcp` is an MCP server that exposes the component registry
++ document model as tools, so an AI client (Claude Code / Claude Desktop) can
+author and edit `EditorDocument`s programmatically. Connect it with:
+
+```bash
+claude mcp add crafted-design -- npx -y @crafted-design/editor crafted-design-mcp
+```
+
+The generated document loads straight into `<Editor />` or
+`<DocumentRenderer />`. See [MCP_GUIDE.md](./MCP_GUIDE.md).
+
 ### How do I start a new adapter / canonical / panel?
 
 Scaffold one — the CLI emits a typed skeleton already wired to

@@ -37,6 +37,7 @@ const GUIDES: Guide[] = [
   { file: 'docs/INTEGRATION_GUIDE.md', title: 'Integration Guide', slug: 'integration', group: 'Getting Started' },
   { file: 'docs/COOKBOOK.md', title: 'Cookbook', slug: 'cookbook', group: 'Guides' },
   { file: 'docs/SDK_GUIDE.md', title: 'SDK Reference', slug: 'sdk', group: 'Guides' },
+  { file: 'docs/MCP_GUIDE.md', title: 'MCP Server (AI)', slug: 'mcp', group: 'Guides' },
   { file: 'docs/TUTORIAL_ADAPTER.md', title: 'Tutorial · Adapter', slug: 'tutorial-adapter', group: 'Guides' },
   { file: 'docs/TUTORIAL_CANONICAL.md', title: 'Tutorial · Canonical', slug: 'tutorial-canonical', group: 'Guides' },
   { file: 'docs/TUTORIAL_PANEL.md', title: 'Tutorial · Panel', slug: 'tutorial-panel', group: 'Guides' },
