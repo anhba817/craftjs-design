@@ -1,6 +1,12 @@
-import { Editor as Craft, Element, Frame } from '@craftjs/core'
+import { Editor as Craft, Element, Frame, useEditor } from '@craftjs/core'
 import { Loader2 } from 'lucide-react'
-import { useEffect, useLayoutEffect } from 'react'
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  type Ref,
+} from 'react'
 import { AdapterProvider, getAdapter } from '../adapters/AdapterContext'
 import { getResolver } from '../craft/resolver'
 import {
@@ -14,6 +20,7 @@ import { ThemeProvider } from '../themes/ThemeProvider'
 import { resolveChromeTheme } from './chromeTheme'
 import type { EditorChromeTheme } from './chromeTheme'
 import { ControlledHydrator, DefaultValueSeeder } from './ControlledHydrator'
+import { applyEnvelope, buildEnvelope, normalizeDocument } from './document/envelope'
 import { resolveEmbeddingMode } from './embedding'
 import { useDocumentChangeEmitter } from './useDocumentChangeEmitter'
 import { CanvasKeyboardRegion } from './canvas/CanvasKeyboardRegion'
@@ -126,17 +133,39 @@ export interface EditorProps {
   hideChrome?: boolean
 }
 
-export function Editor({
-  adapter,
-  allowUserToSwitchAdapter,
-  editorTheme,
-  value,
-  defaultValue,
-  onChange,
-  onChangeDebounceMs,
-  persistence,
-  hideChrome = false,
-}: EditorProps = {}) {
+/**
+ * Phase 23 (P5) — imperative handle on `<Editor>`. Pass a `ref` to read the
+ * current document on demand or set it programmatically without going through
+ * the controlled `value` prop. Redundant with `onChange` / `value` but handy
+ * for "serialize on a Save button click" without holding the doc in state.
+ *
+ * @example
+ *   const ref = useRef<EditorHandle>(null)
+ *   // …
+ *   <Editor ref={ref} />
+ *   <button onClick={() => save(ref.current!.getDocument())}>Save</button>
+ */
+export interface EditorHandle {
+  /** Serialize the live canvas into the current document envelope. */
+  getDocument(): EditorDocument
+  /** Replace the canvas with the given envelope (object or JSON string). */
+  setDocument(doc: EditorDocument | string): void
+}
+
+export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
+  {
+    adapter,
+    allowUserToSwitchAdapter,
+    editorTheme,
+    value,
+    defaultValue,
+    onChange,
+    onChangeDebounceMs,
+    persistence,
+    hideChrome = false,
+  }: EditorProps,
+  ref: Ref<EditorHandle>,
+) {
   // Phase 23 — controlled when `value` is supplied; persistence defaults on
   // but is forced off in controlled mode (`value` is the source of truth).
   const { controlled, persist } = resolveEmbeddingMode({ value, persistence })
@@ -244,6 +273,9 @@ export function Editor({
         resolver={resolver}
         onNodesChange={onChange ? onNodesChange : undefined}
       >
+        {/* Phase 23 (P5) — bridge the imperative handle out of the Craft
+            context (where query/actions live) to the forwarded ref. */}
+        <EditorImperativeHandle handleRef={ref} serializedRef={serializedRef} />
         {/* Phase 23 — controlled (`value`) vs uncontrolled. In controlled mode
             ControlledHydrator owns seeding and the persistence Hydrator is
             bypassed; otherwise the store-backed Hydrator runs (only when
@@ -372,10 +404,41 @@ export function Editor({
       </Craft>
     </AdapterProvider>
   )
-}
+})
 
 // Re-export for App.tsx to wrap the entire editor in a top-shell boundary.
 export { ErrorBoundary, TopShellErrorFallback }
+
+// Phase 23 (P5) — lives inside <Craft> so it can read query/actions, and
+// projects the imperative API onto the ref the host passed to <Editor>.
+// getDocument serializes the live canvas; setDocument applies an envelope and
+// syncs serializedRef so the change doesn't echo back through onChange.
+function EditorImperativeHandle({
+  handleRef,
+  serializedRef,
+}: {
+  handleRef: Ref<EditorHandle>
+  serializedRef: React.RefObject<string | null>
+}) {
+  const { actions, query } = useEditor()
+  useImperativeHandle(
+    handleRef,
+    () => ({
+      getDocument: () => buildEnvelope(query),
+      setDocument: (doc) => {
+        const envelope = normalizeDocument(doc)
+        applyEnvelope(actions, envelope)
+        try {
+          serializedRef.current = query.serialize()
+        } catch {
+          /* query may be briefly unavailable mid-teardown; ignore */
+        }
+      },
+    }),
+    [actions, query, serializedRef],
+  )
+  return null
+}
 
 // Phase 14 § 6.2 — brief loading veil over the canvas until the async
 // document store finishes its first index read (and Hydrator applies the

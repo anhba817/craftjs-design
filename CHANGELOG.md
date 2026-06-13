@@ -124,6 +124,49 @@ App build (`npm run build`):
 
 (none yet)
 
+## [1.6.0] — 2026-06-13
+
+### Added
+
+- **`<Editor>` as a controlled component.** New additive, optional props let a
+  host embed the editor and own the document, instead of the editor owning it:
+  - `value` — controlled document (envelope or JSON string); re-seeds on
+    identity change and forces persistence off (single source of truth).
+  - `defaultValue` — uncontrolled one-time seed; edits stay internal, surfaced
+    via `onChange`.
+  - `onChange` (+ `onChangeDebounceMs`) — debounced change callback firing on
+    structural **and** prop/style edits, with the full `EditorDocument`. The
+    edit→onChange→value round-trip is loop-guarded.
+  - `persistence` (default `true`) — opt out of the built-in IndexedDB store;
+    no I/O when off.
+  - `hideChrome` — drop the document-management chrome (Save/Load/Import/Export/
+    Share bar, onboarding tour, quota banners, cross-tab watcher), keeping the
+    toolbox + canvas + inspector.
+  - An imperative `ref` (`EditorHandle`) with `getDocument()` / `setDocument()`.
+
+  With none of these passed, standalone `<Editor />` behavior is unchanged.
+  Runnable end-to-end example in `examples/controlled-host`; see
+  [INTEGRATION_GUIDE → Embedding as a controlled component](./docs/INTEGRATION_GUIDE.md#embedding-as-a-controlled-component-160).
+
+### Fixed
+
+- **The full SDK type surface is now resolvable from `@crafted-design/editor`
+  and `/core`.** The build emits the SDK runtime at the flat path
+  `dist-lib/sdk.js` while declarations live at `dist-lib/sdk/index.d.ts`; a bare
+  `export * from './sdk'` in `core.tsx` resolved the specifier to the `.js` file
+  (which has no sibling `.d.ts`), so the entire SDK surface (`registerCanonical`,
+  `registerAdapter`, `setStorageAdapter`, the canonical/style/theme helpers, the
+  `StorageAdapter` type, …) silently dropped out of the `/` and `/core` type
+  entries — present since `1.0.0`. The runtime was always correct; only the
+  types were missing. Fixed by re-exporting from `./sdk/index`, and guarded by
+  `examples/minimal-host` importing an SDK name from `/core` (checked in CI via
+  `check:example`). Importing directly from `/sdk` was unaffected.
+
+- **Re-seeding `<Editor>` on remount.** The module-level hydration latch now
+  resets when `<Editor>` unmounts, so an SPA that mounts a fresh editor for a
+  different document re-hydrates instead of opening blank — while still
+  surviving the within-session AdapterProvider remount (no adapter snap-back).
+
 ## [1.5.0] — 2026-06-04
 
 ### Added

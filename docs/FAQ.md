@@ -94,9 +94,28 @@ No editor chrome, a fraction of the editor's bundle — see
 
 ### How do I save documents to my own backend?
 
-Implement the `StorageAdapter` interface and register it with
-`setStorageAdapter` before rendering `<Editor />`. The default is IndexedDB →
-localStorage. See [COOKBOOK.md → Server-backed storage](./COOKBOOK.md#server-backed-storage).
+Two ways:
+
+1. **Controlled component (1.6.0)** — own the document in your own state and use
+   `onChange` (or the imperative `ref.getDocument()`): `JSON.stringify(doc)` is
+   what you persist; pass it back via `value` to restore. No editor persistence
+   involved (`persistence={false}`). See
+   [INTEGRATION_GUIDE → Embedding as a controlled component](./INTEGRATION_GUIDE.md#embedding-as-a-controlled-component-160).
+2. **StorageAdapter** — keep the editor's built-in document lifecycle but point
+   it at your backend: implement the `StorageAdapter` interface and register it
+   with `setStorageAdapter` before rendering `<Editor />`. The default is
+   IndexedDB → localStorage. See
+   [COOKBOOK.md → Server-backed storage](./COOKBOOK.md#server-backed-storage).
+
+### How do I read the design document in code?
+
+If the editor is **controlled**, you already have it — it's the `value` you hold
+in state, kept current by `onChange`. Otherwise pass a `ref` and call
+`ref.current.getDocument()` for an on-demand `EditorDocument` envelope (the same
+shape `Export` writes). To build or transform a document **without** an editor
+mounted, use the headless [`buildDocument`](./SDK_GUIDE.md) /
+`renderDocumentToHtml`. See
+[INTEGRATION_GUIDE → Embedding as a controlled component](./INTEGRATION_GUIDE.md#embedding-as-a-controlled-component-160).
 
 ### Does importing the SDK pull the whole editor into my bundle?
 

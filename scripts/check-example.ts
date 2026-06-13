@@ -21,7 +21,11 @@ import { resolve } from 'node:path'
 const ROOT = resolve(import.meta.dirname, '..')
 const DIST = resolve(ROOT, 'dist-lib')
 
-const EXAMPLES = ['examples/minimal-host', 'examples/renderer-host']
+const EXAMPLES = [
+  'examples/minimal-host',
+  'examples/renderer-host',
+  'examples/controlled-host',
+]
 
 // Published specifier → local declaration file (relative to each example dir).
 const PATHS = {

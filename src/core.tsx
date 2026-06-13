@@ -29,7 +29,7 @@ import './persistence/templates'
 
 // Editor runtime surface.
 export { Editor, ErrorBoundary, TopShellErrorFallback } from './editor/Editor'
-export type { EditorProps } from './editor/Editor'
+export type { EditorProps, EditorHandle } from './editor/Editor'
 export type {
   EditorChromeTheme,
   EditorChromeTokens,

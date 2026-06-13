@@ -104,6 +104,75 @@ function App() {
 }
 ```
 
+## Embedding as a controlled component (1.6.0)
+
+By default `<Editor>` is a self-contained app: it owns its document, persists to
+IndexedDB, and shows its own Save/Load chrome. To embed it inside your own UI —
+a step in a multi-step form, a drawer, a tab — drive it as a **controlled
+component** instead. All of these props are additive and optional; with none
+passed, behavior is identical to the minimal embed above.
+
+```tsx
+import { Editor, type EditorHandle } from '@crafted-design/editor/core'
+import type { EditorDocument } from '@crafted-design/editor/core'
+
+function CardEditor() {
+  // The host owns the document.
+  const [doc, setDoc] = useState<EditorDocument>(seedFromYourBackend)
+
+  return (
+    <Editor
+      adapter="shadcn"
+      value={doc}                       // controlled: single source of truth
+      onChange={(next) => setDoc(next)} // debounced; persist with JSON.stringify(next)
+      persistence={false}               // never touch the built-in IndexedDB store
+      hideChrome                        // drop the Save/Load bar — render your own
+    />
+  )
+}
+```
+
+| Prop | Type | Effect |
+|---|---|---|
+| `value` | `EditorDocument \| string` | **Controlled.** The document the editor renders; re-seeds whenever its identity changes. Persistence is forced off. |
+| `defaultValue` | `EditorDocument \| string` | **Uncontrolled** one-time seed on mount; edits stay internal, surfaced via `onChange`. Ignored when `value` is set. |
+| `onChange` | `(doc: EditorDocument) => void` | Fired (debounced) on every change — structural edits **and** prop/style edits. The same envelope `Export` produces. |
+| `onChangeDebounceMs` | `number` | Debounce window for `onChange`. Default `150`. |
+| `persistence` | `boolean` | Whether the editor manages its own IndexedDB store/autosave. Default `true`. `value` implies `false`. |
+| `hideChrome` | `boolean` | Hide document-management chrome (Save/Load/Import/Export/Share bar, onboarding tour, quota banners, cross-tab watcher). Keeps toolbox + canvas + inspector. |
+
+Both `value` and `defaultValue` accept an `EditorDocument` envelope **or** its
+JSON string — each is validated + migrated on the way in, exactly like an
+Import. Build a seed without an editor using the headless
+[`buildDocument`](./SDK_GUIDE.md), or feed a string straight from your backend.
+
+**No feedback loop.** The natural controlled wiring — `edit → onChange →
+setState → new value → re-apply` — does **not** loop: the editor tracks the last
+serialized tree and skips re-applying a `value` it already produced. Re-applying
+an identical envelope is a no-op.
+
+**Reading on demand (imperative ref).** Redundant with `onChange` but convenient
+for a "serialize on click" button without holding the doc in state:
+
+```tsx
+const ref = useRef<EditorHandle>(null)
+// …
+<Editor ref={ref} />
+<button onClick={() => save(ref.current!.getDocument())}>Save</button>
+<button onClick={() => ref.current!.setDocument(loaded)}>Load</button>
+```
+
+A runnable end-to-end example (controlled `value` + `onChange` + ref + a live
+`<DocumentRenderer>` preview) lives in
+[`examples/controlled-host`](../examples/controlled-host).
+
+> **CSS isolation.** This controlled API removes the persistence/chrome/seed
+> machinery. Fully **inline, iframe-free** embedding into an app already running
+> Tailwind v4 additionally needs the scoped stylesheet
+> (`@crafted-design/editor/index.scoped.css`), which ships in a follow-up phase.
+> Until then, mount the editor on its own route, or keep a single iframe purely
+> for CSS isolation — see [Caveats](#caveats).
+
 ## Pinning the adapter (host-chosen design system)
 
 The product model is that **you** — the host — choose the design system; the
