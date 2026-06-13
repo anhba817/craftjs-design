@@ -10,6 +10,13 @@ pre-commit:
   jobs:
     - name: lint
       glob: '*.{ts,tsx}'
+      # The standalone example sub-projects have their own tsconfig (extra
+      # TSConfig roots the parser can't disambiguate) and are excluded from the
+      # repo's eslint/tsc — drift-checked by `check:example` instead. Exclude
+      # them here too, else passing one as an explicit staged file (multi-file
+      # projectService run) trips the multi-TSConfigRoot parser error.
+      exclude:
+        - 'examples/**/*'
       run: npx eslint {staged_files}
     - name: typecheck
       # tsc -b is project-wide (no per-file mode with project references),

@@ -38,7 +38,18 @@ export type { ErrorFallbackProps } from './editor/errors/ErrorBoundary'
 
 // Full SDK — re-exported so consumers don't need a separate
 // @crafted-design/editor/sdk import path.
-export * from './sdk'
+//
+// Phase 23 (P7) — MUST be `./sdk/index`, not `./sdk`. The dist build emits the
+// SDK runtime bundle at the flat path `dist-lib/sdk.js` (per the `./sdk`
+// exports entry) while the declarations live at `dist-lib/sdk/index.d.ts`.
+// A bare `export * from './sdk'` resolves the specifier to `dist-lib/sdk.js`
+// (a file beats the `sdk/` directory) — which has NO sibling `.d.ts`, so the
+// ENTIRE SDK type surface silently dropped out of `/core` and the `.` entry
+// (registerCanonical, setStorageAdapter, …). Pointing at `./sdk/index`
+// resolves straight to the declaration file (no shadowing sibling), restoring
+// the surface. Regression-guarded by examples/minimal-host (it imports an SDK
+// name from `/core`, type-checked in CI via check:example).
+export * from './sdk/index'
 
 // State management surface for hosts driving the editor programmatically.
 export { useEditorStore } from './state/editorStore'

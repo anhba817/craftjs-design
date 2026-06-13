@@ -114,6 +114,16 @@ export interface EditorProps {
    * IndexedDB.
    */
   persistence?: boolean
+  /**
+   * Phase 23 — hide the document-management chrome: the top Save/Load/Import/
+   * Export/Share/DocumentMenu bar, the onboarding tour, the storage-quota
+   * banners + modal, and the cross-tab concurrent-edit watcher. The editing
+   * surface (toolbox, canvas, inspector) stays. For an embed that owns the
+   * document via `value`/`defaultValue` + `onChange` and renders its own
+   * save/load UI. Defaults to `false` (full chrome). Independent of
+   * {@link persistence} — but typically paired with it.
+   */
+  hideChrome?: boolean
 }
 
 export function Editor({
@@ -125,6 +135,7 @@ export function Editor({
   onChange,
   onChangeDebounceMs,
   persistence,
+  hideChrome = false,
 }: EditorProps = {}) {
   // Phase 23 — controlled when `value` is supplied; persistence defaults on
   // but is forced off in controlled mode (`value` is the source of truth).
@@ -264,17 +275,20 @@ export function Editor({
         <CanvasSearch />
         {/* Phase 11 § 3.8 — first-load onboarding tour. Reads/writes
             the completion flag in localStorage; the document menu's
-            "Show tour again" entry replays it. */}
-        <OnboardingTour />
+            "Show tour again" entry replays it.
+            Phase 23 — document-management chrome, hidden under `hideChrome`. */}
+        {!hideChrome && <OnboardingTour />}
         {/* Phase 9 § 1.6 — toast for uncaught async errors (effects,
             event handlers, fetch promises) that the React render-path
             ErrorBoundaries don't see. Critical async failures
             (Hydrator deserialize) still bubble to a boundary; this
-            handles everything else. */}
+            handles everything else. Kept even under `hideChrome` — it's
+            generic error surfacing, not document-management UI. */}
         <AsyncErrorBanner />
         {/* Phase 9 § 1.7 — blocking modal when localStorage save fails
-            with QuotaExceededError. */}
-        <StorageQuotaErrorModal />
+            with QuotaExceededError. Persistence chrome → hidden under
+            `hideChrome`. */}
+        {!hideChrome && <StorageQuotaErrorModal />}
         {/* Phase 19 — `cd-editor-chrome` marks the editor shell (a styling
             hook for chrome-wide CSS like scrollbars). The chrome THEME is
             applied higher up — data-editor-theme + --ed-* variables go on
@@ -284,13 +298,17 @@ export function Editor({
             intentionally transparent and historically showed the white
             <body> through — the backdrop is what themes them. */}
         <div className="cd-editor-chrome flex h-screen flex-col bg-ed-surface text-ed-text">
-          <SaveLoadBar />
+          {/* Phase 23 — the top document bar + persistence banners + cross-tab
+              watcher are document-management chrome, dropped under `hideChrome`
+              (an embed renders its own save/load UI). The editing surface
+              below (toolbox, canvas, inspector) always stays. */}
+          {!hideChrome && <SaveLoadBar />}
           {/* Phase 9 § 1.7 — non-blocking warning when usage ≥ 80%. */}
-          <StorageQuotaBanner />
+          {!hideChrome && <StorageQuotaBanner />}
           {/* Phase 9 § 1.8 — cross-tab edit detected; user picks which
               version wins. */}
-          <ConcurrentEditBanner />
-          <ConcurrentEditWatcherMount />
+          {!hideChrome && <ConcurrentEditBanner />}
+          {!hideChrome && <ConcurrentEditWatcherMount />}
           {/* Phase 11 § 3.2 — global Cmd+C/X/V/D clipboard shortcuts. */}
           <ClipboardKeyboardMount />
           {/* Phase 11 § 3.3 — mirror Craft's events.selected into

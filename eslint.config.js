@@ -16,8 +16,12 @@ export default defineConfig([
     // Standalone sub-projects: their own tsconfig/vite/package.json (extra
     // candidate TSConfig roots the parser can't disambiguate). Excluded from
     // the repo's tsc build too; drift-checked separately by `check:example`.
-    'examples/minimal-host',
-    'examples/renderer-host',
+    // The `/**` is load-bearing: a bare dir pattern is skipped by `eslint .`'s
+    // traversal but does NOT match an explicitly-passed nested file (how the
+    // lefthook pre-commit hook invokes eslint on staged files), which would
+    // then hit the multi-TSConfigRoot parser error.
+    'examples/minimal-host/**',
+    'examples/renderer-host/**',
   ]),
   {
     files: ['**/*.{ts,tsx}'],
