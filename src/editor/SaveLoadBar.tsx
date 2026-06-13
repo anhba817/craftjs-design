@@ -4,10 +4,7 @@ import { useEditorStore } from '@/state/editorStore'
 import { useDocumentStore } from '@/persistence/documentStore'
 import { downloadDocument } from '@/persistence/exportDocument'
 import { ImportError, importDocumentFromFile } from '@/persistence/importDocument'
-import {
-  CURRENT_DOCUMENT_VERSION,
-  type EditorDocument,
-} from '@/persistence/schema'
+import { applyEnvelope, buildEnvelope } from './document/envelope'
 import { AdapterSwitcher } from './AdapterSwitcher'
 import { ColorModeToggle } from './ColorModeToggle'
 import { PreviewToggle } from './PreviewToggle'
@@ -24,25 +21,9 @@ export function SaveLoadBar() {
   // adapters (<Editor allowUserToSwitchAdapter />). Hidden when pinned.
   const allowAdapterSwitch = useEditorStore((s) => s.allowAdapterSwitch)
 
-  const currentEnvelope = (): EditorDocument => {
-    const { activeThemeId, activeAdapterId, colorMode } =
-      useEditorStore.getState()
-    return {
-      version: CURRENT_DOCUMENT_VERSION,
-      adapterId: activeAdapterId,
-      themeId: activeThemeId,
-      colorMode,
-      craftJson: query.serialize(),
-    }
-  }
-
-  const applyEnvelope = (doc: EditorDocument) => {
-    actions.deserialize(doc.craftJson)
-    const store = useEditorStore.getState()
-    if (doc.themeId) store.setActiveTheme(doc.themeId)
-    if (doc.colorMode) store.setColorMode(doc.colorMode)
-    store.setActiveAdapter(doc.adapterId)
-  }
+  // Phase 23 § Decision 3 — both delegate to the shared envelope module so
+  // Save / Load / Import emit the exact same shape as onChange + the ref.
+  const currentEnvelope = () => buildEnvelope(query)
 
   const handleSave = () => {
     useDocumentStore.getState().saveActiveDocument(currentEnvelope())
@@ -53,7 +34,7 @@ export function SaveLoadBar() {
       .getState()
       .loadActiveDocument()
       .then((doc) => {
-        if (doc) applyEnvelope(doc)
+        if (doc) applyEnvelope(actions, doc)
       })
   }
 
@@ -80,7 +61,7 @@ export function SaveLoadBar() {
     if (!file) return
     try {
       const doc = await importDocumentFromFile(file)
-      applyEnvelope(doc)
+      applyEnvelope(actions, doc)
       // Persist as the active document so a reload restores the imported
       // content. Group E adds an "Import as new document" affordance that
       // creates a new entry rather than overwriting the active one.

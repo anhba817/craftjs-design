@@ -17,6 +17,17 @@ import { applyEnvelopeSafely } from './errors/applyEnvelopeSafely'
 // dev HMR resets only by the cost of reloading the module (acceptable).
 let hydrated = false
 
+// Phase 23 § Decision 5 — reset the within-realm latch when the OUTER <Editor>
+// unmounts. The flag is module-level so it survives the AdapterProvider Wrapper
+// remount mid-session (a useRef would re-fire restore and snap the adapter pick
+// back). But across an <Editor> unmount/remount — e.g. an SPA stepping to a new
+// form that mounts a fresh editor — the next mount MUST re-hydrate, so Editor's
+// effect cleanup calls this. Controlled mode (a `value` prop) bypasses the
+// store Hydrator entirely and doesn't depend on this.
+export function _resetHydrationLatch(): void {
+  hydrated = false
+}
+
 export function Hydrator() {
   const { actions } = useEditor()
   // Phase 14 § 6.2 — wait for the async bootstrap to resolve the index

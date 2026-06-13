@@ -7,11 +7,15 @@ import {
   bootstrapDocumentStore,
   useDocumentStore,
 } from '../persistence/documentStore'
+import type { EditorDocument } from '../persistence/schema'
 import { _markEditorMounted, getComponent } from '../registry/registry'
 import { useEditorStore } from '../state/editorStore'
 import { ThemeProvider } from '../themes/ThemeProvider'
 import { resolveChromeTheme } from './chromeTheme'
 import type { EditorChromeTheme } from './chromeTheme'
+import { ControlledHydrator, DefaultValueSeeder } from './ControlledHydrator'
+import { resolveEmbeddingMode } from './embedding'
+import { useDocumentChangeEmitter } from './useDocumentChangeEmitter'
 import { CanvasKeyboardRegion } from './canvas/CanvasKeyboardRegion'
 import { ResizeOverlay } from './canvas/ResizeOverlay'
 import { SecondarySelectionOutlines } from './canvas/SecondarySelectionOutlines'
@@ -30,7 +34,7 @@ import {
   CanvasErrorFallback,
   TopShellErrorFallback,
 } from './errors/fallbacks'
-import { Hydrator } from './Hydrator'
+import { Hydrator, _resetHydrationLatch } from './Hydrator'
 import { Inspector } from './Inspector'
 import { LeftAside } from './LeftAside'
 import { OverlayStage } from './OverlayStage'
@@ -74,18 +78,76 @@ export interface EditorProps {
    * this is host policy: end users get no chrome-theme control.
    */
   editorTheme?: EditorChromeTheme
+  /**
+   * Phase 23 — **controlled** document. When set, `value` is the single source
+   * of truth: the editor re-seeds whenever `value`'s identity changes, the
+   * built-in persistence (IndexedDB) is bypassed entirely, and edits are
+   * surfaced via {@link onChange}. Accepts an {@link EditorDocument} envelope
+   * or its JSON string (both validated + migrated like an Import). For a
+   * one-time seed without taking over the document lifecycle, use
+   * {@link defaultValue} instead.
+   */
+  value?: EditorDocument | string
+  /**
+   * Phase 23 — **uncontrolled** initial seed, applied once on mount. Edits stay
+   * internal (and persist unless `persistence={false}`), surfaced via
+   * {@link onChange}. Ignored when {@link value} is set. Accepts an envelope
+   * object or its JSON string.
+   */
+  defaultValue?: EditorDocument | string
+  /**
+   * Phase 23 — called (debounced) whenever the document changes, with the
+   * current {@link EditorDocument} envelope. Fires on structural edits AND
+   * prop/style edits. The same shape Save / Export produce. Stringify it for
+   * your own persistence: `onChange={(doc) => save(JSON.stringify(doc))}`.
+   */
+  onChange?: (doc: EditorDocument) => void
+  /**
+   * Phase 23 — debounce window (ms) for {@link onChange}. Defaults to 150.
+   */
+  onChangeDebounceMs?: number
+  /**
+   * Phase 23 — whether the editor manages its own document persistence
+   * (IndexedDB store, autosave, the document index). Defaults to `true`. Set
+   * `false` (or pass {@link value}, which implies it) for an embed that owns
+   * the document itself via `defaultValue` + `onChange` and never touches
+   * IndexedDB.
+   */
+  persistence?: boolean
 }
 
 export function Editor({
   adapter,
   allowUserToSwitchAdapter,
   editorTheme,
+  value,
+  defaultValue,
+  onChange,
+  onChangeDebounceMs,
+  persistence,
 }: EditorProps = {}) {
+  // Phase 23 — controlled when `value` is supplied; persistence defaults on
+  // but is forced off in controlled mode (`value` is the source of truth).
+  const { controlled, persist } = resolveEmbeddingMode({ value, persistence })
+
+  // Phase 23 — onChange rides Craft's onNodesChange (debounced). The shared
+  // serializedRef lets ControlledHydrator dedupe the onChange→value→apply echo.
+  const { onNodesChange, serializedRef } = useDocumentChangeEmitter(
+    onChange,
+    onChangeDebounceMs,
+  )
+
   // Phase 6 — flip the registry's post-mount flag so any registerCanonical
   // calls after this point warn instead of silently failing to appear.
   useEffect(() => {
     _markEditorMounted()
   }, [])
+
+  // Phase 23 § Decision 5 — clear the within-realm hydration latch when THIS
+  // <Editor> unmounts, so the next mount (e.g. an SPA stepping to a new form)
+  // re-hydrates. The latch stays module-level to survive the AdapterProvider
+  // Wrapper remount mid-session; only the outer unmount resets it.
+  useEffect(() => () => _resetHydrationLatch(), [])
 
   // Apply the host's adapter policy before first paint (layout effect — no
   // visible flash; an adapter swap is safe by design, the wrapper tree stays
@@ -139,9 +201,13 @@ export function Editor({
   // adapter's one-time init (legacy migration / IDB import), reads the index,
   // flips `ready`, and seeds the storage-quota percent. Hydrator waits on
   // `ready` before applying the active document.
+  // Phase 23 — skipped when persistence is off / controlled: no IndexedDB I/O,
+  // and the canvas isn't gated on the store's `ready` flag (see persist prop
+  // threaded to DocumentLoadingOverlay below).
   useEffect(() => {
+    if (!persist) return
     void bootstrapDocumentStore()
-  }, [])
+  }, [persist])
 
   const resolver = getResolver()
   const boxDef = getComponent('box')
@@ -163,8 +229,26 @@ export function Editor({
   // localized failures so the rest of the editor stays alive.
   return (
     <AdapterProvider>
-      <Craft resolver={resolver}>
-        <Hydrator />
+      <Craft
+        resolver={resolver}
+        onNodesChange={onChange ? onNodesChange : undefined}
+      >
+        {/* Phase 23 — controlled (`value`) vs uncontrolled. In controlled mode
+            ControlledHydrator owns seeding and the persistence Hydrator is
+            bypassed; otherwise the store-backed Hydrator runs (only when
+            persistence is on). defaultValue seeds an uncontrolled embed once. */}
+        {controlled && value !== undefined ? (
+          <ControlledHydrator value={value} serializedRef={serializedRef} />
+        ) : persist ? (
+          <Hydrator />
+        ) : (
+          defaultValue !== undefined && (
+            <DefaultValueSeeder
+              value={defaultValue}
+              serializedRef={serializedRef}
+            />
+          )
+        )}
         <ResolverUpdater />
         <ResizeOverlay />
         {/* Phase 11 § 3.3 — dashed outlines for every non-primary
@@ -254,7 +338,7 @@ export function Editor({
                   {/* Phase 14 § 6.2 — cover the canvas while the async
                       document bootstrap is in flight so the user doesn't
                       see / interact with the pre-hydration seed. */}
-                  <DocumentLoadingOverlay />
+                  <DocumentLoadingOverlay persist={persist} />
                 </ErrorBoundary>
               </main>
             </ThemeProvider>
@@ -279,9 +363,11 @@ export { ErrorBoundary, TopShellErrorFallback }
 // document store finishes its first index read (and Hydrator applies the
 // active document). Subscribes to the store's `ready` flag; renders
 // nothing once ready so it adds no overhead to the steady state.
-function DocumentLoadingOverlay() {
+function DocumentLoadingOverlay({ persist }: { persist: boolean }) {
   const ready = useDocumentStore((s) => s.ready)
-  if (ready) return null
+  // Phase 23 — with persistence off the store is never bootstrapped (so
+  // `ready` stays false); the canvas renders immediately, no veil.
+  if (!persist || ready) return null
   return (
     <div
       className="absolute inset-0 z-20 flex items-center justify-center bg-ed-surface-3/60 backdrop-blur-sm"
