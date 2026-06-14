@@ -62,8 +62,13 @@ const BUDGETS: Budget[] = [
   { label: 'CLI (cli.js)', entry: 'cli.js', maxGzipKB: 5 },
 ]
 
-// CSS is a single emitted file (not code-split), checked directly.
-const CSS_BUDGET = { label: 'editor CSS (index.css)', file: 'index.css', maxGzipKB: 150 }
+// CSS is emitted as whole files (not code-split), checked directly. The scoped
+// sheet (Phase 24) is the same stylesheet with every selector prefixed +
+// `.dark` duplicated, so it runs a bit larger.
+const CSS_BUDGETS = [
+  { label: 'editor CSS (index.css)', file: 'index.css', maxGzipKB: 150 },
+  { label: 'scoped CSS (index.scoped.css)', file: 'index.scoped.css', maxGzipKB: 170 },
+]
 
 function gzipKB(path: string): number {
   return gzipSync(readFileSync(path)).length / 1024
@@ -124,12 +129,13 @@ function main(): void {
     rows.push({ label: b.label, sizeKB, maxKB: b.maxGzipKB, ok })
   }
 
-  // CSS (single file).
-  if (existsSync(join(DIST_DIR, CSS_BUDGET.file))) {
-    const sizeKB = gzipKB(join(DIST_DIR, CSS_BUDGET.file))
-    const ok = sizeKB <= CSS_BUDGET.maxGzipKB
+  // CSS (whole files).
+  for (const b of CSS_BUDGETS) {
+    if (!existsSync(join(DIST_DIR, b.file))) continue
+    const sizeKB = gzipKB(join(DIST_DIR, b.file))
+    const ok = sizeKB <= b.maxGzipKB
     if (!ok) failed = true
-    rows.push({ label: CSS_BUDGET.label, sizeKB, maxKB: CSS_BUDGET.maxGzipKB, ok })
+    rows.push({ label: b.label, sizeKB, maxKB: b.maxGzipKB, ok })
   }
 
   console.log('Bundle size (gzipped, transitive per entry; externals excluded):')

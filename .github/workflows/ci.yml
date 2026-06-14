@@ -49,6 +49,9 @@ jobs:
       - name: Build (dist)
         run: npm run build:dist
 
+      - name: Scoped stylesheet guard
+        run: npm run check:scoped-css
+
       - name: Bundle budget
         run: npm run check:size
 

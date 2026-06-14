@@ -56,6 +56,7 @@
       "import": "./dist-lib/vite-plugin.js"
     },
     "./index.css": "./dist-lib/index.css",
+    "./index.scoped.css": "./dist-lib/index.scoped.css",
     "./package.json": "./package.json"
   },
   "sideEffects": [
@@ -80,7 +81,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:dist": "tsc -b && vite build --config vite.config.dist.ts && npm run copy-cli-templates && npm run build:harness",
+    "build:dist": "tsc -b && vite build --config vite.config.dist.ts && npm run build:scoped-css && npm run copy-cli-templates && npm run build:harness",
+    "build:scoped-css": "tsx scripts/build-scoped-css.ts",
     "build:demo": "npm run gen-safelist && vite build --config vite.config.demo.ts",
     "build:harness": "npm run gen-safelist && vite build --config vite.config.harness.ts",
     "build:gallery": "tsx scripts/build-gallery.ts",
@@ -98,6 +100,7 @@
     "docs:matrix": "tsx scripts/adapter-matrix.ts",
     "check:size": "tsx scripts/check-bundle-size.ts",
     "check:chrome": "tsx scripts/check-chrome-tokens.ts",
+    "check:scoped-css": "tsx scripts/check-scoped-css.ts",
     "check:cli": "tsx scripts/check-cli-scaffold.ts",
     "check:example": "tsx scripts/check-example.ts",
     "copy-cli-templates": "tsx scripts/copy-cli-templates.ts",
