@@ -68,7 +68,9 @@ export default function App() {
             fontSize: 12,
             borderRadius: 6,
             border: '1px solid #8884',
-            background: '#0008',
+            // Opaque dark — a semi-transparent black (#0008) blends to ~#777 on
+            // a light page, failing WCAG contrast with white text (axe: 4.47:1).
+            background: '#111827',
             color: '#fff',
             cursor: 'pointer',
           }}
