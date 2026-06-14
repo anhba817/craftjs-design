@@ -87,10 +87,11 @@ jobs:
       - name: Install Chromium (+ system deps)
         run: npx playwright install --with-deps chromium
 
-      - name: Build render harness
-        # renderImage loads dist-lib/harness/; build:harness emits just that
-        # (not the full dist), so this job stays lean.
-        run: npm run build:harness
+      - name: Build (dist)
+        # The browser suites need built artifacts: renderImage loads
+        # dist-lib/harness/, and the scoped-CSS fixture loads
+        # dist-lib/index.scoped.css. build:dist emits both (+ harness).
+        run: npm run build:dist
 
-      - name: Browser render + contrast tests
-        run: npx vitest run src/mcp/renderImage.test.ts
+      - name: Browser tests (render + contrast + scoped CSS)
+        run: npx vitest run src/mcp/renderImage.test.ts src/style/scopedCss.browser.test.ts

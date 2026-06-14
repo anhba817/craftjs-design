@@ -9,9 +9,7 @@
 //   - `ref`           — read/replace the document imperatively on demand
 //
 // No iframe, no postMessage, no custom StorageAdapter, no DOM-clicking a Save
-// button — the workarounds a controlled component makes unnecessary. (Full
-// inline CSS isolation into a Tailwind-v4 host is the follow-up scoped-CSS
-// phase; this example imports the global index.css.)
+// button — the workarounds a controlled component makes unnecessary.
 import { useCallback, useRef, useState } from 'react'
 import { Editor, type EditorHandle } from '@crafted-design/editor/core'
 import type { EditorDocument } from '@crafted-design/editor/core'
@@ -19,7 +17,12 @@ import { DocumentRenderer } from '@crafted-design/editor/renderer'
 import { buildDocument } from '@crafted-design/editor/headless'
 // Register the design system the editor + renderer use (side-effect import).
 import '@crafted-design/editor/adapters/shadcn'
-import '@crafted-design/editor/index.css'
+// The SCOPED stylesheet (Phase 24): every rule is prefixed with
+// `.crafted-design-scope`, so the editor can be embedded INLINE in an app
+// already running Tailwind v4 with no double preflight and no token clobbering
+// — no iframe needed. (A non-Tailwind / standalone host can use the global
+// `@crafted-design/editor/index.css` instead.)
+import '@crafted-design/editor/index.scoped.css'
 
 // A document the host "loaded from its backend". Built headlessly (no editor
 // needed) — exactly what a server or a previous session would hand you.

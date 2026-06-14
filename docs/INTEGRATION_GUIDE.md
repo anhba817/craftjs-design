@@ -35,7 +35,8 @@ adapters you want, so you don't bundle a UI library you never render:
 | `@crafted-design/editor/adapters/html` | Registers just the plain-HTML adapter (no UI library). | none |
 | `@crafted-design/editor/adapters/mui` | Registers just the MUI adapter. | `@mui/material`, `@emotion/react`, `@emotion/styled` |
 | `@crafted-design/editor/sdk` | SDK-only surface (`registerAdapter`, `registerCanonical`, `registerPanel`, `registerTheme`, `registerTemplate`, `registerFontToken`, `useNodeClasses`, all the matching types). No editor UI — use when authoring a canonical / adapter / panel without pulling in `<Editor />`. | none |
-| `@crafted-design/editor/index.css` | Tailwind CSS bundle. Import once per page; no JS overhead. | none |
+| `@crafted-design/editor/index.css` | Tailwind CSS bundle (global preflight + `:root` tokens). Import once per page; no JS overhead. | none |
+| `@crafted-design/editor/index.scoped.css` | Same stylesheet, every rule scoped under `.crafted-design-scope` — for embedding inline in a Tailwind-v4 host without a double preflight / token clobbering. Use *instead of* `index.css`. See [Inline embedding](#inline-embedding-into-a-tailwind-v4-app-170). | none |
 
 Typical setups:
 
@@ -167,11 +168,57 @@ A runnable end-to-end example (controlled `value` + `onChange` + ref + a live
 [`examples/controlled-host`](../examples/controlled-host).
 
 > **CSS isolation.** This controlled API removes the persistence/chrome/seed
-> machinery. Fully **inline, iframe-free** embedding into an app already running
-> Tailwind v4 additionally needs the scoped stylesheet
-> (`@crafted-design/editor/index.scoped.css`), which ships in a follow-up phase.
-> Until then, mount the editor on its own route, or keep a single iframe purely
-> for CSS isolation — see [Caveats](#caveats).
+> machinery. To embed **inline** in an app already running Tailwind v4 (no
+> iframe), import the scoped stylesheet — see
+> [Inline embedding into a Tailwind-v4 app](#inline-embedding-into-a-tailwind-v4-app-170) below.
+
+## Inline embedding into a Tailwind-v4 app (1.7.0)
+
+The default stylesheet `@crafted-design/editor/index.css` is a full Tailwind v4
+build — a global preflight (the `*` reset) + the editor's `:root` design
+tokens. Imported into an app that **already runs Tailwind v4**, that means a
+second global preflight and clashing `:root` tokens (the editor's `--primary`,
+`--background`, … vs. yours). That's why, historically, embedding meant an
+iframe.
+
+Instead, import the **scoped** stylesheet:
+
+```tsx
+// in a Tailwind-v4 host — INSTEAD of index.css:
+import '@crafted-design/editor/index.scoped.css'
+
+<Editor value={doc} onChange={setDoc} persistence={false} hideChrome />
+```
+
+Every rule in it is prefixed with `.crafted-design-scope` (and the editor's
+`:root` tokens are rehomed onto that class), which `<Editor>` and
+`<DocumentRenderer>` put on their root. So:
+
+- The editor's preflight resets **only inside** the editor subtree — your page
+  isn't double-reset.
+- The editor's tokens live **only inside** `.crafted-design-scope` — your host's
+  `:root` / `--color-*` tokens are untouched, and vice-versa.
+- Runtime overlays (Modal/Drawer/Toast) portal into a scope-classed container,
+  so they're styled correctly even though they're DOM-detached.
+
+**When to use which:**
+
+| Host | Stylesheet |
+|---|---|
+| Already runs Tailwind v4, embedding inline | `index.scoped.css` |
+| No CSS framework / standalone / its own route / iframe | `index.css` (global) |
+
+Notes & limits:
+- The scoped sheet **omits a global preflight** — it assumes the host already
+  has one (Tailwind v4). A host with no reset at all should use `index.css`.
+- The editor owns its look: scoping makes the editor's utilities
+  un-overridable by host CSS (intended). Theme the **canvas** via `registerTheme`
+  and the **chrome** via `editorTheme`, not by overriding editor utilities.
+- The **MUI** adapter renders overlays via MUI's own portals (emotion-styled),
+  outside the Tailwind scoped sheet; the scoped sheet targets the shadcn / html
+  (Tailwind) stacks.
+
+`examples/controlled-host` embeds inline with the scoped sheet.
 
 ## Pinning the adapter (host-chosen design system)
 

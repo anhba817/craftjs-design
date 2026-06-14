@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@crafted-design/editor": "^1.6.0",
+    "@crafted-design/editor": "^1.7.0",
     "@craftjs/core": "^0.2.12",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"

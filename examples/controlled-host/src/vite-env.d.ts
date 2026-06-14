@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
 
-// The editor ships a stylesheet; this lets the side-effect import typecheck.
+// The editor ships stylesheets; these let the side-effect imports typecheck.
 declare module '@crafted-design/editor/index.css'
+declare module '@crafted-design/editor/index.scoped.css'

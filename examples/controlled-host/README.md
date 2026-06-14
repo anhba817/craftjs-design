@@ -38,10 +38,12 @@ const ref = useRef<EditorHandle>(null)
 internal, still surfaced via `onChange`) — use it when you don't want to hold the
 document in state.
 
-> **CSS isolation:** this example imports the global `index.css`. Fully inline,
-> iframe-free embedding into an app already running Tailwind v4 is the follow-up
-> scoped-stylesheet phase (`@crafted-design/editor/index.scoped.css`). Until
-> then, embed in its own route, or keep a single iframe purely for CSS.
+> **CSS isolation:** this example imports the **scoped** stylesheet
+> `@crafted-design/editor/index.scoped.css` — every rule is prefixed with
+> `.crafted-design-scope`, so the editor embeds **inline** in an app already
+> running Tailwind v4 with no double preflight and no token clobbering (no
+> iframe). A non-Tailwind / standalone host can use the global `index.css`
+> instead.
 
 ## Run it
 

@@ -124,6 +124,39 @@ App build (`npm run build`):
 
 (none yet)
 
+## [1.7.0] — 2026-06-14
+
+### Added
+
+- **Scoped stylesheet for inline embedding —
+  `@crafted-design/editor/index.scoped.css`.** A new opt-in build of the editor
+  CSS with every rule prefixed by `.crafted-design-scope` (and the `:root`
+  design tokens rehomed onto that class). Import it *instead of* `index.css` to
+  embed `<Editor>` / `<DocumentRenderer>` **inline in an app already running
+  Tailwind v4** — no second global preflight, no `--color-*` / `:root` token
+  clobbering in either direction, no iframe. `<Editor>` and `<DocumentRenderer>`
+  wrap their output in the scope class; runtime overlays (Modal/Drawer/Toast)
+  portal into a scope-classed container so they're styled correctly despite
+  being DOM-detached. The default `index.css` (global preflight + tokens) is
+  unchanged — use it for standalone / non-Tailwind hosts. Verified against a
+  real Tailwind-v4 host fixture in a browser (host `:root` token preserved,
+  preflight reset confined to the editor subtree, editor tokens resolved inside
+  the scope incl. the overlay portal root). See
+  [INTEGRATION_GUIDE → Inline embedding into a Tailwind-v4 app](./docs/INTEGRATION_GUIDE.md#inline-embedding-into-a-tailwind-v4-app-170).
+  `getScopedPortalRoot` is exposed on `@crafted-design/editor/sdk` for
+  third-party adapters that portal their own runtime overlays. (The MUI adapter
+  renders overlays via MUI's own emotion portals, outside the Tailwind scoped
+  sheet.)
+
+### Fixed
+
+- **Standalone `<Editor>` no longer logs `onNodesChange is not a function`.**
+  1.6.0 passed `onNodesChange={undefined}` to the internal `<Craft>` when no
+  `onChange` was provided, clobbering Craft's default no-op; Craft calls it on
+  every node change (incl. deserialize), so it threw into the console on every
+  edit/hydrate. The editor now always passes a handler (a no-op when there's no
+  `onChange`).
+
 ## [1.6.0] — 2026-06-13
 
 ### Added
