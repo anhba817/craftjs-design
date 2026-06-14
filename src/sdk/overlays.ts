@@ -8,7 +8,10 @@
 //   - the editor's overlay-stage portal target (`useOverlayStageTarget`) —
 //     where an overlay renders its editor-mode preview instead of inline in
 //     the canvas,
-//   - `OverlayCard`, the labeled wrapper that preview is portaled into.
+//   - `OverlayCard`, the labeled wrapper that preview is portaled into,
+//   - `getScopedPortalRoot` (Phase 24) — the body-level, scope-classed
+//     container a RUNTIME overlay should `createPortal` into instead of bare
+//     `document.body`, so the opt-in scoped stylesheet still reaches it.
 //
 // The built-in adapters use these; exposing them here lets a third-party
 // adapter build overlay impls with the same editor/runtime behavior. See the
@@ -21,3 +24,4 @@ export {
 export type { OverlayKind, OverlayDef } from '../state/overlayRuntimeStore'
 export { useOverlayStageTarget } from '../editor/canvas/useOverlayStageTarget'
 export { OverlayCard } from '../editor/overlay-stage/OverlayCard'
+export { getScopedPortalRoot } from '../style/scope'

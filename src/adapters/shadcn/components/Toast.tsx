@@ -8,6 +8,7 @@ import {
 } from '@design/sdk'
 import { useIsEditing } from '@design/sdk'
 import { useOverlayStageTarget } from '@design/sdk'
+import { getScopedPortalRoot } from '@design/sdk'
 import { OverlayCard } from '@design/sdk'
 import type { AdapterRenderProps } from '../../types'
 
@@ -98,6 +99,6 @@ export function ShadcnToast({
     >
       {body}
     </div>,
-    document.body,
+    getScopedPortalRoot(),
   )
 }

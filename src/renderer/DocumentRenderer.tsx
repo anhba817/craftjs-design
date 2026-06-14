@@ -26,6 +26,7 @@ import { AdapterProvider, getAdapter, listAdapters } from '@/adapters/AdapterCon
 import { getResolver } from '@/craft/resolver'
 import { parseDocumentJson } from '@/persistence/importDocument'
 import type { EditorDocument } from '@/persistence/schema'
+import { SCOPE_CLASS } from '@/style/scope'
 import { getTheme } from '@/themes/registry'
 
 export interface DocumentRendererProps {
@@ -112,7 +113,7 @@ export function DocumentRenderer({
   if (!parsed.doc) {
     console.error('[DocumentRenderer] invalid document:', parsed.error)
     return (
-      <div role="alert" className={className}>
+      <div role="alert" className={[SCOPE_CLASS, className].filter(Boolean).join(' ')}>
         <div className="rounded border border-destructive/40 p-4 text-sm text-destructive">
           This document could not be loaded.
         </div>
@@ -174,7 +175,7 @@ export function DocumentRenderer({
 
   return (
     <div
-      className={[scheme === 'dark' ? 'dark' : '', className ?? '']
+      className={[SCOPE_CLASS, scheme === 'dark' ? 'dark' : '', className ?? '']
         .filter(Boolean)
         .join(' ') || undefined}
       data-theme={dataTheme}

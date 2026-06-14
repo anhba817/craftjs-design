@@ -23,6 +23,7 @@ import { ControlledHydrator, DefaultValueSeeder } from './ControlledHydrator'
 import { applyEnvelope, buildEnvelope, normalizeDocument } from './document/envelope'
 import { resolveEmbeddingMode } from './embedding'
 import { useDocumentChangeEmitter } from './useDocumentChangeEmitter'
+import { SCOPE_CLASS } from '../style/scope'
 import { CanvasKeyboardRegion } from './canvas/CanvasKeyboardRegion'
 import { ResizeOverlay } from './canvas/ResizeOverlay'
 import { SecondarySelectionOutlines } from './canvas/SecondarySelectionOutlines'
@@ -268,11 +269,18 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   // or AdapterProvider failure. Inner boundaries (Canvas, Toolbox) handle
   // localized failures so the rest of the editor stays alive.
   return (
-    <AdapterProvider>
-      <Craft
-        resolver={resolver}
-        onNodesChange={onChange ? onNodesChange : undefined}
-      >
+    // Phase 24 — the scope root. Wraps the ENTIRE editor output (not just the
+    // cd-editor-chrome shell) because sibling overlays — ResizeOverlay,
+    // GuideOverlay, CanvasSearch, the tour, banners — render outside that shell
+    // and must also fall under the scope so the opt-in scoped stylesheet
+    // reaches them. Inert under the default global index.css (its rules aren't
+    // scope-prefixed, so the class matches nothing).
+    <div className={SCOPE_CLASS}>
+      <AdapterProvider>
+        <Craft
+          resolver={resolver}
+          onNodesChange={onChange ? onNodesChange : undefined}
+        >
         {/* Phase 23 (P5) — bridge the imperative handle out of the Craft
             context (where query/actions live) to the forwarded ref. */}
         <EditorImperativeHandle handleRef={ref} serializedRef={serializedRef} />
@@ -401,8 +409,9 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
             <Inspector />
           </div>
         </div>
-      </Craft>
-    </AdapterProvider>
+        </Craft>
+      </AdapterProvider>
+    </div>
   )
 })
 

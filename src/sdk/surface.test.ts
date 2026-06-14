@@ -48,6 +48,7 @@ const SDK_SURFACE = [
   'getApplicablePanels',
   'getCanvasSlots',
   'getComponent',
+  'getScopedPortalRoot', // Phase 24 — scoped portal root for runtime overlays
   'getComponentByDisplayName',
   'getPanelsFor',
   'getStorageAdapter',

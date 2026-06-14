@@ -5,6 +5,7 @@ import { cn } from '@design/sdk'
 import { iconElement } from '../_shared/lucide-icons'
 import { useIsEditing } from '@design/sdk'
 import { useOverlayStageTarget } from '@design/sdk'
+import { getScopedPortalRoot } from '@design/sdk'
 import { OverlayCard } from '@design/sdk'
 import {
   readOverlayOpen,
@@ -809,7 +810,7 @@ export function HtmlModal({ props, children, rootRef, className, inlineStyle }: 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setOpen(name, false)}>
       <div ref={rootRef as never} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()} className={dialogClass} style={inlineStyle}>{inner}</div>
     </div>,
-    document.body,
+    getScopedPortalRoot(),
   )
 }
 
@@ -861,7 +862,7 @@ export function HtmlDrawer({ props, children, rootRef, className, inlineStyle }:
         {children}
       </div>
     </div>,
-    document.body,
+    getScopedPortalRoot(),
   )
 }
 
@@ -906,7 +907,7 @@ export function HtmlToast({ props, rootRef, className, inlineStyle }: Render) {
   if (!isOpen) return null
   return createPortal(
     <div ref={rootRef as never} role="status" aria-live="polite" className={cn('fixed bottom-4 right-4 z-50 flex max-w-sm gap-2 rounded-md border bg-card p-3 shadow-lg', className)} style={inlineStyle}>{body}</div>,
-    document.body,
+    getScopedPortalRoot(),
   )
 }
 
