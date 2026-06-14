@@ -124,6 +124,19 @@ App build (`npm run build`):
 
 (none yet)
 
+## [1.8.1] — 2026-06-14
+
+### Fixed
+
+- **Toolbar overflow popover (< xl): the Adapter / Theme `<select>` no longer
+  overflows its right edge.** In the `⋯` overflow popover (full-width rows) the
+  select sized to its widest option and spilled past the popover; it now shrinks
+  to share its row (`min-w-0 flex-1`). The toolbar (inline) is unchanged.
+
+(Also internal: an a11y contrast fix on the demo's dogfood chrome-theme toggle,
+and a test-harness fix for `onNodesChange` stderr noise — neither affects the
+published package.)
+
 ## [1.8.0] — 2026-06-14
 
 ### Added
