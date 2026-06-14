@@ -277,10 +277,11 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     // scope-prefixed, so the class matches nothing).
     <div className={SCOPE_CLASS}>
       <AdapterProvider>
-        <Craft
-          resolver={resolver}
-          onNodesChange={onChange ? onNodesChange : undefined}
-        >
+        {/* Always pass our handler (it no-ops internally when no `onChange` is
+            set). Passing `undefined` here would CLOBBER Craft's default
+            `onNodesChange: () => null`, and Craft calls it on every node change
+            (incl. deserialize) → "onNodesChange is not a function". */}
+        <Craft resolver={resolver} onNodesChange={onNodesChange}>
         {/* Phase 23 (P5) — bridge the imperative handle out of the Craft
             context (where query/actions live) to the forwarded ref. */}
         <EditorImperativeHandle handleRef={ref} serializedRef={serializedRef} />
