@@ -51,10 +51,10 @@ function Harness({
   const Root = resolver[boxDef.displayName]
   return (
     <AdapterProvider>
-      <Craft
-        resolver={resolver}
-        onNodesChange={onChange ? onNodesChange : undefined}
-      >
+      {/* Always pass the handler (no-ops when no onChange) — mirrors <Editor>.
+          Passing undefined would clobber Craft's default onNodesChange and
+          throw "onNodesChange is not a function" on deserialize. */}
+      <Craft resolver={resolver} onNodesChange={onNodesChange}>
         <ControlledHydrator value={value} serializedRef={serializedRef} />
         <Probe />
         <Frame>
