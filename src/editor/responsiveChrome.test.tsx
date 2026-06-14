@@ -58,6 +58,11 @@ afterEach(() => {
 })
 
 const q = (sel: string) => container.querySelector(sel)
+// Radix Popover portals its content to document.body, so search the whole doc.
+const buttonByText = (text: string) =>
+  [...document.querySelectorAll('button')].find(
+    (b) => b.textContent?.trim() === text,
+  ) ?? null
 
 describe('responsive editor chrome', () => {
   it('≥ lg: panels are docked columns — toolbox + tabified right panel, no drawers/toggles', async () => {
@@ -94,5 +99,34 @@ describe('responsive editor chrome', () => {
     expect(dialog).not.toBeNull()
     expect(dialog!.getAttribute('aria-modal')).toBe('true')
     expect(q('[data-onboarding-target="toolbox"]')).not.toBeNull()
+  })
+})
+
+describe('toolbar overflow', () => {
+  it('≥ md: secondary controls are inline — no overflow menu', async () => {
+    installMatchMedia(900) // tablet: not compact (≥ md), still narrow (< lg)
+    await mount(<Editor adapter="html" persistence={false} />)
+    // Secondary controls render directly in the bar.
+    expect(buttonByText('Export')).not.toBeNull()
+    expect(buttonByText('Import')).not.toBeNull()
+    // No overflow trigger.
+    expect(q('[aria-label="More actions"]')).toBeNull()
+  })
+
+  it('< md: secondary controls collapse into the `⋯` overflow popover', async () => {
+    installMatchMedia(600) // phone: compact
+    await mount(<Editor adapter="html" persistence={false} />)
+    const more = q('[aria-label="More actions"]') as HTMLElement
+    expect(more).not.toBeNull()
+    // Collapsed: Export/Import are NOT in the bar until the popover opens.
+    expect(buttonByText('Export')).toBeNull()
+    // Open the overflow → the secondary controls become reachable.
+    await act(async () => {
+      more.click()
+      await new Promise((r) => setTimeout(r, 30))
+    })
+    expect(buttonByText('Export')).not.toBeNull()
+    expect(buttonByText('Import')).not.toBeNull()
+    expect(buttonByText('Load')).not.toBeNull()
   })
 })

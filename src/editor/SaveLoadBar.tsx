@@ -1,7 +1,12 @@
 import { useEditor } from '@craftjs/core'
-import { PanelLeft, PanelRight } from 'lucide-react'
+import { MoreHorizontal, PanelLeft, PanelRight } from 'lucide-react'
 import { useRef } from 'react'
 import { useEditorStore } from '@/state/editorStore'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { useEditorViewport } from './responsive/useEditorViewport'
 import { useDocumentStore } from '@/persistence/documentStore'
 import { downloadDocument } from '@/persistence/exportDocument'
@@ -25,7 +30,9 @@ export function SaveLoadBar() {
 
   // Phase 25 — below lg the side panels are overlay drawers; these toggles
   // open them. Hidden at/above lg, where the panels are docked columns.
-  const { isDesktop } = useEditorViewport()
+  // Below md (`isCompact`) the secondary toolbar controls collapse into a
+  // `⋯` overflow popover so the bar never clips.
+  const { isDesktop, isCompact } = useEditorViewport()
   const setLeftPanelOpen = useEditorStore((s) => s.setLeftPanelOpen)
   const setRightPanelOpen = useEditorStore((s) => s.setRightPanelOpen)
 
@@ -88,6 +95,40 @@ export function SaveLoadBar() {
     }
   }
 
+  // Phase 25 — the secondary toolbar controls. Rendered inline (≥md) or stacked
+  // inside the `⋯` overflow popover (<md). Same set either way.
+  const secondary = (
+    <>
+      <PreviewToggle />
+      {allowAdapterSwitch && <AdapterSwitcher />}
+      <ThemeSwitcher />
+      <ThemeEditorButton />
+      <ColorModeToggle />
+      <ShareButton />
+      <button
+        type="button"
+        onClick={handleImportClick}
+        className="rounded border border-ed-border-2 px-2 py-1 text-sm text-ed-text hover:bg-ed-surface-2"
+      >
+        Import
+      </button>
+      <button
+        type="button"
+        onClick={handleExport}
+        className="rounded border border-ed-border-2 px-2 py-1 text-sm text-ed-text hover:bg-ed-surface-2"
+      >
+        Export
+      </button>
+      <button
+        type="button"
+        onClick={handleLoad}
+        className="rounded border border-ed-border-2 px-2 py-1 text-sm text-ed-text hover:bg-ed-surface-2"
+      >
+        Load
+      </button>
+    </>
+  )
+
   return (
     <header
       data-onboarding-target="savebar"
@@ -113,11 +154,6 @@ export function SaveLoadBar() {
       <DocumentMenu />
       <UndoRedo />
       <div className="flex-1" />
-      <PreviewToggle />
-      {allowAdapterSwitch && <AdapterSwitcher />}
-      <ThemeSwitcher />
-      <ThemeEditorButton />
-      <ColorModeToggle />
       <input
         ref={fileInputRef}
         type="file"
@@ -125,34 +161,37 @@ export function SaveLoadBar() {
         onChange={handleFileChange}
         className="hidden"
       />
-      <ShareButton />
-      <button
-        type="button"
-        onClick={handleImportClick}
-        className="rounded border border-ed-border-2 px-2 py-1 text-sm text-ed-text hover:bg-ed-surface-2"
-      >
-        Import
-      </button>
-      <button
-        type="button"
-        onClick={handleExport}
-        className="rounded border border-ed-border-2 px-2 py-1 text-sm text-ed-text hover:bg-ed-surface-2"
-      >
-        Export
-      </button>
+      {/* Phase 25 — secondary controls: inline at ≥md, collapsed into a `⋯`
+          overflow popover below md so the bar never overflows horizontally.
+          `secondary` is the same set in both layouts (only the container's
+          direction changes). */}
+      {isCompact ? (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label="More actions"
+              className="rounded border border-ed-border-2 p-1.5 text-ed-text hover:bg-ed-surface-2"
+            >
+              <MoreHorizontal size={16} aria-hidden />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            className="flex w-52 flex-col items-stretch gap-1 border-ed-border bg-ed-surface text-ed-text"
+          >
+            {secondary}
+          </PopoverContent>
+        </Popover>
+      ) : (
+        secondary
+      )}
       <button
         type="button"
         onClick={handleSave}
         className="rounded border border-ed-border-2 px-2 py-1 text-sm text-ed-text hover:bg-ed-surface-2"
       >
         Save
-      </button>
-      <button
-        type="button"
-        onClick={handleLoad}
-        className="rounded border border-ed-border-2 px-2 py-1 text-sm text-ed-text hover:bg-ed-surface-2"
-      >
-        Load
       </button>
       {/* Phase 25 — open the right (Properties/Overlays) drawer; only below lg. */}
       {!isDesktop && (
