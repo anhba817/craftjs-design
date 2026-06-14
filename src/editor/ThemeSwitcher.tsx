@@ -25,11 +25,13 @@ export function ThemeSwitcher() {
 
   return (
     <label className="flex items-center gap-1.5 text-xs text-ed-text-muted">
-      <span className="font-semibold tracking-wide uppercase text-ed-text-muted">Theme</span>
+      <span className="shrink-0 font-semibold tracking-wide uppercase text-ed-text-muted">Theme</span>
       <select
         value={activeThemeId}
         onChange={(e) => setActiveTheme(e.target.value)}
-        className="rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 text-sm text-ed-text hover:bg-ed-surface-2"
+        // min-w-0 + flex-1 so the select shrinks to share its row in the narrow
+        // toolbar overflow popover instead of overflowing it.
+        className="min-w-0 flex-1 rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 text-sm text-ed-text hover:bg-ed-surface-2"
       >
         {themes.map((t) => (
           <option key={t.id} value={t.id}>

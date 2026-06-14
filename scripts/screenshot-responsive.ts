@@ -59,6 +59,15 @@ async function main() {
   const browser = await chromium.launch({ args: ['--no-sandbox'] })
   for (const width of WIDTHS) {
     const page = await browser.newPage({ viewport: { width, height: 820 } })
+    // Suppress the first-load onboarding tour — its modal backdrop would
+    // intercept the `⋯` click below.
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('craftjs-design.onboarding-completed:v1', '1')
+      } catch {
+        /* ignore */
+      }
+    })
     await page.goto(url, { waitUntil: 'networkidle' })
     // Wait for the editor canvas to mount.
     await page.waitForSelector('[data-onboarding-target="canvas"]', { timeout: 15_000 })
@@ -66,6 +75,17 @@ async function main() {
     const out = join(OUT, `editor-${width}.png`)
     await page.screenshot({ path: out })
     console.log(`screenshot:responsive — ${width}px → ${out}`)
+
+    // If the toolbar is condensed (< xl), also open the `⋯` overflow popover
+    // and capture it — so the popover layout (no control overflow) is verified.
+    const more = await page.$('[aria-label="More actions"]')
+    if (more) {
+      await more.click()
+      await page.waitForTimeout(300)
+      const outMenu = join(OUT, `editor-${width}-overflow.png`)
+      await page.screenshot({ path: outMenu })
+      console.log(`screenshot:responsive — ${width}px overflow → ${outMenu}`)
+    }
     await page.close()
   }
   await browser.close()
