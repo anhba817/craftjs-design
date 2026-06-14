@@ -101,7 +101,9 @@ export function ChromeDrawer({
         aria-modal="true"
         aria-label={label}
         tabIndex={-1}
-        className={`absolute inset-y-0 ${sideClass} flex w-72 max-w-[85%] flex-col border-ed-border bg-ed-surface text-ed-text shadow-xl outline-none`}
+        // w-auto so the drawer is exactly as wide as the panel inside it
+        // (LeftAside w-56 / RightPanel w-72); capped on very small screens.
+        className={`absolute inset-y-0 ${sideClass} flex w-auto max-w-[90%] flex-col border-ed-border bg-ed-surface text-ed-text shadow-xl outline-none`}
       >
         {children}
       </div>

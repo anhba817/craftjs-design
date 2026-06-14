@@ -1,6 +1,8 @@
 import { useEditor } from '@craftjs/core'
+import { PanelLeft, PanelRight } from 'lucide-react'
 import { useRef } from 'react'
 import { useEditorStore } from '@/state/editorStore'
+import { useEditorViewport } from './responsive/useEditorViewport'
 import { useDocumentStore } from '@/persistence/documentStore'
 import { downloadDocument } from '@/persistence/exportDocument'
 import { ImportError, importDocumentFromFile } from '@/persistence/importDocument'
@@ -20,6 +22,12 @@ export function SaveLoadBar() {
   // Phase 18 follow-up — the host decides whether end users may switch
   // adapters (<Editor allowUserToSwitchAdapter />). Hidden when pinned.
   const allowAdapterSwitch = useEditorStore((s) => s.allowAdapterSwitch)
+
+  // Phase 25 — below lg the side panels are overlay drawers; these toggles
+  // open them. Hidden at/above lg, where the panels are docked columns.
+  const { isDesktop } = useEditorViewport()
+  const setLeftPanelOpen = useEditorStore((s) => s.setLeftPanelOpen)
+  const setRightPanelOpen = useEditorStore((s) => s.setRightPanelOpen)
 
   // Phase 23 § Decision 3 — both delegate to the shared envelope module so
   // Save / Load / Import emit the exact same shape as onChange + the ref.
@@ -91,6 +99,17 @@ export function SaveLoadBar() {
           editor chrome is visually self-evident; the heading is
           sr-only. */}
       <h1 className="sr-only">Editor</h1>
+      {/* Phase 25 — open the left (Components/Layers) drawer; only below lg. */}
+      {!isDesktop && (
+        <button
+          type="button"
+          aria-label="Open components and layers"
+          onClick={() => setLeftPanelOpen(true)}
+          className="rounded border border-ed-border-2 p-1.5 text-ed-text hover:bg-ed-surface-2"
+        >
+          <PanelLeft size={16} aria-hidden />
+        </button>
+      )}
       <DocumentMenu />
       <UndoRedo />
       <div className="flex-1" />
@@ -135,6 +154,17 @@ export function SaveLoadBar() {
       >
         Load
       </button>
+      {/* Phase 25 — open the right (Properties/Overlays) drawer; only below lg. */}
+      {!isDesktop && (
+        <button
+          type="button"
+          aria-label="Open inspector"
+          onClick={() => setRightPanelOpen(true)}
+          className="rounded border border-ed-border-2 p-1.5 text-ed-text hover:bg-ed-surface-2"
+        >
+          <PanelRight size={16} aria-hidden />
+        </button>
+      )}
     </header>
   )
 }

@@ -43,9 +43,10 @@ import {
   TopShellErrorFallback,
 } from './errors/fallbacks'
 import { Hydrator, _resetHydrationLatch } from './Hydrator'
-import { Inspector } from './Inspector'
 import { LeftAside } from './LeftAside'
-import { OverlayStage } from './OverlayStage'
+import { RightPanel } from './RightPanel'
+import { ChromeDrawer } from './responsive/ChromeDrawer'
+import { useEditorViewport } from './responsive/useEditorViewport'
 import { ConcurrentEditBanner } from './persistence/ConcurrentEditBanner'
 import { useConcurrentEditWatcher } from './persistence/concurrentEditWatcher'
 import { StorageQuotaBanner } from './persistence/StorageQuotaBanner'
@@ -177,6 +178,22 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     onChange,
     onChangeDebounceMs,
   )
+
+  // Phase 25 — responsive side panels (drawers below lg). Open/close flags +
+  // the viewport. At/above lg the docked columns ignore the flags.
+  const leftPanelOpen = useEditorStore((s) => s.leftPanelOpen)
+  const rightPanelOpen = useEditorStore((s) => s.rightPanelOpen)
+  const setLeftPanelOpen = useEditorStore((s) => s.setLeftPanelOpen)
+  const setRightPanelOpen = useEditorStore((s) => s.setRightPanelOpen)
+  const { isDesktop } = useEditorViewport()
+  // Auto-open the inspector drawer when a node is selected on a narrow
+  // viewport — so the user sees its properties without hunting for the toggle.
+  // A SEPARATE store read, decoupled from the flushSync selection-sync write
+  // (so it can't perturb selection latency — see [[feedback_selection_sync]]).
+  const primarySelection = useEditorStore((s) => s.selection[0] ?? null)
+  useEffect(() => {
+    if (!isDesktop && primarySelection) setRightPanelOpen(true)
+  }, [isDesktop, primarySelection, setRightPanelOpen])
 
   // Phase 6 — flip the registry's post-mount flag so any registerCanonical
   // calls after this point warn instead of silently failing to appear.
@@ -361,12 +378,21 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
               implements Cmd/Ctrl-click toggle and Shift-click range
               before Craft's default connector overwrites selection. */}
           <MultiSelectClickMount />
-          <div className="flex min-h-0 flex-1">
+          {/* Phase 25 — `relative` anchors the side panels' overlay drawers
+              (absolute inset-0) to this row below the lg breakpoint. */}
+          <div className="relative flex min-h-0 flex-1">
             {/* Phase 11 § 3.4 — left aside hosts both Components and
                 Layers tabs. Per-tab ErrorBoundaries live inside
                 LeftAside so a buggy LayerTree doesn't drop the
-                toolbox. */}
-            <LeftAside />
+                toolbox. Phase 25 — docked column ≥lg, overlay drawer below. */}
+            <ChromeDrawer
+              side="left"
+              open={leftPanelOpen}
+              onClose={() => setLeftPanelOpen(false)}
+              label="Components and layers"
+            >
+              <LeftAside />
+            </ChromeDrawer>
             <ThemeProvider>
               <main
                 data-onboarding-target="canvas"
@@ -401,13 +427,19 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
                 </ErrorBoundary>
               </main>
             </ThemeProvider>
-            {/* Phase 13 § 5.3 — Modals / Drawers / Toasts / Tooltips /
-                Popovers portal here in editing mode (via the
-                `craftjs-overlay-stage` div inside) so they don't
-                pollute the canvas layout. Empty when no overlays are
-                attached. */}
-            <OverlayStage />
-            <Inspector />
+            {/* Phase 25 — the right panel tabifies Properties + Overlays into
+                one column (Decision 2); docked ≥lg, overlay drawer below. The
+                `#craftjs-overlay-stage` portal target lives inside RightPanel
+                (kept mounted across tabs) — overlays still portal there in
+                editing mode. */}
+            <ChromeDrawer
+              side="right"
+              open={rightPanelOpen}
+              onClose={() => setRightPanelOpen(false)}
+              label="Inspector"
+            >
+              <RightPanel />
+            </ChromeDrawer>
           </div>
         </div>
         </Craft>

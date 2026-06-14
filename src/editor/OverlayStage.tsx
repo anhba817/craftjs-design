@@ -22,7 +22,12 @@ const OVERLAY_DISPLAYNAMES = [
   'Popover',
 ] as const
 
-export function OverlayStage() {
+// Phase 25 — the Overlay-stage BODY (no outer <aside>/header). Rendered as the
+// "Overlays" tab of RightPanel. The `#craftjs-overlay-stage` portal target must
+// stay mounted whichever tab is active (overlays portal into it via
+// useOverlayStageTarget), so RightPanel keeps this mounted and toggles
+// visibility rather than unmounting it.
+export function OverlayStageBody() {
   // Subscribe so the empty-state hint reflects current overlay count.
   const { count } = useEditor((state) => {
     let n = 0
@@ -34,28 +39,21 @@ export function OverlayStage() {
   })
 
   return (
-    <aside
+    <div
+      id="craftjs-overlay-stage"
       aria-label="Overlay stage"
-      className="flex w-80 shrink-0 flex-col border-l border-ed-border bg-ed-surface-2"
+      className={cn(
+        'flex min-h-0 flex-1 flex-col space-y-3 overflow-y-auto p-3',
+        count === 0 && 'items-center justify-center',
+      )}
     >
-      <header className="border-b border-ed-border px-3 py-2 text-[11px] font-medium uppercase tracking-wider text-ed-text-muted">
-        Overlays
-      </header>
-      <div
-        id="craftjs-overlay-stage"
-        className={cn(
-          'flex-1 space-y-3 overflow-y-auto p-3',
-          count === 0 && 'flex items-center justify-center',
-        )}
-      >
-        {count === 0 && (
-          <p className="max-w-[14rem] text-center text-[11px] leading-relaxed text-ed-text-muted">
-            Right-click a Button on the canvas and choose{' '}
-            <span className="font-medium text-ed-text">Attach overlay</span>{' '}
-            to add a Modal / Drawer / Toast / Tooltip / Popover.
-          </p>
-        )}
-      </div>
-    </aside>
+      {count === 0 && (
+        <p className="max-w-[14rem] text-center text-[11px] leading-relaxed text-ed-text-muted">
+          Right-click a Button on the canvas and choose{' '}
+          <span className="font-medium text-ed-text">Attach overlay</span> to add
+          a Modal / Drawer / Toast / Tooltip / Popover.
+        </p>
+      )}
+    </div>
   )
 }

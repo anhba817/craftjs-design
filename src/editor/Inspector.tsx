@@ -16,7 +16,9 @@ import { CollapsibleSection } from './inspector/shared/CollapsibleSection'
 // constant so the `?? ROOT_SLOTS` below doesn't allocate a new array per render.
 const ROOT_SLOTS = ['root']
 
-export function Inspector() {
+// Phase 25 — the Inspector BODY (no outer <aside>/header). Rendered as the
+// "Properties" tab of RightPanel, which owns the aside + tab bar.
+export function InspectorBody() {
   // Phase 11 § 3.3 — Inspector reads selection from editorStore (the
   // multi-id source of truth) rather than from Craft directly. See
   // useSelectionSync for the mirror.
@@ -101,16 +103,9 @@ export function Inspector() {
   const showSlotPicker = slots.length > 1
 
   return (
-    <aside
-      aria-label="Inspector"
-      data-onboarding-target="inspector"
-      className="flex w-72 flex-col border-l border-ed-border"
-    >
-      <div className="px-3 py-2 text-xs font-semibold tracking-wide uppercase text-ed-text-muted">
-        Inspector
-      </div>
+    <div className="flex min-h-0 flex-1 flex-col">
       {!primary ? (
-        <div className="px-3 text-xs text-ed-text-muted">Nothing selected.</div>
+        <div className="px-3 py-2 text-xs text-ed-text-muted">Nothing selected.</div>
       ) : (
         <>
           <InspectorBreadcrumbs />
@@ -166,6 +161,6 @@ export function Inspector() {
           </div>
         </>
       )}
-    </aside>
+    </div>
   )
 }
