@@ -46,6 +46,7 @@ import { Hydrator, _resetHydrationLatch } from './Hydrator'
 import { LeftAside } from './LeftAside'
 import { RightPanel } from './RightPanel'
 import { ChromeDrawer } from './responsive/ChromeDrawer'
+import { SmallScreenHint } from './responsive/SmallScreenHint'
 import { useEditorViewport } from './responsive/useEditorViewport'
 import { ConcurrentEditBanner } from './persistence/ConcurrentEditBanner'
 import { useConcurrentEditWatcher } from './persistence/concurrentEditWatcher'
@@ -361,6 +362,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
               (an embed renders its own save/load UI). The editing surface
               below (toolbox, canvas, inspector) always stays. */}
           {!hideChrome && <SaveLoadBar />}
+          {/* Phase 25 — phone-viewport hint (drag-to-add wants a pointer). */}
+          {!hideChrome && <SmallScreenHint />}
           {/* Phase 9 § 1.7 — non-blocking warning when usage ≥ 80%. */}
           {!hideChrome && <StorageQuotaBanner />}
           {/* Phase 9 § 1.8 — cross-tab edit detected; user picks which

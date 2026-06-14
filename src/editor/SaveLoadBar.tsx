@@ -30,9 +30,10 @@ export function SaveLoadBar() {
 
   // Phase 25 — below lg the side panels are overlay drawers; these toggles
   // open them. Hidden at/above lg, where the panels are docked columns.
-  // Below md (`isCompact`) the secondary toolbar controls collapse into a
-  // `⋯` overflow popover so the bar never clips.
-  const { isDesktop, isCompact } = useEditorViewport()
+  // Below xl (`isCondensed`) the secondary toolbar controls collapse into a
+  // `⋯` overflow popover so the bar never clips (the full inline toolbar needs
+  // ~1280px — it clips at 1024 even with the panels docked).
+  const { isDesktop, isCondensed } = useEditorViewport()
   const setLeftPanelOpen = useEditorStore((s) => s.setLeftPanelOpen)
   const setRightPanelOpen = useEditorStore((s) => s.setRightPanelOpen)
 
@@ -165,7 +166,7 @@ export function SaveLoadBar() {
           overflow popover below md so the bar never overflows horizontally.
           `secondary` is the same set in both layouts (only the container's
           direction changes). */}
-      {isCompact ? (
+      {isCondensed ? (
         <Popover>
           <PopoverTrigger asChild>
             <button

@@ -21,6 +21,9 @@ dist-ssr
 dist-demo
 dist-gallery
 
+# Responsive-chrome verification screenshots (scripts/screenshot-responsive.ts)
+responsive-shots
+
 # Phase 4 — regenerated from src/style/tw-classes.ts on every dev/build via the
 # `gen-safelist` npm script. See scripts/gen-safelist.ts.
 src/style/safelist.generated.css

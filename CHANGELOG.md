@@ -124,6 +124,33 @@ App build (`npm run build`):
 
 (none yet)
 
+## [1.8.0] — 2026-06-14
+
+### Added
+
+- **Responsive editor chrome.** The editor UI now reflows to the viewport
+  instead of clipping:
+  - **≥ 1280 (xl):** docked side columns + the full toolbar inline (as before).
+  - **1024–1280:** docked columns; the toolbar's secondary controls collapse
+    into a `⋯` overflow menu (the full inline toolbar needs ~1280px).
+  - **< 1024 (lg):** the side panels become **overlay drawers** toggled from
+    the toolbar (`☰` / inspector buttons); the canvas takes full width. Drawers
+    are `aria-modal`, Esc/backdrop-close, focus-trapped.
+  - **< 640 (sm):** a dismissible "optimized for larger screens" hint.
+
+  The right side is now **one panel with Properties / Overlays tabs** at all
+  sizes (replacing the two always-on docked columns — the usually-empty overlay
+  stage no longer permanently occupies ~320px). Selecting a node opens the
+  inspector (and its drawer on narrow viewports). Verified with screenshots at
+  375 / 768 / 1024 / 1440. See
+  [INTEGRATION_GUIDE → Responsive & supported viewports](./docs/INTEGRATION_GUIDE.md#responsive--supported-viewports-180).
+
+  **Touch caveat:** inspect / select / edit-props / reorder / save work on
+  touch; *dragging a new component onto the canvas* does not (Craft.js uses
+  HTML5 drag-and-drop, which doesn't fire on touch) — component authoring wants
+  a pointer. Standalone `<Editor />` on desktop is visually unchanged except the
+  right column is now tabbed.
+
 ## [1.7.0] — 2026-06-14
 
 ### Added

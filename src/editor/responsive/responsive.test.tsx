@@ -61,26 +61,21 @@ afterEach(() => {
 
 describe('useEditorViewport', () => {
   function Probe() {
-    const { isDesktop, isCompact } = useEditorViewport()
-    return <span data-testid="vp">{`${isDesktop ? 'desktop' : 'narrow'}/${isCompact ? 'compact' : 'wide'}`}</span>
+    const { isDesktop, isCondensed } = useEditorViewport()
+    return <span data-testid="vp">{`${isDesktop ? 'desktop' : 'narrow'}/${isCondensed ? 'condensed' : 'full'}`}</span>
   }
+  const vp = () => container.querySelector('[data-testid="vp"]')!.textContent
 
-  it('reflects width and reacts to matchMedia changes', () => {
+  it('reflects width and reacts to matchMedia changes (panels=lg, toolbar=xl)', () => {
     const mm = installMatchMedia(1440)
     mount(<Probe />)
-    expect(container.querySelector('[data-testid="vp"]')!.textContent).toBe(
-      'desktop/wide',
-    )
-    // Shrink to phone width.
+    expect(vp()).toBe('desktop/full') // ≥ xl: docked + inline toolbar
+    // Phone.
     act(() => mm.resize(500))
-    expect(container.querySelector('[data-testid="vp"]')!.textContent).toBe(
-      'narrow/compact',
-    )
-    // Tablet: narrow (below lg) but not compact (≥ md).
-    act(() => mm.resize(800))
-    expect(container.querySelector('[data-testid="vp"]')!.textContent).toBe(
-      'narrow/wide',
-    )
+    expect(vp()).toBe('narrow/condensed')
+    // Decoupled middle (lg ≤ w < xl): panels docked, toolbar condensed.
+    act(() => mm.resize(1100))
+    expect(vp()).toBe('desktop/condensed')
   })
 })
 

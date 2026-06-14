@@ -693,6 +693,33 @@ export default defineConfig({
 Then `@import "./safelist.docs.css";` from your stylesheet. Purely an
 upgrade — skipping it changes nothing.
 
+## Responsive & supported viewports (1.8.0)
+
+The editor chrome reflows to the viewport:
+
+| Width | Layout |
+|---|---|
+| **≥ 1280 (xl)** | Docked side columns + the full toolbar inline. |
+| **1024–1280 (lg–xl)** | Docked side columns; the toolbar's secondary controls collapse into a `⋯` overflow menu. |
+| **< 1024 (lg)** | Side panels become **overlay drawers** toggled from the toolbar (`☰` / inspector buttons); canvas is full-width. |
+| **< 640 (sm)** | Adds a dismissible "optimized for larger screens" hint. |
+
+The right panel is a single column with **Properties** / **Overlays** tabs at all
+sizes. Selecting a node opens the inspector (and, on narrow viewports, its
+drawer).
+
+**Touch / phones — what works and what doesn't.** Inspecting, selecting,
+editing props, reordering via the Layers tab, and saving all work on a touch
+device. **Dragging a new component from the toolbox onto the canvas does not** —
+Craft.js uses HTML5 drag-and-drop, which doesn't fire on touch. So component
+*authoring* wants a pointer (mouse/trackpad) and a ≥ ~768px viewport; phones are
+supported for review and light edits, not full drag-to-build. The chrome stays
+usable down to ~360px.
+
+These breakpoints are the editor's own; they're independent of the **document's**
+responsive breakpoints (the `base`/`sm`/`md`/`lg`/`xl` style editing on the
+canvas), which you design regardless of the editor window size.
+
 ## Caveats
 
 ### React version

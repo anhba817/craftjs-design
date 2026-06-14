@@ -103,8 +103,8 @@ describe('responsive editor chrome', () => {
 })
 
 describe('toolbar overflow', () => {
-  it('≥ md: secondary controls are inline — no overflow menu', async () => {
-    installMatchMedia(900) // tablet: not compact (≥ md), still narrow (< lg)
+  it('≥ xl: secondary controls are inline — no overflow menu', async () => {
+    installMatchMedia(1440) // ≥ xl: full inline toolbar fits
     await mount(<Editor adapter="html" persistence={false} />)
     // Secondary controls render directly in the bar.
     expect(buttonByText('Export')).not.toBeNull()
@@ -113,8 +113,8 @@ describe('toolbar overflow', () => {
     expect(q('[aria-label="More actions"]')).toBeNull()
   })
 
-  it('< md: secondary controls collapse into the `⋯` overflow popover', async () => {
-    installMatchMedia(600) // phone: compact
+  it('< xl: secondary controls collapse into the `⋯` overflow popover', async () => {
+    installMatchMedia(900) // below xl (even on a docked-panel tablet width)
     await mount(<Editor adapter="html" persistence={false} />)
     const more = q('[aria-label="More actions"]') as HTMLElement
     expect(more).not.toBeNull()
