@@ -61,6 +61,16 @@ interface EditorStore {
   allowAdapterSwitch: boolean
   setAllowAdapterSwitch: (allow: boolean) => void
 
+  // Phase 25 — responsive chrome. Below the lg breakpoint the side panels are
+  // overlay drawers toggled from the toolbar; these flags drive them. At/above
+  // lg the panels are docked columns that ignore these flags (always visible).
+  // UI-only; not persisted.
+  leftPanelOpen: boolean
+  setLeftPanelOpen: (open: boolean) => void
+  rightPanelOpen: boolean
+  setRightPanelOpen: (open: boolean) => void
+  closeAllPanels: () => void
+
   // Phase 4 — UI-only state. Inspector panels read/write the active
   // breakpoint's slice. NOT persisted; resets to 'base' on reload.
   activeBreakpoint: Breakpoint
@@ -176,6 +186,12 @@ export const useEditorStore = create<EditorStore>()((set) => ({
 
   allowAdapterSwitch: true,
   setAllowAdapterSwitch: (allow) => set({ allowAdapterSwitch: allow }),
+
+  leftPanelOpen: false,
+  setLeftPanelOpen: (open) => set({ leftPanelOpen: open }),
+  rightPanelOpen: false,
+  setRightPanelOpen: (open) => set({ rightPanelOpen: open }),
+  closeAllPanels: () => set({ leftPanelOpen: false, rightPanelOpen: false }),
 
   activeBreakpoint: 'base',
   setActiveBreakpoint: (bp) => set({ activeBreakpoint: bp }),
