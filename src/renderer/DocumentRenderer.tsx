@@ -28,6 +28,8 @@ import { parseDocumentJson } from '@/persistence/importDocument'
 import type { EditorDocument } from '@/persistence/schema'
 import { SCOPE_CLASS } from '@/style/scope'
 import { getTheme } from '@/themes/registry'
+import type { TemplateValues } from '@/headless/interpolate'
+import { TemplateValuesProvider } from '@/editor/variables/templateValues'
 
 export interface DocumentRendererProps {
   /** The saved document — an `EditorDocument` envelope or its JSON string. */
@@ -39,6 +41,12 @@ export interface DocumentRendererProps {
   adapter?: string
   /** Class for the wrapper element (sizing/positioning in the host layout). */
   className?: string
+  /**
+   * Phase 26 — values for `{{ template }}` tokens in text content. A token
+   * resolves to `variables[key]` (flat or nested dot-path); unresolved tokens
+   * keep the literal `{{ token }}`. Omit for a document with no variables.
+   */
+  variables?: TemplateValues
 }
 
 // Minimal local boundary — a malformed document must not crash the host page.
@@ -85,10 +93,13 @@ function useColorScheme(mode: EditorDocument['colorMode']): 'light' | 'dark' {
   return 'light'
 }
 
+const EMPTY_VALUES: TemplateValues = {}
+
 export function DocumentRenderer({
   document: documentProp,
   adapter,
   className,
+  variables = EMPTY_VALUES,
 }: DocumentRendererProps) {
   // Normalize + validate + migrate through the editor's own import path, so
   // the renderer accepts exactly what the editor accepts (including old
@@ -182,18 +193,22 @@ export function DocumentRenderer({
     >
       <RenderBoundary>
         <AdapterProvider adapterId={adapterId}>
-          {/* Craft only reads <Frame data> on mount — key the editor by the
-              document content so a document prop change remounts and re-
-              deserializes (display pages swap documents rarely; full remount
-              is the predictable behavior). enabled={false} = the editor's
-              preview mode: editing interactions off, runtime behavior on. */}
-          <Craft
-            key={parsed.doc.craftJson}
-            resolver={getResolver()}
-            enabled={false}
-          >
-            <Frame data={parsed.doc.craftJson} />
-          </Craft>
+          {/* Phase 26 — feed `{{ template }}` values to the tree; EditableText
+              (display mode) substitutes them. */}
+          <TemplateValuesProvider values={variables}>
+            {/* Craft only reads <Frame data> on mount — key the editor by the
+                document content so a document prop change remounts and re-
+                deserializes (display pages swap documents rarely; full remount
+                is the predictable behavior). enabled={false} = the editor's
+                preview mode: editing interactions off, runtime behavior on. */}
+            <Craft
+              key={parsed.doc.craftJson}
+              resolver={getResolver()}
+              enabled={false}
+            >
+              <Frame data={parsed.doc.craftJson} />
+            </Craft>
+          </TemplateValuesProvider>
         </AdapterProvider>
       </RenderBoundary>
     </div>

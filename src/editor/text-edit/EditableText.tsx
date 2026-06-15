@@ -130,11 +130,10 @@ export function EditableText({
   }, [isEditing, id, propPath])
 
   if (!isEditing) {
-    // Single-line: render as a Fragment of the raw string. Multi-line:
-    // convert each "\n" to a <br/> so saved newlines actually break
-    // visually in the parent (which doesn't have white-space: pre-wrap
-    // by default). Single-line is the common case so we avoid the
-    // split when we don't need it.
+    // Display the text as given. Template `{{ token }}` substitution happens
+    // upstream in CanonicalNode (adapter-agnostic, display only) — except for
+    // the node being inline-edited, which receives the RAW token here so the
+    // user edits the template, not the substituted value.
     if (!multiline || !text.includes('\n')) return <>{text}</>
     const lines = text.split('\n')
     return (

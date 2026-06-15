@@ -90,6 +90,10 @@ const SDK_SURFACE = [
   'useNodeClasses',
   'useNodeClassesMulti',
   'useStartTextEdit',
+  // Phase 26 — template variables (TemplateVariable / TemplateValues are
+  // type-only, so they're erased and don't appear here).
+  'EditorTemplateVariablesProvider',
+  'useTemplateVariables',
 ].sort()
 
 // Editor-only runtime, exported from the editor entry but NOT the SDK: the
@@ -137,6 +141,10 @@ const HEADLESS_SURFACE = [
   'updateNodeProps',
   'updateNodeStyle',
   'validateDocument',
+  // Phase 26 — template interpolation (TemplateValues / InterpolateOptions are
+  // type-only).
+  'interpolate',
+  'extractTemplateRefs',
 ].sort()
 
 // Internals that must NEVER appear in the public surface. CanonicalNode is the

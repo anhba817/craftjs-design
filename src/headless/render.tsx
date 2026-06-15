@@ -21,16 +21,41 @@ import type { EditorDocument } from '@/persistence/schema'
 import { getComponentByDisplayName, getComponent } from '@/registry/registry'
 import type { Adapter, ClassMapResult } from '@/adapters/types'
 import { getTheme } from '@/themes/registry'
+import { interpolate, type InterpolateOptions, type TemplateValues } from './interpolate'
 import type { SerializedCraftNode, SerializedNodeMap } from './build'
 
 function resolvedNameOf(type: SerializedCraftNode['type']): string {
   return typeof type === 'string' ? type : type.resolvedName
 }
 
+// Phase 26 — interpolate `{{ tokens }}` in string props. Safe to run over ALL
+// string props: non-template strings (enums like size/level) have no `{{ }}` so
+// interpolate returns them unchanged. null = no variables → skip entirely.
+interface TemplateCtx {
+  values: TemplateValues
+  onMissing: InterpolateOptions['onMissing']
+}
+
+function substituteProps(
+  props: Record<string, unknown>,
+  ctx: TemplateCtx | null,
+): Record<string, unknown> {
+  if (!ctx) return props
+  let copy: Record<string, unknown> | undefined
+  for (const [k, v] of Object.entries(props)) {
+    if (typeof v === 'string' && v.includes('{{')) {
+      copy ??= { ...props }
+      copy[k] = interpolate(v, ctx.values, { onMissing: ctx.onMissing })
+    }
+  }
+  return copy ?? props
+}
+
 function renderNode(
   nodes: SerializedNodeMap,
   id: string,
   adapter: Adapter,
+  tpl: TemplateCtx | null,
 ): ReactNode {
   const node = nodes[id]
   if (!node) return null
@@ -43,7 +68,7 @@ function renderNode(
     return createElement(
       node.type,
       { key: id, ...(node.props as Record<string, unknown>) },
-      ...node.nodes.map((child) => renderNode(nodes, child, adapter)),
+      ...node.nodes.map((child) => renderNode(nodes, child, adapter, tpl)),
     )
   }
 
@@ -68,7 +93,10 @@ function renderNode(
     )
   }
 
-  const nodeProps = (node.props.nodeProps ?? {}) as Record<string, unknown>
+  const nodeProps = substituteProps(
+    (node.props.nodeProps ?? {}) as Record<string, unknown>,
+    tpl,
+  )
   const style = (node.props.style ?? { classes: {} }) as Parameters<
     typeof buildNodeRenderModel
   >[2]
@@ -98,12 +126,14 @@ function renderNode(
     for (const slot of canvasSlots) {
       const linkedId = node.linkedNodes?.[slot]
       slotChildren[slot] = linkedId
-        ? renderNode(nodes, linkedId, adapter)
+        ? renderNode(nodes, linkedId, adapter, tpl)
         : createElement('div', { key: slot, className: 'canvas-slot' })
     }
   }
 
-  const children = node.nodes.map((child) => renderNode(nodes, child, adapter))
+  const children = node.nodes.map((child) =>
+    renderNode(nodes, child, adapter, tpl),
+  )
 
   return createElement(
     Fragment,
@@ -130,6 +160,13 @@ function renderNode(
 export interface RenderDocumentOptions {
   /** Adapter to render with. Defaults to the envelope's `adapterId`. */
   adapterId?: string
+  /**
+   * Phase 26 — values for `{{ template }}` tokens in text props (flat or nested
+   * dot-paths). Omitted → tokens render as the literal `{{ token }}`.
+   */
+  variables?: TemplateValues
+  /** Unresolved token behavior: 'keep' (default, literal) or 'blank'. */
+  onMissingVariable?: InterpolateOptions['onMissing']
 }
 
 /**
@@ -153,13 +190,16 @@ export function renderDocumentToHtml(
   }
   const nodes = JSON.parse(envelope.craftJson) as SerializedNodeMap
   const theme = envelope.themeId ? getTheme(envelope.themeId) : undefined
+  const tpl: TemplateCtx | null = options.variables
+    ? { values: options.variables, onMissing: options.onMissingVariable ?? 'keep' }
+    : null
   const tree = createElement(
     'div',
     {
       'data-theme': theme?.dataThemeValue || undefined,
       className: envelope.colorMode === 'dark' ? 'dark' : undefined,
     },
-    renderNode(nodes, 'ROOT', adapter),
+    renderNode(nodes, 'ROOT', adapter, tpl),
   )
   return renderToStaticMarkup(tree)
 }

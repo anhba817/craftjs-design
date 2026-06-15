@@ -46,6 +46,12 @@ export {
   type RenderDocumentOptions,
 } from './render'
 export {
+  interpolate,
+  extractTemplateRefs,
+  type TemplateValues,
+  type InterpolateOptions,
+} from './interpolate'
+export {
   analyzeDocumentContrast,
   analyzeThemeContrast,
   resolveThemePalette,

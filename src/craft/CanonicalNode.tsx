@@ -8,6 +8,8 @@ import type { NodeStyle } from '../registry/types'
 import { useEditorStore } from '../state/editorStore'
 import { type StyleState } from '../style/dimensions'
 import { buildNodeRenderModel } from './nodeRenderModel'
+import { interpolate } from '@/headless/interpolate'
+import { useTemplateValues } from '@/editor/variables/templateValues'
 
 export interface CanonicalNodeProps {
   canonicalId: string
@@ -93,6 +95,30 @@ export function CanonicalNode({
   // wiring below. The `className` / `inlineStyle` props passed to the impl
   // mirror `composedClasses.root` / `composedInlineStyles.root` for
   // backwards compatibility with Pattern A impls written before Pattern B.
+  // Phase 26 — substitute `{{ tokens }}` in text props for DISPLAY, here (the
+  // adapter-agnostic seam every impl receives nodeProps from — mirrors headless
+  // renderNode), so it works for adapters that render text directly (html) as
+  // well as those using EditableText (shadcn/mui). Skipped for the node being
+  // inline-edited so EditableText seeds the RAW token, not the value. The
+  // boolean selector keeps non-editing nodes from re-rendering on edit toggle
+  // (see feedback-zustand-selectors). No-op when no values are in scope.
+  const templateValues = useTemplateValues()
+  const isInlineEditing = useEditorStore((s) => s.editingTextNode === nodeId)
+  const renderProps = useMemo(() => {
+    if (isInlineEditing) return nodeProps
+    let copy: Record<string, unknown> | undefined
+    for (const [k, v] of Object.entries(nodeProps)) {
+      if (typeof v === 'string' && v.includes('{{')) {
+        const sub = interpolate(v, templateValues)
+        if (sub !== v) {
+          copy ??= { ...nodeProps }
+          copy[k] = sub
+        }
+      }
+    }
+    return copy ?? nodeProps
+  }, [nodeProps, templateValues, isInlineEditing])
+
   const {
     composedClasses,
     composedInlineStyles,
@@ -100,7 +126,7 @@ export function CanonicalNode({
     rootClassString,
     canvasSlots,
     usesSlotChildren,
-  } = buildNodeRenderModel(def, nodeProps, style, previewBucket)
+  } = buildNodeRenderModel(def, renderProps, style, previewBucket)
 
   // Root-slot classMap output. Adapters with classMap receive the composed
   // root string; non-root slot composition isn't passed through classMap
@@ -196,7 +222,7 @@ export function CanonicalNode({
       {responsiveInlineCSS && <style>{responsiveInlineCSS}</style>}
       <Impl
         canonicalId={canonicalId}
-        props={nodeProps}
+        props={renderProps}
         style={style}
         rootRef={attachRef}
         className={styleProps.className}
