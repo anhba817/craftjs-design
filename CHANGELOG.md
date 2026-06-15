@@ -124,6 +124,23 @@ App build (`npm run build`):
 
 (none yet)
 
+## [1.8.2] — 2026-06-15
+
+### Fixed
+
+- **`@crafted-design/editor/index.css` no longer clobbers a host app's design
+  tokens.** The editor's document tokens (`--primary`, `--background`, `.dark`,
+  `[data-theme]`) now ship in a cascade layer (`@layer crafted-design`), so an
+  embedding app's **unlayered** `:root` / `.dark` tokens always win — importing
+  the global stylesheet stops overriding the host's brand colors app-wide
+  (reported: a host's primary button turning neutral on every page that loaded
+  the editor CSS). Standalone use is unchanged (nothing competes, so the layered
+  values apply); the editor's `--ed-*` *chrome* tokens stay unlayered. For full
+  subtree isolation (host tokens never reach the canvas either, no second
+  preflight), `@crafted-design/editor/index.scoped.css` (1.7.0) remains the
+  option. Verified in a real browser (`src/style/tokenLayer.browser.test.ts`).
+  See [INTEGRATION_GUIDE → Inline embedding](./docs/INTEGRATION_GUIDE.md#inline-embedding-into-a-tailwind-v4-app-170).
+
 ## [1.8.1] — 2026-06-14
 
 ### Fixed

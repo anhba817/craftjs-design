@@ -175,13 +175,17 @@ A runnable end-to-end example (controlled `value` + `onChange` + ref + a live
 ## Inline embedding into a Tailwind-v4 app (1.7.0)
 
 The default stylesheet `@crafted-design/editor/index.css` is a full Tailwind v4
-build — a global preflight (the `*` reset) + the editor's `:root` design
-tokens. Imported into an app that **already runs Tailwind v4**, that means a
-second global preflight and clashing `:root` tokens (the editor's `--primary`,
-`--background`, … vs. yours). That's why, historically, embedding meant an
-iframe.
+build — a global preflight (the `*` reset) + the editor's design tokens.
 
-Instead, import the **scoped** stylesheet:
+**Tokens don't clobber yours (1.8.2+).** The editor's document tokens
+(`--primary`, `--background`, `.dark`, `[data-theme]`) ship in a cascade layer
+(`@layer crafted-design`), so your app's **unlayered** `:root` / `.dark` tokens
+always win — importing `index.css` no longer overrides your brand colors
+app-wide. (The editor's `--ed-*` *chrome* tokens stay unlayered, but a host has
+no `--ed-*` to collide with.) The trade-off: because your `:root` wins
+everywhere, the editor **canvas** also inherits your brand tokens, and a
+preflight is still global. For full subtree isolation — host tokens never reach
+the canvas, no second preflight — use the **scoped** stylesheet instead:
 
 ```tsx
 // in a Tailwind-v4 host — INSTEAD of index.css:
@@ -205,7 +209,8 @@ Every rule in it is prefixed with `.crafted-design-scope` (and the editor's
 
 | Host | Stylesheet |
 |---|---|
-| Already runs Tailwind v4, embedding inline | `index.scoped.css` |
+| Want the editor canvas fully isolated from host tokens (and no double preflight) | `index.scoped.css` |
+| Fine with the canvas inheriting your brand tokens; just don't want your `:root` clobbered | `index.css` (global — tokens are layered) |
 | No CSS framework / standalone / its own route / iframe | `index.css` (global) |
 
 Notes & limits:
