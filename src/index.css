@@ -319,6 +319,17 @@ body {
   min-height: 2.5rem;
 }
 
+/* Phase 26 — editor-only marker on a node whose text content holds template
+   `{{ tokens }}` (CanonicalNode adds this class only while editing, so it never
+   reaches the rendered/exported output). A subtle dashed underline signals
+   "this element is dynamic" while the canvas shows the resolved value. */
+.crafted-design-has-var {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-color: color-mix(in oklch, var(--primary) 45%, transparent);
+  text-underline-offset: 3px;
+}
+
 .canvas-slot:empty {
   display: flex;
   align-items: center;

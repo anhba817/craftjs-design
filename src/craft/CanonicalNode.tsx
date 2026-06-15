@@ -10,6 +10,7 @@ import { type StyleState } from '../style/dimensions'
 import { buildNodeRenderModel } from './nodeRenderModel'
 import { interpolate } from '@/headless/interpolate'
 import { useTemplateValues } from '@/editor/variables/templateValues'
+import { useIsEditing } from '@/editor/canvas/useIsEditing'
 
 export interface CanonicalNodeProps {
   canonicalId: string
@@ -119,6 +120,19 @@ export function CanonicalNode({
     return copy ?? nodeProps
   }, [nodeProps, templateValues, isInlineEditing])
 
+  // Phase 26 (Group B) — mark a node whose text contains `{{ tokens }}` so the
+  // designer sees WHICH elements are dynamic (the displayed text is the
+  // resolved value). Editor-only (useIsEditing) so it never reaches the
+  // rendered/exported output; adapter-agnostic (rides the root className).
+  const editing = useIsEditing()
+  const hasTemplateRefs = useMemo(
+    () =>
+      Object.values(nodeProps).some(
+        (v) => typeof v === 'string' && v.includes('{{'),
+      ),
+    [nodeProps],
+  )
+
   const {
     composedClasses,
     composedInlineStyles,
@@ -225,7 +239,11 @@ export function CanonicalNode({
         props={renderProps}
         style={style}
         rootRef={attachRef}
-        className={styleProps.className}
+        className={
+          editing && hasTemplateRefs
+            ? `${styleProps.className ?? ''} crafted-design-has-var`.trim()
+            : styleProps.className
+        }
         sx={styleProps.sx}
         inlineStyle={inlineStyle}
         composedClasses={composedClasses}
