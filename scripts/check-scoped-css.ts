@@ -57,8 +57,23 @@ const root = postcss.parse(css)
 const offenders: string[] = []
 let sawDarkCompound = false
 
+// Chrome-theme rules (`:root { --ed-* }` defaults + `[data-editor-theme]`
+// presets) are INTENTIONALLY left global by build-scoped-css.ts so the
+// editorTheme prop (inline `--ed-*` on <html>) still works under the scoped
+// sheet; exempt them from the "must be scoped" assertion. (--ed-* is
+// editor-only — leaving them global never collides with a host.)
+function isChromeThemeRule(rule: Rule): boolean {
+  if (rule.selector.includes('[data-editor-theme')) return true
+  const decls = rule.nodes.filter((n) => n.type === 'decl')
+  return (
+    decls.length > 0 &&
+    decls.every((d) => (d as { prop: string }).prop.startsWith('--ed-'))
+  )
+}
+
 root.walkRules((rule) => {
   if (insideSkippedAtRule(rule)) return
+  if (isChromeThemeRule(rule)) return // chrome theme rules stay global by design
   selectorParser((sel) => {
     sel.each((node) => {
       const s = String(node).trim()

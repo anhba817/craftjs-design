@@ -93,5 +93,5 @@ jobs:
         # dist-lib/index.scoped.css. build:dist emits both (+ harness).
         run: npm run build:dist
 
-      - name: Browser tests (render + contrast + scoped CSS + token layer)
-        run: npx vitest run src/mcp/renderImage.test.ts src/style/scopedCss.browser.test.ts src/style/tokenLayer.browser.test.ts
+      - name: Browser tests (render + contrast + scoped CSS + token layer + chrome theme)
+        run: npx vitest run src/mcp/renderImage.test.ts src/style/scopedCss.browser.test.ts src/style/tokenLayer.browser.test.ts src/style/chromeThemeScoped.browser.test.ts

@@ -219,6 +219,8 @@ Notes & limits:
 - The editor owns its look: scoping makes the editor's utilities
   un-overridable by host CSS (intended). Theme the **canvas** via `registerTheme`
   and the **chrome** via `editorTheme`, not by overriding editor utilities.
+  (`editorTheme` works under the scoped sheet too — the `--ed-*` chrome tokens
+  stay global so the prop's inline values still apply; 1.8.3+.)
 - The **MUI** adapter renders overlays via MUI's own portals (emotion-styled),
   outside the Tailwind scoped sheet; the scoped sheet targets the shadcn / html
   (Tailwind) stacks.

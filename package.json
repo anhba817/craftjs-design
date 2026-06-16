@@ -1,6 +1,6 @@
 {
   "name": "@crafted-design/editor",
-  "version": "1.8.2",
+  "version": "1.8.3",
   "description": "A pluggable, AI-native drag-and-drop website builder for React — pick your design system (shadcn, MUI, plain HTML), drop the editor in, and let humans or AI agents (via the built-in MCP server) build designs.",
   "license": "MIT",
   "type": "module",

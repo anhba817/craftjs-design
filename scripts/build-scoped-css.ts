@@ -60,6 +60,24 @@ function scopeSelectorList(selectorList: string): string {
   }).processSync(selectorList)
   return [...new Set(out)].join(', ')
 }
+
+// Chrome-theme rules stay GLOBAL (not scoped): the `editorTheme` prop applies
+// `--ed-*` vars + `data-editor-theme` INLINE on <html> and relies on
+// inheritance into the editor. Rehoming `:root { --ed-* }` onto
+// `.crafted-design-scope` would set the defaults DIRECTLY on the editor root,
+// beating the host's inherited inline vars (verified) — so a host's editorTheme
+// would be ignored under the scoped sheet. `--ed-*` is editor-only, so leaving
+// these global never collides with a host. Covers the `:root { --ed-* }`
+// defaults, the `[data-editor-theme]` presets, and the data-editor-theme
+// color-scheme rules.
+function isChromeThemeRule(rule: Rule): boolean {
+  if (rule.selector.includes('[data-editor-theme')) return true
+  const decls = rule.nodes.filter((n) => n.type === 'decl')
+  return (
+    decls.length > 0 &&
+    decls.every((d) => (d as { prop: string }).prop.startsWith('--ed-'))
+  )
+}
 const DIST = resolve(import.meta.dirname, '..', 'dist-lib')
 const SOURCE = resolve(DIST, 'index.css')
 const OUT = resolve(DIST, 'index.scoped.css')
@@ -81,6 +99,7 @@ const banner =
 const root = postcss.parse(readFileSync(SOURCE, 'utf8'))
 root.walkRules((rule) => {
   if (insideSkippedAtRule(rule)) return
+  if (isChromeThemeRule(rule)) return // keep chrome theme rules global
   rule.selector = scopeSelectorList(rule.selector)
 })
 writeFileSync(OUT, banner + root.toString())

@@ -124,6 +124,22 @@ App build (`npm run build`):
 
 (none yet)
 
+## [1.8.3] — 2026-06-15
+
+### Fixed
+
+- **`editorTheme` now works under the scoped stylesheet
+  (`index.scoped.css`).** The scoping pass rehomed *every* `:root` rule onto
+  `.crafted-design-scope`, including the editor's `--ed-*` chrome-token defaults
+  — setting them directly on the editor root and overriding the host's
+  `editorTheme` (applied as inline `--ed-*` vars on `<html>`), so the chrome
+  theme was silently ignored under the scoped sheet. The chrome-theme rules
+  (`:root { --ed-* }` defaults + `[data-editor-theme]` presets) now stay
+  **global**, so the host's inline vars cascade in as intended (they're
+  editor-only, so they never collide with a host). Document tokens remain
+  scoped. Verified in a real browser
+  (`src/style/chromeThemeScoped.browser.test.ts`).
+
 ## [1.8.2] — 2026-06-15
 
 ### Fixed
