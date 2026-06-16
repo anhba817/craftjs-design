@@ -14,6 +14,22 @@ import { EditorTemplateVariablesProvider } from './EditorTemplateVariablesProvid
 ;(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
 const VARS = [{ key: 'contact.name', label: 'Full name', group: 'Contact', sample: 'Jane' }]
+const MANY = [
+  { key: 'contact.name', label: 'Full name', group: 'Contact' },
+  { key: 'contact.title', label: 'Job title', group: 'Contact' },
+  { key: 'company.name', label: 'Company', group: 'Company' },
+]
+
+// React controlled inputs ignore a plain `.value =`; use the native setter +
+// an input event so onChange fires.
+function typeInto(el: HTMLInputElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(
+    window.HTMLInputElement.prototype,
+    'value',
+  )!.set!
+  setter.call(el, value)
+  el.dispatchEvent(new Event('input', { bubbles: true }))
+}
 
 let container: HTMLDivElement
 let root: Root | null = null
@@ -70,5 +86,40 @@ describe('template variable picker (inspector)', () => {
     })
     // Caret defaulted to end of "Hi " → token appended.
     expect(onChange).toHaveBeenCalledWith('Hi {{ contact.name }}')
+  })
+
+  it('filters the list by search and Enter picks the first match', async () => {
+    const onChange = vi.fn()
+    mount(
+      <EditorTemplateVariablesProvider variables={MANY}>
+        <PropField schema={z.string()} value="" onChange={onChange} />
+      </EditorTemplateVariablesProvider>,
+    )
+    await act(async () => {
+      pickerBtn()!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((r) => setTimeout(r, 30))
+    })
+    // All three before filtering.
+    expect(rowFor('contact.name')).not.toBeNull()
+    expect(rowFor('company.name')).not.toBeNull()
+
+    const search = document.querySelector(
+      '[aria-label="Search variables"]',
+    ) as HTMLInputElement
+    expect(search).not.toBeNull()
+    await act(async () => typeInto(search, 'company'))
+
+    // Only the matching variable remains.
+    expect(rowFor('company.name')).not.toBeNull()
+    expect(rowFor('contact.name')).toBeNull()
+    expect(rowFor('contact.title')).toBeNull()
+
+    // Enter inserts the first (only) match.
+    await act(async () => {
+      search.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      )
+    })
+    expect(onChange).toHaveBeenCalledWith('{{ company.name }}')
   })
 })
