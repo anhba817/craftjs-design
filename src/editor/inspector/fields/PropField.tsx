@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { z } from 'zod'
 import { ValueSelect } from '../shared/ValueSelect'
+import { TemplateVariableTextInput } from '../../variables/TemplateVariableTextInput'
 import { ArrayField } from './ArrayField'
 import { ObjectField } from './ObjectField'
 
@@ -50,14 +51,9 @@ function PropFieldImpl({
     )
   }
   if (schema instanceof z.ZodString) {
-    return (
-      <input
-        type="text"
-        value={(value as string | undefined) ?? ''}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded border border-ed-border-2 bg-ed-surface px-1.5 py-1 text-sm text-ed-text"
-      />
-    )
+    // Phase 26 — string fields get the `{{ }}` variable picker when the host
+    // declared template variables; otherwise it's a plain text input.
+    return <TemplateVariableTextInput value={value} onChange={onChange} />
   }
   if (schema instanceof z.ZodBoolean) {
     return (
