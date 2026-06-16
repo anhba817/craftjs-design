@@ -38,6 +38,27 @@ const ref = useRef<EditorHandle>(null)
 internal, still surfaced via `onChange`) — use it when you don't want to hold the
 document in state.
 
+## Template variables (1.9.0)
+
+The example also shows **merge fields**: the seed document uses
+`{{ contact.name }}`-style tokens, and the host declares the variable list via
+`EditorTemplateVariablesProvider`. Insert tokens from the inspector's `{{ }}`
+picker (or type them); the canvas previews the live values, and the right-hand
+panel re-renders the same design with whatever data you type:
+
+```tsx
+<EditorTemplateVariablesProvider
+  variables={[{ key: 'contact.name', label: 'Full name', sample: 'Jane Doe' }]}
+  values={liveValues}            // canvas preview shows these (sample as fallback)
+>
+  <Editor … />
+</EditorTemplateVariablesProvider>
+
+<DocumentRenderer document={doc} variables={liveValues} />  // rendered output
+```
+
+The document stores only the `{{ tokens }}` — one design, many data rows.
+
 > **CSS isolation:** this example imports the **scoped** stylesheet
 > `@crafted-design/editor/index.scoped.css` — every rule is prefixed with
 > `.crafted-design-scope`, so the editor embeds **inline** in an app already

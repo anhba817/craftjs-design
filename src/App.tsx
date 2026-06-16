@@ -8,6 +8,7 @@ import './editor/inspector/built-in-panels'
 import './persistence/templates'
 import { useState } from 'react'
 import { EditorColorVariablesProvider } from './editor/colors/EditorColorVariablesProvider'
+import { EditorTemplateVariablesProvider } from './editor/variables/EditorTemplateVariablesProvider'
 import { Editor, ErrorBoundary, TopShellErrorFallback } from './editor/Editor'
 import type { EditorChromeTheme } from './editor/chromeTheme'
 import {
@@ -28,6 +29,18 @@ const DEMO_COLOR_VARIABLES = [
   { name: 'brand-blue', label: 'Brand Blue' },
   { name: 'brand-ink', label: 'Brand Ink' },
   { name: 'brand-sand', label: 'Brand Sand' },
+]
+
+// Phase 26 demo — host-supplied template variables. Insert `{{ key }}` into any
+// text via the inspector's `{{ }}` picker; the canvas previews the `sample`.
+// A real host would also pass live `values` and render with
+// <DocumentRenderer variables={…}>.
+const DEMO_TEMPLATE_VARIABLES = [
+  { key: 'contact.name', label: 'Full name', group: 'Contact', sample: 'Jane Doe' },
+  { key: 'contact.title', label: 'Job title', group: 'Contact', sample: 'Head of Product' },
+  { key: 'contact.email', label: 'Email', group: 'Contact', sample: 'jane@acme.com' },
+  { key: 'company.name', label: 'Company', group: 'Company', sample: 'Acme Inc.' },
+  { key: 'company.tagline', label: 'Tagline', group: 'Company', sample: 'Build better, faster.' },
 ]
 
 export default function App() {
@@ -77,7 +90,9 @@ export default function App() {
         >
           chrome: {label}
         </button>
-        <Editor editorTheme={themeForEditor} />
+        <EditorTemplateVariablesProvider variables={DEMO_TEMPLATE_VARIABLES}>
+          <Editor editorTheme={themeForEditor} />
+        </EditorTemplateVariablesProvider>
       </EditorColorVariablesProvider>
     </ErrorBoundary>
   )

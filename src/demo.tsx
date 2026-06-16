@@ -20,10 +20,20 @@ import {
   registerSystemFonts,
 } from './registry/curated-fonts'
 import { Editor, ErrorBoundary, TopShellErrorFallback } from './editor/Editor'
+import { EditorTemplateVariablesProvider } from './editor/variables/EditorTemplateVariablesProvider'
 import type { EditorChromeTheme } from './editor/chromeTheme'
 
 registerSystemFonts()
 registerGoogleFonts()
+
+// Phase 26 — showcase template variables: the inspector's `{{ }}` picker lists
+// these and the canvas previews each `sample`.
+const DEMO_TEMPLATE_VARIABLES = [
+  { key: 'contact.name', label: 'Full name', group: 'Contact', sample: 'Jane Doe' },
+  { key: 'contact.title', label: 'Job title', group: 'Contact', sample: 'Head of Product' },
+  { key: 'company.name', label: 'Company', group: 'Company', sample: 'Acme Inc.' },
+  { key: 'company.tagline', label: 'Tagline', group: 'Company', sample: 'Build better, faster.' },
+]
 
 // A host-level control that cycles the editor-chrome theme — showcases the
 // `editorTheme` prop (1.1.0). Like in the dev harness (App.tsx), this lives
@@ -62,7 +72,9 @@ function DemoApp() {
       >
         chrome: {label}
       </button>
-      <Editor editorTheme={editorTheme} />
+      <EditorTemplateVariablesProvider variables={DEMO_TEMPLATE_VARIABLES}>
+        <Editor editorTheme={editorTheme} />
+      </EditorTemplateVariablesProvider>
     </ErrorBoundary>
   )
 }
