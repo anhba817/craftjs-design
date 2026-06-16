@@ -478,6 +478,67 @@ document) lives at
 [`examples/renderer-host`](../examples/renderer-host) — the display-page
 counterpart to `examples/minimal-host`.
 
+## Template variables (1.9.0)
+
+Let users drop `{{ tokens }}` into text (headings, paragraphs, buttons, …) that
+resolve to per-recipient values at render time — a merge-field system for
+emails, personalized pages, and the like. The token syntax is a safe
+Mustache/Jinja subset: `{{ path.to.value }}` interpolation only, **no** loops,
+conditionals, or expressions.
+
+**Declare the variables** the editor offers. Wrap `<Editor>` in the provider:
+
+```tsx
+import { Editor } from '@crafted-design/editor'
+import { EditorTemplateVariablesProvider } from '@crafted-design/editor/core'
+import type { TemplateVariable } from '@crafted-design/editor/core'
+
+const variables: TemplateVariable[] = [
+  { key: 'contact.name',  label: 'Full name', group: 'Contact', sample: 'Jane Doe' },
+  { key: 'contact.email', label: 'Email',     group: 'Contact', sample: 'jane@acme.com' },
+  { key: 'company.name',  label: 'Company',    group: 'Company', sample: 'Acme Inc.' },
+]
+
+<EditorTemplateVariablesProvider variables={variables} values={liveValues}>
+  <Editor /* … */ />
+</EditorTemplateVariablesProvider>
+```
+
+- The inspector's text fields grow a `{{ }}` picker (searchable, grouped by
+  `group`) that inserts the selected token at the caret; users can also type
+  tokens directly.
+- `key` supports **dot-paths** (`contact.name`) resolved against nested values;
+  a flat key matching the whole path wins first.
+- On the canvas each token renders its **value** — from the optional `values`
+  prop when present, else the variable's `sample`, else the **raw** `{{ token }}`
+  when neither exists (so unconfigured fields stay visible). Tokens with a
+  variable carry a dashed underline so authors can spot them.
+
+**Render with real values** on a production page — the renderer takes a flat or
+nested `values` object and substitutes the same way:
+
+```tsx
+import { DocumentRenderer } from '@crafted-design/editor/renderer'
+
+<DocumentRenderer
+  document={savedEnvelope}
+  variables={{ contact: { name: 'Jane Doe' }, company: { name: 'Acme Inc.' } }}
+/>
+```
+
+A missing value falls back to the raw `{{ token }}` by default. For a
+server-side render, `renderDocumentToHtml(doc, { variables, onMissingVariable })`
+in `@crafted-design/editor/headless` does the same with no React/DOM, and
+`interpolate(text, values)` / `extractTemplateRefs(text)` are exported for
+custom pipelines. The document envelope is **unchanged** — tokens live inside
+ordinary text props, so saved documents stay portable across hosts with
+different variable sets.
+
+When driving the editor through the [MCP server](./MCP_GUIDE.md), declare the
+same variables via `CRAFTED_DESIGN_TEMPLATE_VARIABLES` (a JSON array) so the
+agent can discover and insert them. A full host↔renderer loop lives in
+[`examples/controlled-host`](../examples/controlled-host).
+
 ## Persistence
 
 The editor persists documents to **IndexedDB by default** (0.5.0+), behind

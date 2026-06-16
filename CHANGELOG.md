@@ -124,6 +124,33 @@ App build (`npm run build`):
 
 (none yet)
 
+## [1.9.0] — 2026-06-17
+
+### Added
+
+- **Template variables** — let users drop `{{ tokens }}` into text that resolve
+  to per-recipient values at render time (a merge-field system for emails,
+  personalized pages, …). The token syntax is a safe Mustache/Jinja subset:
+  `{{ path.to.value }}` interpolation only, no control flow.
+  - **Editor:** wrap `<Editor>` in `EditorTemplateVariablesProvider` with a list
+    of `TemplateVariable` (`{ key, label?, group?, sample? }`). Inspector text
+    fields grow a searchable, grouped `{{ }}` picker that inserts the token at
+    the caret; users can also type tokens directly. The canvas shows the
+    resolved value (from the optional `values` prop, else the variable's
+    `sample`, else the raw `{{ token }}`); tokens carry a dashed underline.
+    Dot-path keys (`contact.name`) resolve against nested values.
+  - **Renderer:** `<DocumentRenderer variables={…} />` substitutes a flat or
+    nested values object; missing values fall back to the raw `{{ token }}`.
+  - **Headless:** `renderDocumentToHtml(doc, { variables, onMissingVariable })`,
+    plus `interpolate(text, values)` / `extractTemplateRefs(text)` for custom
+    pipelines (exported from `@crafted-design/editor/headless`).
+  - **MCP:** a `list_template_variables` tool reports the host-declared set
+    (configured via the `CRAFTED_DESIGN_TEMPLATE_VARIABLES` env var, a JSON
+    array); `get_capabilities` nudges the agent to use `{{ key }}` tokens.
+  - New SDK exports: `EditorTemplateVariablesProvider`, `useTemplateVariables`,
+    `TemplateVariable`. The document envelope is **unchanged** — tokens live in
+    ordinary text props, so saved documents stay portable across hosts.
+
 ## [1.8.3] — 2026-06-15
 
 ### Fixed

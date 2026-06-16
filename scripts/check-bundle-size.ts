@@ -44,7 +44,9 @@ const BUDGETS: Budget[] = [
   // Phase 21 — headless document API. Registers canonicals/themes/templates
   // (data + zod, no React UI), so it's mid-sized; it must NOT pull the editor
   // chrome or adapters into its graph.
-  { label: 'headless (headless.js)', entry: 'headless.js', maxGzipKB: 60 },
+  // Phase 26 — bumped 60 → 62: the template-variable interpolation engine
+  // (interpolate / extractTemplateRefs / lookupValue) + render-time substitution.
+  { label: 'headless (headless.js)', entry: 'headless.js', maxGzipKB: 62 },
   // Phase 21 — standalone document renderer: canonical registry + the Craft
   // render path (CanonicalNode/resolver) but NO editor chrome (toolbox,
   // inspector, persistence UI). A blow-past here means chrome leaked in.

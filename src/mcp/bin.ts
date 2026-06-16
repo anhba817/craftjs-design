@@ -6,6 +6,35 @@
 // @modelcontextprotocol/sdk is an OPTIONAL peer (the editor doesn't need it).
 // Resolve it lazily so a missing install gives a clear hint instead of a
 // module-not-found stack trace.
+import type { McpTemplateVariable } from './tools'
+
+/** Parse the CRAFTED_DESIGN_TEMPLATE_VARIABLES env (a JSON array of variable
+ * descriptors). Returns undefined when unset/invalid so the server falls back
+ * to "no variables configured". */
+function parseTemplateVariables(
+  raw: string | undefined,
+): McpTemplateVariable[] | undefined {
+  if (!raw) return undefined
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) throw new Error('expected a JSON array')
+    return parsed
+      .filter((v): v is McpTemplateVariable => !!v && typeof v.key === 'string')
+      .map((v) => ({
+        key: v.key,
+        label: typeof v.label === 'string' ? v.label : undefined,
+        group: typeof v.group === 'string' ? v.group : undefined,
+        sample: typeof v.sample === 'string' ? v.sample : undefined,
+      }))
+  } catch (err) {
+    console.error(
+      'crafted-design-mcp: ignoring invalid CRAFTED_DESIGN_TEMPLATE_VARIABLES —',
+      err instanceof Error ? err.message : err,
+    )
+    return undefined
+  }
+}
+
 async function main() {
   let StdioServerTransport: typeof import('@modelcontextprotocol/sdk/server/stdio.js').StdioServerTransport
   try {
@@ -28,7 +57,13 @@ async function main() {
   // check_contrast) when Playwright + the harness are present, so the agent
   // sees a screenshot tool only when it actually works.
   const imageRendering = await isRenderImageAvailable()
-  const server = createMcpServer({ imageRendering })
+  // The host declares template variables (Phase 26) via an env var holding a
+  // JSON array of `{ key, label?, group?, sample? }`. Malformed JSON is ignored
+  // (with a stderr note) rather than crashing the server.
+  const templateVariables = parseTemplateVariables(
+    process.env.CRAFTED_DESIGN_TEMPLATE_VARIABLES,
+  )
+  const server = createMcpServer({ imageRendering, templateVariables })
   const transport = new StdioServerTransport()
   await server.connect(transport)
   // stdio transport keeps the process alive; nothing else to do.

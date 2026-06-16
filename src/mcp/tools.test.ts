@@ -48,6 +48,43 @@ describe('tool catalog', () => {
   })
 })
 
+describe('template variables (Phase 26)', () => {
+  const withVars = () => {
+    const session = new DesignSession()
+    const tools = new Map(
+      createTools(session, {
+        templateVariables: [
+          { key: 'contact.name', label: 'Full name', group: 'Contact', sample: 'Jane' },
+          { key: 'company.name', label: 'Company' },
+        ],
+      }).map((t) => [t.name, t]),
+    )
+    return (name: string) => (tools.get(name) as ToolDef).handler({})
+  }
+
+  it('list_template_variables reports the host-declared set + tokens', () => {
+    const out = withVars()('list_template_variables')
+    expect(out.isError).toBeFalsy()
+    expect(out.text).toContain('{{ contact.name }}')
+    expect(out.text).toContain('Full name')
+    expect(out.text).toContain('[Contact]')
+    expect(out.text).toContain('"Jane"')
+    expect(out.text).toContain('{{ company.name }}')
+  })
+
+  it('get_capabilities nudges about {{ key }} tokens when variables exist', () => {
+    expect(withVars()('get_capabilities').text).toContain('{{ key }}')
+  })
+
+  it('reports none + omits the nudge when the host declared no variables', () => {
+    const session = new DesignSession()
+    const tools = new Map(createTools(session).map((t) => [t.name, t]))
+    const call = (n: string) => (tools.get(n) as ToolDef).handler({})
+    expect(call('list_template_variables').text).toContain('No template variables')
+    expect(call('get_capabilities').text).not.toContain('{{ key }}')
+  })
+})
+
 describe('build a document through the tools', () => {
   it('create → add (Pattern A + B) → style → render → get', () => {
     const { call, session } = harness()

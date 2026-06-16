@@ -126,6 +126,30 @@ Pydantic-AI, and others.
 > supports it). A client that needs HTTP/SSE can't connect directly — open an
 > issue if you need a streamable-HTTP transport.
 
+### Declaring template variables
+
+To let the agent insert merge tokens (`{{ contact.name }}`), set the
+`CRAFTED_DESIGN_TEMPLATE_VARIABLES` env var to a JSON array of
+`{ key, label?, group?, sample? }` — the same shape the editor's
+`EditorTemplateVariablesProvider` takes (see the
+[Integration Guide](./INTEGRATION_GUIDE.md#template-variables-190)). The agent
+discovers them via `list_template_variables`; `get_capabilities` nudges it to
+use tokens. Invalid JSON is ignored (the server starts with no variables).
+
+```jsonc
+{
+  "mcpServers": {
+    "crafted-design": {
+      "command": "npx",
+      "args": ["-y", "@crafted-design/editor", "crafted-design-mcp"],
+      "env": {
+        "CRAFTED_DESIGN_TEMPLATE_VARIABLES": "[{\"key\":\"contact.name\",\"label\":\"Full name\",\"group\":\"Contact\",\"sample\":\"Jane Doe\"}]"
+      }
+    }
+  }
+}
+```
+
 ## The workflow
 
 Call `get_capabilities` first — it returns this in-band. The shape:
@@ -160,6 +184,7 @@ node) comes back as a recoverable tool error, not a crash.
 | `list_canonicals` | All components: id · category · container/leaf/slots. |
 | `describe_canonical` | One component: props JSON Schema, defaults, slots, panels. |
 | `list_adapters` / `list_themes` / `list_templates` | Registered design systems / themes / templates. |
+| `list_template_variables` | Host-declared merge variables; insert any as a `{{ key }}` token in a text prop. |
 | `create_document` | Fresh document (adapter / theme / colorMode / root). |
 | `apply_template` | Load a registered starter template. |
 | `add_node` | Add a canonical under a parent (or a Pattern B `slot`); returns its id. |

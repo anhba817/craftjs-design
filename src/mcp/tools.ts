@@ -53,11 +53,23 @@ function specFromArgs(args: Record<string, unknown>): HeadlessNodeSpec {
   return spec
 }
 
+// Phase 26 — a host-declared template variable the agent can reference as a
+// `{{ key }}` merge token in text props (mirrors the editor's TemplateVariable).
+export interface McpTemplateVariable {
+  key: string
+  label?: string
+  group?: string
+  sample?: string
+}
+
 export interface ToolOptions {
   /** True when render_image / browser-exact contrast are available (Playwright
    * + harness present). Drives the capabilities guidance + the check_contrast
    * nudge so the agent is steered to `render_image` only when it actually works. */
   imageRendering?: boolean
+  /** Host-declared template variables (Phase 26). When present, text props
+   * accept `{{ key }}` merge tokens and list_template_variables reports them. */
+  templateVariables?: McpTemplateVariable[]
 }
 
 export function createTools(
@@ -67,6 +79,11 @@ export function createTools(
   const seeStep = opts.imageRendering
     ? '5. **See it** — ALWAYS call render_image after building (and whenever colors, contrast, or layout matter): it renders a real PNG you can look at. outline_document / render_html are cheaper text views.'
     : '5. **See it** — outline_document (cheap text tree) or render_html (structural HTML).'
+  const templateVars = opts.templateVariables ?? []
+  const varsNote =
+    templateVars.length > 0
+      ? '• Template variables: text props (content / label) accept `{{ key }}` merge tokens — call list_template_variables for the host’s set. The host substitutes real values at render.'
+      : null
   return [
     {
       name: 'get_capabilities',
@@ -89,6 +106,7 @@ export function createTools(
             seeStep,
             '   • theme_palette / check_contrast — know your colors and whether text is legible (WCAG).',
             '6. validate_document, then get_document for the final EditorDocument JSON.',
+            ...(varsNote ? ['', varsNote] : []),
             '',
             'Every mutating tool returns the validation status + a fresh outline, so you stay oriented.',
           ].join('\n'),
@@ -157,6 +175,31 @@ export function createTools(
           listTemplates().map((t) => `${t.id} · ${t.name}`).join('\n') ||
             '(no templates registered)',
         ),
+    },
+
+    {
+      name: 'list_template_variables',
+      title: 'List template variables',
+      description:
+        'The host-declared template variables. Insert any as a `{{ key }}` merge token in a text prop (content, label, …); the host substitutes the real value when rendering. Empty unless the host configured variables.',
+      inputShape: {},
+      handler: () => {
+        if (templateVars.length === 0)
+          return ok(
+            'No template variables are configured for this server — author literal text.',
+          )
+        const rows = templateVars.map((v) => {
+          const parts = [`{{ ${v.key} }}`]
+          if (v.label) parts.push(`— ${v.label}`)
+          if (v.group) parts.push(`[${v.group}]`)
+          if (v.sample !== undefined) parts.push(`e.g. ${JSON.stringify(v.sample)}`)
+          return parts.join(' ')
+        })
+        return ok(
+          'Template variables — drop these tokens into text props; the host fills real values at render:\n\n' +
+            rows.join('\n'),
+        )
+      },
     },
 
     {

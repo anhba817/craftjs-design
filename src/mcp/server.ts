@@ -7,7 +7,12 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 // render_html previews through the dependency-free HTML adapter — register it.
 import '@/adapters/html'
 import { DesignSession } from './session'
-import { createTools, type ToolDef, type ToolResult } from './tools'
+import {
+  createTools,
+  type McpTemplateVariable,
+  type ToolDef,
+  type ToolResult,
+} from './tools'
 import { createImageRenderer, type ImageRenderer } from './renderImage'
 
 // The MCP server's own protocol identity (independent of the editor version).
@@ -29,6 +34,9 @@ export interface McpServerOptions {
    * can't use, and the capabilities guidance omits it. Default false.
    */
   imageRendering?: boolean
+  /** Host-declared template variables (Phase 26). Exposed via
+   * list_template_variables and the capabilities guidance. */
+  templateVariables?: McpTemplateVariable[]
 }
 
 /** Build a fully-configured McpServer over a fresh session (no transport). */
@@ -39,7 +47,10 @@ export function createMcpServer(opts: McpServerOptions = {}): McpServer {
     version: SERVER_VERSION,
   })
   const session = new DesignSession()
-  const tools = createTools(session, { imageRendering })
+  const tools = createTools(session, {
+    imageRendering,
+    templateVariables: opts.templateVariables,
+  })
   const byName = new Map<string, ToolDef>(tools.map((t) => [t.name, t]))
 
   // A persistent screenshot renderer (Playwright optional peer). Launched
