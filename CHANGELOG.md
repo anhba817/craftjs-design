@@ -124,6 +124,22 @@ App build (`npm run build`):
 
 (none yet)
 
+## [1.9.2] — 2026-06-17
+
+### Fixed
+
+- **The `crafted-design` bin now actually runs when launched via npx / npm /
+  a local install.** Its "run only when executed directly" guard compared
+  `import.meta.url` (the resolved real path) against `process.argv[1]` with a
+  plain string equality. npm/npx/local installs execute every bin through a
+  `node_modules/.bin/<name>` **symlink**, so `process.argv[1]` was the symlink
+  path — never equal to the real module path — and the CLI **silently no-opped
+  and exited 0**. Symptoms: `npx -y @crafted-design/editor mcp` produced no
+  output (the MCP server never started; clients saw "connection closed"), and
+  `npx … scaffold` did nothing. The guard now compares `realpathSync` of both
+  sides, so a symlinked launch resolves to the same file. (Latent since the CLI
+  first shipped; only direct `node dist-lib/cli.js …` invocations worked.)
+
 ## [1.9.1] — 2026-06-17
 
 ### Fixed

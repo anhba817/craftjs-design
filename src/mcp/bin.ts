@@ -12,6 +12,7 @@
 // module-not-found stack trace.
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
+import { realpathSync } from 'node:fs'
 import type { McpTemplateVariable } from './tools'
 
 /** Parse the CRAFTED_DESIGN_TEMPLATE_VARIABLES env (a JSON array of variable
@@ -80,10 +81,19 @@ export async function startMcpServer(): Promise<void> {
 
 // Allow direct execution for dev/debugging (`tsx src/mcp/bin.ts`). In the
 // published package this module is imported by the CLI, not run directly, so
-// the guard stays dormant.
-const invokedAsScript =
-  process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
-if (invokedAsScript) {
+// the guard stays dormant. Compare realpaths so a symlinked invocation still
+// matches (see the equivalent note in src/cli/index.ts).
+function invokedDirectly(): boolean {
+  const argv1 = process.argv[1]
+  if (!argv1) return false
+  const self = fileURLToPath(import.meta.url)
+  try {
+    return realpathSync(self) === realpathSync(argv1)
+  } catch {
+    return self === resolve(argv1)
+  }
+}
+if (invokedDirectly()) {
   startMcpServer().catch((err) => {
     console.error('crafted-design mcp failed to start:', err)
     process.exit(1)

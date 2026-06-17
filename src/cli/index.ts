@@ -19,6 +19,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   statSync,
   writeFileSync,
 } from 'node:fs'
@@ -238,10 +239,24 @@ export function run(argv: string[]): number {
 }
 
 // Only auto-run when executed as the bin (not when imported by tests).
-// import.meta.url === the invoked script's URL in that case.
-const invokedAsScript =
-  process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
-if (invokedAsScript) {
+// `process.argv[1]` is the path that was executed — and when launched through
+// a `node_modules/.bin/crafted-design` SYMLINK (how npm / npx / local installs
+// run every bin) it's the symlink, NOT this file. `import.meta.url` always
+// resolves to the real module path, so a raw string compare would never match
+// under a symlink and the CLI would silently no-op. Compare REALPATHS so the
+// symlink resolves to the same file. (Latent since the CLI shipped — it broke
+// `scaffold` and `mcp` for every npx/installed invocation.)
+function invokedAsBin(): boolean {
+  const argv1 = process.argv[1]
+  if (!argv1) return false
+  const self = fileURLToPath(import.meta.url)
+  try {
+    return realpathSync(self) === realpathSync(argv1)
+  } catch {
+    return self === resolve(argv1)
+  }
+}
+if (invokedAsBin()) {
   const argv = process.argv.slice(2)
   if (argv[0] === 'mcp') {
     // Hand off to the MCP server (stdio; keeps the process alive). Lazily
