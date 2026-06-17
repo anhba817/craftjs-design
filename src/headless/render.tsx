@@ -22,6 +22,7 @@ import { getComponentByDisplayName, getComponent } from '@/registry/registry'
 import type { Adapter, ClassMapResult } from '@/adapters/types'
 import { getTheme } from '@/themes/registry'
 import { interpolate, type InterpolateOptions, type TemplateValues } from './interpolate'
+import { withHeadlessIcons } from './headlessIcons'
 import type { SerializedCraftNode, SerializedNodeMap } from './build'
 
 function resolvedNameOf(type: SerializedCraftNode['type']): string {
@@ -201,7 +202,9 @@ export function renderDocumentToHtml(
     },
     renderNode(nodes, 'ROOT', adapter, tpl),
   )
-  return renderToStaticMarkup(tree)
+  // Phase 27 — icons resolve synchronously here (the lazy DynamicIcon default
+  // can't render under renderToStaticMarkup); a host's custom resolver is kept.
+  return withHeadlessIcons(() => renderToStaticMarkup(tree))
 }
 
 /**

@@ -44,6 +44,7 @@ const lucideResolver: IconResolver = (name, sizePx) => (
 )
 
 let currentResolver: IconResolver = lucideResolver
+let resolverIsBuiltin = true
 
 /**
  * Replace the global icon resolver with a host-supplied one (call BEFORE the
@@ -52,6 +53,17 @@ let currentResolver: IconResolver = lucideResolver
  */
 export function registerIconResolver(resolver?: IconResolver): void {
   currentResolver = resolver ?? lucideResolver
+  resolverIsBuiltin = resolver == null
+}
+
+/**
+ * Whether the active resolver is the built-in (lazy lucide) one. The headless
+ * renderer uses this to decide whether to substitute its synchronous lucide
+ * resolver (the lazy default can't render under `renderToStaticMarkup`) — a
+ * host's custom resolver is left untouched.
+ */
+export function isBuiltinResolver(): boolean {
+  return resolverIsBuiltin
 }
 
 /** Resolve an icon name to a node using the active resolver. */
