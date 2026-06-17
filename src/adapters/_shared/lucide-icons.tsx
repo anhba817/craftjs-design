@@ -1,47 +1,15 @@
-import {
-  AlertCircle,
-  ArrowDown,
-  ArrowRight,
-  Check,
-  Heart,
-  Home,
-  Info,
-  Mail,
-  Minus,
-  Phone,
-  Plus,
-  Search,
-  Settings,
-  Star,
-  User,
-  X,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+// Phase 13 § 5.2 / Phase 27 — shared icon rendering for adapter impls (the Icon
+// canonical, NavItem, …). A thin wrapper over the runtime icon resolver
+// (`@/icons/resolver`): lazy lucide by default, host-pluggable via
+// `registerIconResolver`. The export name + signature are unchanged so every
+// caller (HtmlIcon, HtmlNavItem, the MUI/shadcn NavItems) stays the same.
+//
+// Empty name → nothing (callers use this for "no icon"). A non-empty but
+// unknown name resolves to the resolver's fallback glyph, not null.
+import type { ReactNode } from 'react'
+import { resolveIcon } from '@/icons/resolver'
 
-// Phase 13 § 5.2 — shared lucide icon lookup for adapter impls that need
-// the same icon set as the Icon canonical (NavItem, etc.). Same 16 names
-// as src/registry/components/icon.ts.
-export const LUCIDE_ICONS: Record<string, LucideIcon> = {
-  star: Star,
-  heart: Heart,
-  home: Home,
-  user: User,
-  settings: Settings,
-  mail: Mail,
-  phone: Phone,
-  search: Search,
-  check: Check,
-  x: X,
-  'arrow-right': ArrowRight,
-  'arrow-down': ArrowDown,
-  plus: Plus,
-  minus: Minus,
-  info: Info,
-  'alert-circle': AlertCircle,
-}
-
-export function iconElement(name: string, sizePx: number) {
-  const I = LUCIDE_ICONS[name]
-  if (!I) return null
-  return <I size={sizePx} />
+export function iconElement(name: string, sizePx: number): ReactNode {
+  if (!name) return null
+  return resolveIcon(name, sizePx)
 }
