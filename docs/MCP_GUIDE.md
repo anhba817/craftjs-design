@@ -1,6 +1,7 @@
 # MCP server — let an AI build designs
 
-`crafted-design-mcp` is a [Model Context Protocol](https://modelcontextprotocol.io)
+The `crafted-design` **MCP server** (the bin's `mcp` subcommand) is a
+[Model Context Protocol](https://modelcontextprotocol.io)
 server that exposes the editor's component registry and document model as
 tools. An AI client (Claude Code, Claude Desktop, any MCP client) can use it to
 **author and edit editor documents** — producing the same `EditorDocument`
@@ -32,7 +33,7 @@ npm i -D playwright && npx playwright install chromium
 **Claude Code:**
 
 ```bash
-claude mcp add crafted-design -- npx -y @crafted-design/editor crafted-design-mcp
+claude mcp add crafted-design -- npx -y @crafted-design/editor mcp
 ```
 
 **Claude Desktop** (`claude_desktop_config.json` → `mcpServers`):
@@ -42,14 +43,14 @@ claude mcp add crafted-design -- npx -y @crafted-design/editor crafted-design-mc
   "mcpServers": {
     "crafted-design": {
       "command": "npx",
-      "args": ["-y", "@crafted-design/editor", "crafted-design-mcp"]
+      "args": ["-y", "@crafted-design/editor", "mcp"]
     }
   }
 }
 ```
 
-(Both spawn the `crafted-design-mcp` bin over stdio. If the MCP SDK isn't
-installed, the bin prints an install hint and exits.)
+(Both run the `crafted-design` bin's `mcp` subcommand over stdio. If the MCP
+SDK isn't installed, it prints an install hint and exits.)
 
 ## Other MCP clients
 
@@ -57,11 +58,11 @@ Nothing here is Claude-specific — this is a standard **stdio** MCP server, so
 any MCP client registers it with the *same command and args*:
 
 ```
-command: npx   args: ["-y", "@crafted-design/editor", "crafted-design-mcp"]
+command: npx   args: ["-y", "@crafted-design/editor", "mcp"]
 ```
 
 (Before the package is published, point at the built bin instead:
-`command: node`, `args: ["<abs>/dist-lib/mcp.js"]`.) Only the config file and
+`command: node`, `args: ["<abs>/dist-lib/cli.js", "mcp"]`.) Only the config file and
 its key differ per client:
 
 | Client | Where | Key |
@@ -81,7 +82,7 @@ Most use the JSON shape:
   "mcpServers": {
     "crafted-design": {
       "command": "npx",
-      "args": ["-y", "@crafted-design/editor", "crafted-design-mcp"]
+      "args": ["-y", "@crafted-design/editor", "mcp"]
     }
   }
 }
@@ -92,10 +93,10 @@ Most use the JSON shape:
 ```toml
 [mcp_servers.crafted-design]
 command = "npx"
-args = ["-y", "@crafted-design/editor", "crafted-design-mcp"]
+args = ["-y", "@crafted-design/editor", "mcp"]
 ```
 
-(or `codex mcp add crafted-design -- npx -y @crafted-design/editor crafted-design-mcp`).
+(or `codex mcp add crafted-design -- npx -y @crafted-design/editor mcp`).
 
 **Custom agents / frameworks** connect programmatically — no config file. Pass
 the same stdio command to an MCP client SDK or an agent framework's MCP
@@ -106,7 +107,7 @@ adapter:
 from agents.mcp import MCPServerStdio
 server = MCPServerStdio(params={
     "command": "npx",
-    "args": ["-y", "@crafted-design/editor", "crafted-design-mcp"],
+    "args": ["-y", "@crafted-design/editor", "mcp"],
 })
 ```
 
@@ -115,7 +116,7 @@ server = MCPServerStdio(params={
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 const transport = new StdioClientTransport({
   command: 'npx',
-  args: ['-y', '@crafted-design/editor', 'crafted-design-mcp'],
+  args: ['-y', '@crafted-design/editor', 'mcp'],
 })
 ```
 
@@ -141,7 +142,7 @@ use tokens. Invalid JSON is ignored (the server starts with no variables).
   "mcpServers": {
     "crafted-design": {
       "command": "npx",
-      "args": ["-y", "@crafted-design/editor", "crafted-design-mcp"],
+      "args": ["-y", "@crafted-design/editor", "mcp"],
       "env": {
         "CRAFTED_DESIGN_TEMPLATE_VARIABLES": "[{\"key\":\"contact.name\",\"label\":\"Full name\",\"group\":\"Contact\",\"sample\":\"Jane Doe\"}]"
       }
@@ -268,10 +269,10 @@ render harness (`dist-lib/harness/`, produced by the build). Quick checklist:
 ```bash
 npm i -D @modelcontextprotocol/sdk playwright
 npx playwright install chromium     # the browser render_image drives
-npm run build:dist                  # builds dist-lib/mcp.js AND dist-lib/harness/
+npm run build:dist                  # builds dist-lib/cli.js + mcp.js AND dist-lib/harness/
 ```
 
-(For a published install via `npx -y @crafted-design/editor crafted-design-mcp`,
+(For a published install via `npx -y @crafted-design/editor mcp`,
 the harness already ships in the package — only the SDK + Playwright steps
 apply.)
 
@@ -282,7 +283,7 @@ from the package root so the SDK resolves:
 // smoke.mjs — node smoke.mjs
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
-const t = new StdioClientTransport({ command: 'node', args: ['dist-lib/mcp.js'] })
+const t = new StdioClientTransport({ command: 'node', args: ['dist-lib/cli.js', 'mcp'] })
 const c = new Client({ name: 'smoke', version: '1' })
 await c.connect(t)
 await c.callTool({ name: 'create_document', arguments: { adapterId: 'shadcn' } })

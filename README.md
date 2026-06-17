@@ -23,7 +23,7 @@ driven, and visually verified, by an agent.
 ## Highlights
 
 - **Build designs with AI** — a built-in [MCP](https://modelcontextprotocol.io)
-  server (`crafted-design-mcp`) exposes the component registry + document model
+  server (`npx @crafted-design/editor mcp`) exposes the component registry + document model
   as tools, so an agent can author a design from a prompt: discover components
   (JSON-Schema-typed props), build the tree, **render it to a real screenshot**,
   and **check WCAG contrast** before handing back JSON that loads unchanged into

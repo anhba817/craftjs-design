@@ -124,6 +124,30 @@ App build (`npm run build`):
 
 (none yet)
 
+## [1.9.1] — 2026-06-17
+
+### Fixed
+
+- **`npx @crafted-design/editor mcp` now works** (the documented MCP install
+  did not). The package shipped two bins (`crafted-design`, `crafted-design-mcp`),
+  but `npx <pkg> <cmd>` cannot select a *named* bin among several — npm picks a
+  single default (by package-name match, or the only bin) and treats the
+  trailing token as an *argument*. Neither bin matched the unscoped name
+  `editor`, so `npx @crafted-design/editor crafted-design-mcp` failed with
+  "could not determine executable to run".
+
+  Consolidated to a **single `crafted-design` bin** with subcommands, so the
+  natural commands resolve (npm auto-picks the sole bin and passes the
+  subcommand through):
+  - `npx @crafted-design/editor mcp` — launch the stdio MCP server (lazily
+    loaded, so the CLI stays tiny and the optional MCP SDK is only touched when
+    used).
+  - `npx @crafted-design/editor scaffold <kind> <name>` — unchanged, now also
+    resolves correctly.
+
+  The `crafted-design-mcp` bin is removed. Update MCP client configs to run
+  `mcp` as a subcommand (e.g. `args: ["-y", "@crafted-design/editor", "mcp"]`).
+
 ## [1.9.0] — 2026-06-17
 
 ### Added

@@ -111,8 +111,10 @@ export default defineConfig({
         // Phase 21 — standalone runtime renderer for saved documents
         // (production pages; no editor chrome).
         renderer: path.resolve(__dirname, 'src/renderer/index.ts'),
-        // Phase 21 — the MCP server bin (`crafted-design-mcp`). Node-only;
-        // @modelcontextprotocol/sdk is an externalized optional peer.
+        // Phase 21 — the MCP server launcher (`startMcpServer`). Node-only;
+        // @modelcontextprotocol/sdk is an externalized optional peer. No longer
+        // a bin — the CLI's `mcp` subcommand lazily imports this chunk
+        // (`npx @crafted-design/editor mcp`).
         mcp: path.resolve(__dirname, 'src/mcp/bin.ts'),
         // Phase 12 § 4.1 — optional, node-only build-time safelist plugin.
         // Separate entry (not in the browser SDK) since it imports node:fs.
@@ -160,13 +162,12 @@ export default defineConfig({
         'playwright',
       ],
       output: {
-        // Phase 20 — the CLI entry is an executable; prepend a shebang to
-        // cli.js only (the package `bin` points at it). Other entries are
-        // libraries imported by bundlers and must NOT carry a shebang.
+        // Phase 20 — the CLI entry is the sole executable; prepend a shebang to
+        // cli.js only (the package `bin` points at it). Other entries —
+        // including mcp.js, now imported by the CLI rather than run directly —
+        // are libraries loaded by bundlers/Node and must NOT carry a shebang.
         banner: (chunk) =>
-          chunk.fileName === 'cli.js' || chunk.fileName === 'mcp.js'
-            ? '#!/usr/bin/env node'
-            : '',
+          chunk.fileName === 'cli.js' ? '#!/usr/bin/env node' : '',
       },
     },
     // Don't minify by default — easier to debug post-install. Hosts that want

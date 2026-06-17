@@ -34,12 +34,13 @@ visible) is kept. See
 
 ### Can an AI build designs with this?
 
-Yes — `crafted-design-mcp` is an MCP server that exposes the component registry
-+ document model as tools, so an AI client (Claude Code / Claude Desktop) can
-author and edit `EditorDocument`s programmatically. Connect it with:
+Yes — the `crafted-design` bin's `mcp` subcommand starts an MCP server that
+exposes the component registry + document model as tools, so an AI client
+(Claude Code / Claude Desktop) can author and edit `EditorDocument`s
+programmatically. Connect it with:
 
 ```bash
-claude mcp add crafted-design -- npx -y @crafted-design/editor crafted-design-mcp
+claude mcp add crafted-design -- npx -y @crafted-design/editor mcp
 ```
 
 The generated document loads straight into `<Editor />` or

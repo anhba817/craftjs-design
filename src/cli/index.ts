@@ -1,8 +1,12 @@
-// Phase 20 — scaffolding CLI. Shipped as the package `bin` (`scaffold`),
-// invoked as `npx @crafted-design/editor scaffold <kind> <name>`. Generates a
-// typed skeleton for an adapter / canonical / inspector panel, pre-wired to
-// `@crafted-design/editor/sdk`, so authoring an extension starts from working
-// code instead of a blank file.
+// Phase 20 — the package's single `bin` (`crafted-design`). A subcommand
+// dispatcher:
+//   • `scaffold <kind> <name>` — generate a typed adapter/canonical/panel
+//     skeleton, pre-wired to `@crafted-design/editor/sdk`, so authoring an
+//     extension starts from working code instead of a blank file.
+//   • `mcp` — launch the stdio MCP server (Phase 21; lazily loaded so the CLI
+//     stays tiny and the optional MCP SDK is only touched when used).
+// One bin (not two) so `npx @crafted-design/editor <subcommand>` resolves —
+// npx can't pick a *named* bin among several, only a single default.
 //
 // Zero runtime dependencies — Node built-ins only (`util.parseArgs`, `fs`,
 // `path`, `url`). Templates live alongside the built CLI under
@@ -23,17 +27,22 @@ import { dirname, join, relative, resolve } from 'node:path'
 const KINDS = ['adapter', 'canonical', 'panel'] as const
 type Kind = (typeof KINDS)[number]
 
-const USAGE = `crafted-design scaffold — generate an SDK-wired skeleton
+const USAGE = `crafted-design — editor CLI
 
 Usage:
-  npx @crafted-design/editor scaffold <adapter|canonical|panel> <name> [--out <dir>] [--force]
+  npx @crafted-design/editor <command> [options]
+
+Commands:
+  scaffold <adapter|canonical|panel> <name>   Generate an SDK-wired skeleton.
+  mcp                                          Launch the stdio MCP server.
 
 Examples:
   npx @crafted-design/editor scaffold adapter   my-design-system
   npx @crafted-design/editor scaffold canonical pricing-table
   npx @crafted-design/editor scaffold panel     seo-meta
+  npx @crafted-design/editor mcp
 
-Options:
+Options (scaffold):
   --out <dir>   Directory to generate into (default: current directory).
   --force       Overwrite existing files instead of refusing.
   -h, --help    Show this help.
@@ -197,7 +206,7 @@ export function run(argv: string[]): number {
 
   const [command, kind, name] = positionals
   if (command !== 'scaffold') {
-    console.error(`unknown command "${command}". Did you mean "scaffold"?\n`)
+    console.error(`unknown command "${command}". Expected "scaffold" or "mcp".\n`)
     console.error(USAGE)
     return 1
   }
@@ -233,7 +242,20 @@ export function run(argv: string[]): number {
 const invokedAsScript =
   process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
 if (invokedAsScript) {
-  process.exit(run(process.argv.slice(2)))
+  const argv = process.argv.slice(2)
+  if (argv[0] === 'mcp') {
+    // Hand off to the MCP server (stdio; keeps the process alive). Lazily
+    // imported so the CLI's static graph — and cli.js — stays tiny, and the
+    // optional MCP SDK is only resolved when `mcp` is actually invoked.
+    import('../mcp/bin')
+      .then((m) => m.startMcpServer())
+      .catch((err) => {
+        console.error('crafted-design mcp failed to start:', err)
+        process.exit(1)
+      })
+  } else {
+    process.exit(run(argv))
+  }
 }
 
 // re-export internals for the test suite

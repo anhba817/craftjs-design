@@ -1,11 +1,17 @@
-// Phase 21 Group C — the `crafted-design-mcp` bin. A stdio MCP server an AI
-// client (Claude Code / Claude Desktop) spawns to build editor documents.
+// Phase 21 Group C — the stdio MCP server an AI client (Claude Code / Claude
+// Desktop) spawns to build editor documents. Launched as the `mcp` subcommand
+// of the single package bin:
 //
-//   claude mcp add crafted-design -- npx -y @crafted-design/editor crafted-design-mcp
+//   claude mcp add crafted-design -- npx -y @crafted-design/editor mcp
+//
+// `src/cli/index.ts` dispatches `mcp` here; this module can also be executed
+// directly (`tsx src/mcp/bin.ts`) for dev/debugging.
 //
 // @modelcontextprotocol/sdk is an OPTIONAL peer (the editor doesn't need it).
 // Resolve it lazily so a missing install gives a clear hint instead of a
 // module-not-found stack trace.
+import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 import type { McpTemplateVariable } from './tools'
 
 /** Parse the CRAFTED_DESIGN_TEMPLATE_VARIABLES env (a JSON array of variable
@@ -28,14 +34,17 @@ function parseTemplateVariables(
       }))
   } catch (err) {
     console.error(
-      'crafted-design-mcp: ignoring invalid CRAFTED_DESIGN_TEMPLATE_VARIABLES —',
+      'crafted-design mcp: ignoring invalid CRAFTED_DESIGN_TEMPLATE_VARIABLES —',
       err instanceof Error ? err.message : err,
     )
     return undefined
   }
 }
 
-async function main() {
+/** Boot the stdio MCP server. Resolves only when the transport closes; the
+ * stdio transport otherwise keeps the process alive. Exits the process (1) if
+ * the optional MCP SDK isn't installed. */
+export async function startMcpServer(): Promise<void> {
   let StdioServerTransport: typeof import('@modelcontextprotocol/sdk/server/stdio.js').StdioServerTransport
   try {
     ;({ StdioServerTransport } = await import(
@@ -43,7 +52,7 @@ async function main() {
     ))
   } catch {
     console.error(
-      'crafted-design-mcp: @modelcontextprotocol/sdk is not installed.\n' +
+      'crafted-design mcp: @modelcontextprotocol/sdk is not installed.\n' +
         'Install it to run the MCP server:\n' +
         '  npm install @modelcontextprotocol/sdk\n',
     )
@@ -69,7 +78,14 @@ async function main() {
   // stdio transport keeps the process alive; nothing else to do.
 }
 
-main().catch((err) => {
-  console.error('crafted-design-mcp failed to start:', err)
-  process.exit(1)
-})
+// Allow direct execution for dev/debugging (`tsx src/mcp/bin.ts`). In the
+// published package this module is imported by the CLI, not run directly, so
+// the guard stays dormant.
+const invokedAsScript =
+  process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])
+if (invokedAsScript) {
+  startMcpServer().catch((err) => {
+    console.error('crafted-design mcp failed to start:', err)
+    process.exit(1)
+  })
+}

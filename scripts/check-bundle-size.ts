@@ -22,6 +22,12 @@ interface Budget {
   label: string
   entry: string // file under dist-lib
   maxGzipKB: number
+  // Chunks reached only via a lazy `import()` that are themselves separately
+  // budgeted entries — excluded from THIS entry's transitive size so they
+  // aren't double-counted (and so a lazily-loaded subcommand doesn't inflate a
+  // bin that never touches it unless invoked). E.g. the CLI lazily imports
+  // mcp.js only for `crafted-design mcp`.
+  lazyBoundaries?: string[]
 }
 
 // Budgets are the gzipped TRANSITIVE size of each JS entry (sum of the
@@ -58,10 +64,12 @@ const BUDGETS: Budget[] = [
   // not page weight.
   { label: 'MCP server (mcp.js)', entry: 'mcp.js', maxGzipKB: 110 },
   { label: 'vite-plugin', entry: 'vite-plugin.js', maxGzipKB: 5 },
-  // Phase 20 — the scaffolding CLI (`bin`). Node built-ins only; must stay tiny
-  // and must NEVER pull the editor runtime/React into its graph. A regression
-  // here (e.g. an accidental `@/...` import) would blow past this budget.
-  { label: 'CLI (cli.js)', entry: 'cli.js', maxGzipKB: 5 },
+  // Phase 20 — the package's sole `bin` (`crafted-design`). Node built-ins only
+  // in its own graph; must stay tiny and must NEVER eagerly pull the editor
+  // runtime/React. A regression here (e.g. an accidental `@/...` import) would
+  // blow past this budget. The `mcp` subcommand's graph (mcp.js) is reached
+  // only via a lazy `import()` and budgeted separately, so it's excluded here.
+  { label: 'CLI (cli.js)', entry: 'cli.js', maxGzipKB: 5, lazyBoundaries: ['mcp.js'] },
 ]
 
 // CSS is emitted as whole files (not code-split), checked directly. The scoped
@@ -77,14 +85,16 @@ function gzipKB(path: string): number {
 }
 
 // Collect every relatively-imported file reachable from `entry` (deduped).
-function reachableFiles(entryRel: string): Set<string> {
+// Files in `boundaries` are not traversed or counted (lazy, separately-budgeted
+// chunks — see Budget.lazyBoundaries).
+function reachableFiles(entryRel: string, boundaries: Set<string>): Set<string> {
   const seen = new Set<string>()
   const stack = [entryRel]
   // Matches `from"./x.js"`, `import"./x.js"`, `import(..."./x.js")`.
   const importRe = /(?:from|import)\s*\(?\s*["']([^"']+)["']/g
   while (stack.length) {
     const rel = stack.pop()!
-    if (seen.has(rel)) continue
+    if (seen.has(rel) || boundaries.has(rel)) continue
     seen.add(rel)
     const abs = join(DIST_DIR, rel)
     if (!existsSync(abs)) continue
@@ -95,15 +105,16 @@ function reachableFiles(entryRel: string): Set<string> {
       const spec = m[1]
       if (!spec.startsWith('.')) continue // external/bare — not our bundle
       // Resolve relative to the importing file, normalize to a dist-rel path.
-      stack.push(relative(DIST_DIR, join(DIST_DIR, dir, spec)))
+      const next = relative(DIST_DIR, join(DIST_DIR, dir, spec))
+      if (!boundaries.has(next)) stack.push(next)
     }
   }
   return seen
 }
 
-function transitiveGzipKB(entryRel: string): number {
+function transitiveGzipKB(entryRel: string, boundaries: string[] = []): number {
   let total = 0
-  for (const rel of reachableFiles(entryRel)) {
+  for (const rel of reachableFiles(entryRel, new Set(boundaries))) {
     const abs = join(DIST_DIR, rel)
     if (existsSync(abs)) total += gzipKB(abs)
   }
@@ -125,7 +136,7 @@ function main(): void {
       failed = true
       continue
     }
-    const sizeKB = transitiveGzipKB(b.entry)
+    const sizeKB = transitiveGzipKB(b.entry, b.lazyBoundaries)
     const ok = sizeKB <= b.maxGzipKB
     if (!ok) failed = true
     rows.push({ label: b.label, sizeKB, maxKB: b.maxGzipKB, ok })
