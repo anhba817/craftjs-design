@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { getComponentByDisplayName } from '@/registry/registry'
 import { ImagePicker } from '../assets/ImagePicker'
 import { PropField } from './fields/PropField'
+import { IconPicker } from './icons/IconPicker'
 import { PanelRow } from './shared/PanelRow'
 
 // Phase 11 § 3.10 — canonical props that should render the image
@@ -16,6 +17,17 @@ const IMAGE_FIELDS: Record<string, ReadonlySet<string>> = {
 
 function isImageField(canonicalId: string, field: string): boolean {
   return IMAGE_FIELDS[canonicalId]?.has(field) ?? false
+}
+
+// Phase 27 — canonical props that render the searchable icon picker (full
+// lucide set) instead of a text input. Same (canonical id → prop key) seam.
+const ICON_FIELDS: Record<string, ReadonlySet<string>> = {
+  icon: new Set(['name']),
+  'nav-item': new Set(['icon']),
+}
+
+function isIconField(canonicalId: string, field: string): boolean {
+  return ICON_FIELDS[canonicalId]?.has(field) ?? false
 }
 
 // `currentSlide` → "Current slide", `showChevrons` → "Show chevrons",
@@ -110,6 +122,11 @@ export function PropsPanel({ nodeId }: { nodeId: string }) {
         <PanelRow key={key} label={humanizeKey(key)}>
           {isImageField(def.id, key) ? (
             <ImagePicker
+              value={(nodeProps[key] as string | undefined) ?? ''}
+              onChange={handlers[key]}
+            />
+          ) : isIconField(def.id, key) ? (
+            <IconPicker
               value={(nodeProps[key] as string | undefined) ?? ''}
               onChange={handlers[key]}
             />
