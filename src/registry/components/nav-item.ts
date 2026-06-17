@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import { registerComponent } from '../registry'
-import { ICON_NAMES } from './icon'
 
 // Phase 13 § 5.2 — NavItem. Pattern A canvas — its `children` becomes the
 // optional submenu (drop another NavMenu / NavItems inside to nest). Props
@@ -8,7 +7,8 @@ import { ICON_NAMES } from './icon'
 export const navItemPropsSchema = z.object({
   label: z.string(),
   href: z.string(),
-  icon: z.enum(['', ...ICON_NAMES]),
+  // Phase 27 — any resolver-known icon name, or '' for no icon (see icon.ts).
+  icon: z.string(),
   // Phase 13 § 5.3 — overlay trigger linking. Tooltip on a collapsed
   // icon-only sidebar is the canonical example.
   triggers: z.array(z.string()),

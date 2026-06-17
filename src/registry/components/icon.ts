@@ -1,9 +1,12 @@
 import { z } from 'zod'
 import { registerComponent } from '../registry'
 
-// Fixed list of icon names for Phase 5. Adapters import these explicitly from
-// lucide-react to keep bundle size predictable. Phase 6+ can expand with
-// dynamic imports or a runtime icon library.
+// Phase 27 — the `name` prop is now any (kebab-case) icon name, resolved at
+// render time by the icon resolver (lazy lucide by default; host-pluggable via
+// `registerIconResolver`). This list is no longer the allowlist — it stays as a
+// curated *quick-pick / suggested* set (toolbox default, fast-access chips). All
+// of these are valid lucide names, so documents authored against the old enum
+// still validate and render unchanged.
 export const ICON_NAMES = [
   'star',
   'heart',
@@ -25,7 +28,9 @@ export const ICON_NAMES = [
 export type IconName = (typeof ICON_NAMES)[number]
 
 export const iconPropsSchema = z.object({
-  name: z.enum(ICON_NAMES),
+  // Any icon name the active resolver understands (default: lucide kebab-case,
+  // e.g. 'star', 'shopping-cart'). Unknown names render a fallback glyph.
+  name: z.string(),
   size: z.enum(['sm', 'base', 'lg', 'xl']),
   // Phase 13 § 5.3 — overlay trigger linking; same shape as Button.
   // The Triggers inspector panel writes here; the field is hidden from
