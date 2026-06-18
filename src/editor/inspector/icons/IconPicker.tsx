@@ -1,7 +1,9 @@
 import { Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { iconNames } from 'lucide-react/dynamic'
+// `.mjs` (not 'lucide-react/dynamic') so Node/tsx ESM resolves the named
+// export — see the note in src/icons/resolver.tsx.
+import { iconNames } from 'lucide-react/dynamic.mjs'
 import {
   Popover,
   PopoverContent,

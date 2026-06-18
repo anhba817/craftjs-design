@@ -13,11 +13,16 @@
 // this resolver is the interactive (editor / browser renderer) path.
 import type { ReactNode } from 'react'
 import { Square } from 'lucide-react'
+// Import the explicit `.mjs`, NOT 'lucide-react/dynamic': lucide ships no
+// exports map / `type: module`, so Node (tsx scripts, SSR) classifies the
+// extensionless `dynamic.js` as CJS and can't see its `export *` re-exports
+// ("does not provide an export named 'DynamicIcon'"). The `.mjs` is real ESM
+// and resolves everywhere (Node, Vite/Rolldown, TS via dynamic.d.mts).
 import {
   DynamicIcon,
   dynamicIconImports,
   type IconName as LucideIconName,
-} from 'lucide-react/dynamic'
+} from 'lucide-react/dynamic.mjs'
 
 /** Resolve an icon name + pixel size to a renderable node. */
 export type IconResolver = (name: string, sizePx: number) => ReactNode
