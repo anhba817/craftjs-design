@@ -1,5 +1,5 @@
 import { Search, X } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { iconNames } from 'lucide-react/dynamic'
 import {
@@ -34,7 +34,12 @@ export function IconPicker({
 }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const scrollerRef = useRef<HTMLDivElement>(null)
+  // State-backed (not useRef) so mounting the popover content re-renders and the
+  // virtualizer measures the scroll element. With a plain ref it's null on the
+  // first render after open → zero rows, and nothing re-measures until an
+  // unrelated re-render (typing) — the "empty until you search" bug. Re-mount on
+  // each open resets it to the element, so reopening works too.
+  const [scroller, setScroller] = useState<HTMLDivElement | null>(null)
 
   const q = query.trim().toLowerCase()
   const filtered = useMemo(
@@ -45,7 +50,7 @@ export function IconPicker({
 
   const virtualizer = useVirtualizer({
     count: rowCount,
-    getScrollElement: () => scrollerRef.current,
+    getScrollElement: () => scroller,
     estimateSize: () => CELL_PX,
     overscan: 4,
   })
@@ -114,7 +119,7 @@ export function IconPicker({
         </div>
 
         <div
-          ref={scrollerRef}
+          ref={setScroller}
           className="min-h-0 flex-1 overflow-y-auto p-1"
           role="listbox"
           aria-label="Icons"

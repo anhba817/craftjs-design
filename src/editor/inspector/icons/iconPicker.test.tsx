@@ -61,7 +61,19 @@ async function open() {
   })
 }
 
+const iconCells = () =>
+  document.querySelectorAll('[role="listbox"] button[aria-label]')
+
 describe('IconPicker', () => {
+  it('shows icons immediately on first open — before any typing', async () => {
+    // Regression: with a plain useRef the virtualizer saw a null scroll element
+    // on the first post-open render and rendered zero rows until an unrelated
+    // re-render (typing). The state-backed ref must populate rows right away.
+    await mount(<IconPicker value="" onChange={vi.fn()} />)
+    await open()
+    expect(iconCells().length).toBeGreaterThan(0)
+  })
+
   it('opens, filters by search, and writes the kebab name on click', async () => {
     const onChange = vi.fn()
     await mount(<IconPicker value="star" onChange={onChange} />)
