@@ -124,6 +124,22 @@ App build (`npm run build`):
 
 (none yet)
 
+## [1.10.1] — 2026-06-18
+
+### Fixed
+
+- **Icon picker showed no icons on first open** (until you typed in the search
+  box). The virtualizer read the scroll element through a `useRef`, which is
+  `null` on the first render after the popover mounts, so it rendered zero rows
+  and nothing triggered a re-measure. Now backed by a state callback ref, so the
+  grid populates immediately on open (and on every reopen).
+- **`build:gallery` (and other raw-Node/tsx scripts) failed** with "module
+  'lucide-react/dynamic' does not provide an export named 'DynamicIcon'". lucide
+  ships no `exports` map / `type: module`, so Node treats the extensionless
+  `dynamic.js` as CJS and can't see its `export *` re-exports; bundlers
+  (Vite/Rolldown) follow it fine, so the published build, tests, and browser
+  were unaffected. Now imports the explicit `lucide-react/dynamic.mjs`.
+
 ## [1.10.0] — 2026-06-18
 
 ### Added
