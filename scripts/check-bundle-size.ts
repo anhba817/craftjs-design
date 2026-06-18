@@ -38,21 +38,33 @@ interface Budget {
 // external in both. The real /core win is consumer-side — a /core app
 // never imports @mui, so MUI never enters the consumer's bundle and
 // needn't be installed; the full entry's external @mui import does pull it.
+// Phase 27 — the runtime icon library adds a fixed eager cost wherever the icon
+// resolver is bundled: lucide's `dynamicIconImports` thunk map (~1800 lazy
+// importers, ~25KB gz) + `iconNames` for the searchable picker. The ~1800
+// per-icon glyph chunks themselves are LAZY (code-split, excluded above), so
+// this is the map/name overhead only — the cost of "search the full lucide set."
 const BUDGETS: Budget[] = [
-  { label: 'full editor (index.js)', entry: 'index.js', maxGzipKB: 275 },
-  { label: 'lean core (core.js)', entry: 'core.js', maxGzipKB: 265 },
+  // +~58: runtime icon resolver + the searchable IconPicker (iconNames).
+  { label: 'full editor (index.js)', entry: 'index.js', maxGzipKB: 340 },
+  { label: 'lean core (core.js)', entry: 'core.js', maxGzipKB: 330 },
   // Phase 18 § 5 — bumped 60 → 70: the SDK gained the overlay-authoring seam
   // (useOverlayRuntime / readOverlayOpen / useOverlayStageTarget / OverlayCard)
   // + the `cn` class-merge util (pulls tailwind-merge). This is the FULL-surface
   // number; /sdk is side-effect-free, so a consumer importing one symbol
   // tree-shakes the rest (guarded by side-effect-free.test.ts).
-  { label: 'SDK (sdk.js)', entry: 'sdk.js', maxGzipKB: 70 },
+  // Phase 27 — bumped 70 → 100: re-exports registerIconResolver, pulling the
+  // icon resolver + lucide's dynamicIconImports map (tree-shaken away if a
+  // consumer imports only other SDK symbols — side-effect-free.test.ts guards).
+  { label: 'SDK (sdk.js)', entry: 'sdk.js', maxGzipKB: 100 },
   // Phase 21 — headless document API. Registers canonicals/themes/templates
   // (data + zod, no React UI), so it's mid-sized; it must NOT pull the editor
   // chrome or adapters into its graph.
   // Phase 26 — bumped 60 → 62: the template-variable interpolation engine
   // (interpolate / extractTemplateRefs / lookupValue) + render-time substitution.
-  { label: 'headless (headless.js)', entry: 'headless.js', maxGzipKB: 62 },
+  // Phase 27 — bumped 62 → 95: the HTML adapter pulls the icon resolver (lucide
+  // dynamicIconImports map). Node-only bundle; the actual headless render uses a
+  // runtime `createRequire('lucide-react')` (not bundled), so glyphs aren't here.
+  { label: 'headless (headless.js)', entry: 'headless.js', maxGzipKB: 95 },
   // Phase 21 — standalone document renderer: canonical registry + the Craft
   // render path (CanonicalNode/resolver) but NO editor chrome (toolbox,
   // inspector, persistence UI). A blow-past here means chrome leaked in.
@@ -90,8 +102,13 @@ function gzipKB(path: string): number {
 function reachableFiles(entryRel: string, boundaries: Set<string>): Set<string> {
   const seen = new Set<string>()
   const stack = [entryRel]
-  // Matches `from"./x.js"`, `import"./x.js"`, `import(..."./x.js")`.
-  const importRe = /(?:from|import)\s*\(?\s*["']([^"']+)["']/g
+  // STATIC imports only — `from"./x.js"`, `import"./x.js"`, `export … from"x"`.
+  // Deliberately NOT dynamic `import("./x.js")` (note: no optional `(` here):
+  // dynamic imports are code-split, lazily-loaded chunks and don't count toward
+  // an entry's EAGER initial-load weight. e.g. lucide's ~1800 per-icon chunks
+  // (DynamicIcon imports each on demand) and the CLI's lazy `import('./mcp.js')`
+  // — counting them ballooned every entry to ~1MB though nothing eager grew.
+  const importRe = /(?:from|import)\s*["']([^"']+)["']/g
   while (stack.length) {
     const rel = stack.pop()!
     if (seen.has(rel) || boundaries.has(rel)) continue

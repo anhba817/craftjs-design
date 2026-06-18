@@ -761,6 +761,39 @@ export default defineConfig({
 Then `@import "./safelist.docs.css";` from your stylesheet. Purely an
 upgrade — skipping it changes nothing.
 
+## Icons (1.10.0)
+
+The **Icon** canonical (and **NavItem**'s icon) accept any icon name — the
+inspector shows a **searchable picker** over the full [lucide](https://lucide.dev)
+set (~1800 glyphs). Glyphs are **lazy-loaded per icon**, so the editor bundle
+carries the name list, not all the SVGs. Documents store the kebab name
+(`shopping-cart`); an unknown name renders a neutral fallback glyph and keeps
+the stored name. Documents authored before 1.10.0 (the old 16-name set) are
+unchanged — those names are all valid lucide names.
+
+**Bring your own icons.** Replace the entire icon set — your design system's
+icons, [Iconify](https://iconify.design), a curated subset — with a resolver
+registered **before** the editor / renderer mounts:
+
+```tsx
+import { registerIconResolver } from '@crafted-design/editor/sdk'
+import { MyIcon } from './icons'
+
+registerIconResolver((name, sizePx) => <MyIcon name={name} size={sizePx} />)
+// Pass no argument to restore the built-in lucide resolver.
+```
+
+The resolver maps an icon name + pixel size to a `ReactNode`. The same names
+flow through the editor, the browser `<DocumentRenderer />`, and the headless
+`renderDocumentToHtml`. One caveat for **server-side rendering**: the built-in
+lucide resolver is handled for `renderDocumentToHtml` automatically, but a
+*custom* resolver must be **synchronous** (return the glyph directly, no
+`React.lazy`/Suspense) to appear in the static HTML — effects don't run under
+`renderToStaticMarkup`.
+
+When driving the editor via MCP, `icon.name` accepts any lucide kebab name — no
+enum to consult.
+
 ## Responsive & supported viewports (1.8.0)
 
 The editor chrome reflows to the viewport:

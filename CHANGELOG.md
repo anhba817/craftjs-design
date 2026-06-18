@@ -124,6 +124,38 @@ App build (`npm run build`):
 
 (none yet)
 
+## [1.10.0] — 2026-06-18
+
+### Added
+
+- **Runtime icon library.** The **Icon** canonical (and **NavItem**'s icon) now
+  accept any icon name instead of a fixed 16-name enum; the inspector shows a
+  **searchable, virtualized picker** over the full lucide set (~1800 glyphs).
+  Glyphs are **lazy-loaded per icon** (code-split), so the bundle carries the
+  name list — not all the SVGs.
+  - **Backward compatible:** `icon.name` / `nav-item.icon` loosened from a Zod
+    enum to `z.string()`; the old 16 names are valid lucide names, so existing
+    documents validate and render unchanged. `ICON_NAMES` is still exported as a
+    curated quick-pick list.
+  - **Host-pluggable resolver:** new `registerIconResolver(resolver)` SDK export
+    (+ `IconResolver` type) replaces the entire icon set with a host's own
+    (design-system icons, Iconify, a subset). Pass no argument to restore the
+    default. A custom resolver used for headless `renderDocumentToHtml` must be
+    synchronous.
+  - **Headless/SSR:** `renderDocumentToHtml` resolves glyphs synchronously
+    (lucide via a runtime `createRequire`, not bundled), so server-rendered HTML
+    carries real `<svg>` markup; the browser `<DocumentRenderer />` lazy-loads
+    via the same resolver. Unknown names render a neutral fallback glyph and
+    keep the stored name.
+  - **MCP:** `icon.name` accepts any lucide kebab name (no enum).
+
+### Changed
+
+- `check:size` now measures each entry's **eager** (static-import) graph;
+  dynamic `import()` chunks (e.g. lucide's per-icon glyphs, the CLI's lazy MCP
+  load) are excluded as the lazy chunks they are. Editor/core/SDK/headless
+  budgets bumped for the icon resolver's eager map + name-list overhead.
+
 ## [1.9.2] — 2026-06-17
 
 ### Fixed

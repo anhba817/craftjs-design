@@ -67,6 +67,7 @@ const SDK_SURFACE = [
   'registerComponent',
   'registerFontToken',
   'registerGoogleFonts',
+  'registerIconResolver',
   'registerPanel',
   'registerSystemFonts',
   'registerTemplate',
