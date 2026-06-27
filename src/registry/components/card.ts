@@ -27,6 +27,20 @@ registerComponent<CardProps>({
   isCanvas: false,
   styleSlots: ['root', 'header', 'body', 'footer'],
   canvasSlots: ['header', 'body', 'footer'],
+  // Card is `isCanvas: false`, so the default panel derivation omits the
+  // Layout panel — yet each slot (root/header/body/footer) is a flex column
+  // that benefits from display/align/justify/gap control. Opt in explicitly so
+  // the inspector exposes Layout per slot via the SlotPicker; the adapter
+  // wrappers already render `composedClasses[slot]`.
+  applicablePanels: [
+    'layout',
+    'spacing',
+    'size',
+    'appearance',
+    'effects',
+    'typography',
+    'componentProps',
+  ],
   propsSchema: cardPropsSchema,
   defaults: {
     props: { triggers: [] },

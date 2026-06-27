@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.10.2
+
+### Patch Changes
+
+- Card: expose the Layout panel per slot. Card declares an explicit
+  `applicablePanels` that includes `layout`, so the inspector now offers
+  display / direction / align-items / justify-content / gap controls for the
+  `root`, `header`, `body`, and `footer` slots (previously omitted because the
+  default panel derivation gates `layout` behind `isCanvas: true`). The adapter
+  wrappers (shadcn / MUI / HTML) already render `composedClasses[slot]`, so no
+  adapter changes were needed.
+
 All notable changes to `@crafted-design/editor` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -34,6 +46,7 @@ Until `1.0.0` the SDK surface may evolve between minors; see
 ### Added
 
 **SDK surface** (`@crafted-design/editor/sdk`)
+
 - Adapter authoring: `registerAdapter`, `unregisterAdapter`, `listAdapters`,
   `useActiveAdapter`; types `Adapter`, `AdapterRenderProps`, `ClassMapFn`,
   `ClassMapResult`.
@@ -55,6 +68,7 @@ Until `1.0.0` the SDK surface may evolve between minors; see
 - Style data: type `NodeStyle`.
 
 **Editor entry** (`@crafted-design/editor`)
+
 - 20 built-in canonicals: Alert, Avatar, Badge, Box, Button, Card,
   Checkbox, Divider, Heading, Icon, Image, Input, Link, Radio, Select,
   Stack, Switch, Tabs, Text, Textarea.
@@ -81,6 +95,7 @@ Until `1.0.0` the SDK surface may evolve between minors; see
   drag-along-bar handles.
 
 **Distribution**
+
 - Two-entry-point dist build:
   `@crafted-design/editor` (full editor) +
   `@crafted-design/editor/sdk` (SDK boundary alone). Subpath exports
@@ -107,18 +122,18 @@ Until `1.0.0` the SDK surface may evolve between minors; see
 
 Dist (`npm run build:dist`, unminified):
 
-| Artifact | Raw | Gzipped |
-|---|---|---|
-| `dist-lib/index.js` | 408 KB | 88 KB |
-| `dist-lib/sdk.js` + shared chunk | 148 KB | 32 KB |
-| `dist-lib/index.css` | 390 KB | 114 KB |
+| Artifact                         | Raw    | Gzipped |
+| -------------------------------- | ------ | ------- |
+| `dist-lib/index.js`              | 408 KB | 88 KB   |
+| `dist-lib/sdk.js` + shared chunk | 148 KB | 32 KB   |
+| `dist-lib/index.css`             | 390 KB | 114 KB  |
 
 App build (`npm run build`):
 
-| Artifact | Raw | Gzipped |
-|---|---|---|
-| `dist/assets/index-*.js` | 517 KB | 157 KB |
-| `dist/assets/index-*.css` | 218 KB | 28 KB |
+| Artifact                  | Raw    | Gzipped |
+| ------------------------- | ------ | ------- |
+| `dist/assets/index-*.js`  | 517 KB | 157 KB  |
+| `dist/assets/index-*.css` | 218 KB | 28 KB   |
 
 ## [Unreleased]
 
@@ -194,15 +209,16 @@ App build (`npm run build`):
 
 - **`npx @crafted-design/editor mcp` now works** (the documented MCP install
   did not). The package shipped two bins (`crafted-design`, `crafted-design-mcp`),
-  but `npx <pkg> <cmd>` cannot select a *named* bin among several — npm picks a
+  but `npx <pkg> <cmd>` cannot select a _named_ bin among several — npm picks a
   single default (by package-name match, or the only bin) and treats the
-  trailing token as an *argument*. Neither bin matched the unscoped name
+  trailing token as an _argument_. Neither bin matched the unscoped name
   `editor`, so `npx @crafted-design/editor crafted-design-mcp` failed with
   "could not determine executable to run".
 
   Consolidated to a **single `crafted-design` bin** with subcommands, so the
   natural commands resolve (npm auto-picks the sole bin and passes the
   subcommand through):
+
   - `npx @crafted-design/editor mcp` — launch the stdio MCP server (lazily
     loaded, so the CLI stays tiny and the optional MCP SDK is only touched when
     used).
@@ -244,7 +260,7 @@ App build (`npm run build`):
 ### Fixed
 
 - **`editorTheme` now works under the scoped stylesheet
-  (`index.scoped.css`).** The scoping pass rehomed *every* `:root` rule onto
+  (`index.scoped.css`).** The scoping pass rehomed _every_ `:root` rule onto
   `.crafted-design-scope`, including the editor's `--ed-*` chrome-token defaults
   — setting them directly on the editor root and overriding the host's
   `editorTheme` (applied as inline `--ed-*` vars on `<html>`), so the chrome
@@ -266,7 +282,7 @@ App build (`npm run build`):
   the global stylesheet stops overriding the host's brand colors app-wide
   (reported: a host's primary button turning neutral on every page that loaded
   the editor CSS). Standalone use is unchanged (nothing competes, so the layered
-  values apply); the editor's `--ed-*` *chrome* tokens stay unlayered. For full
+  values apply); the editor's `--ed-*` _chrome_ tokens stay unlayered. For full
   subtree isolation (host tokens never reach the canvas either, no second
   preflight), `@crafted-design/editor/index.scoped.css` (1.7.0) remains the
   option. Verified in a real browser (`src/style/tokenLayer.browser.test.ts`).
@@ -291,6 +307,7 @@ published package.)
 
 - **Responsive editor chrome.** The editor UI now reflows to the viewport
   instead of clipping:
+
   - **≥ 1280 (xl):** docked side columns + the full toolbar inline (as before).
   - **1024–1280:** docked columns; the toolbar's secondary controls collapse
     into a `⋯` overflow menu (the full inline toolbar needs ~1280px).
@@ -307,7 +324,7 @@ published package.)
   [INTEGRATION_GUIDE → Responsive & supported viewports](./docs/INTEGRATION_GUIDE.md#responsive--supported-viewports-180).
 
   **Touch caveat:** inspect / select / edit-props / reorder / save work on
-  touch; *dragging a new component onto the canvas* does not (Craft.js uses
+  touch; _dragging a new component onto the canvas_ does not (Craft.js uses
   HTML5 drag-and-drop, which doesn't fire on touch) — component authoring wants
   a pointer. Standalone `<Editor />` on desktop is visually unchanged except the
   right column is now tabbed.
@@ -319,7 +336,7 @@ published package.)
 - **Scoped stylesheet for inline embedding —
   `@crafted-design/editor/index.scoped.css`.** A new opt-in build of the editor
   CSS with every rule prefixed by `.crafted-design-scope` (and the `:root`
-  design tokens rehomed onto that class). Import it *instead of* `index.css` to
+  design tokens rehomed onto that class). Import it _instead of_ `index.css` to
   embed `<Editor>` / `<DocumentRenderer>` **inline in an app already running
   Tailwind v4** — no second global preflight, no `--color-*` / `:root` token
   clobbering in either direction, no iframe. `<Editor>` and `<DocumentRenderer>`
@@ -351,6 +368,7 @@ published package.)
 
 - **`<Editor>` as a controlled component.** New additive, optional props let a
   host embed the editor and own the document, instead of the editor owning it:
+
   - `value` — controlled document (envelope or JSON string); re-seeds on
     identity change and forces persistence off (single source of truth).
   - `defaultValue` — uncontrolled one-time seed; edits stay internal, surfaced
@@ -394,6 +412,7 @@ published package.)
 
 - **Visual feedback for the MCP agent — colors & contrast.** Three new tools so
   an AI building a document can perceive it, not just its structure:
+
   - `theme_palette` — the document theme resolved to colors, with WCAG ratios +
     grades for the key semantic pairs (body/muted/card text, primary/secondary/
     accent buttons). Deterministic, no browser.
@@ -506,7 +525,7 @@ not an exported module).
 
 - **Host-themable editor chrome** — `<Editor editorTheme="dark" />` (or a
   partial token map, e.g. `editorTheme={{ accent: '#7aa2f7', surface:
-  '#16161e' }}`) themes the editor's own UI — toolbox, inspector, toolbar,
+'#16161e' }}`) themes the editor's own UI — toolbox, inspector, toolbar,
   panels, banners. `editorTheme` is `'light'` (default) | `'dark'` | an
   `EditorChromeTokens` map (which may extend a preset via its `preset`
   field). Applied as CSS variables on `<html>`, so chrome that portals to
@@ -643,10 +662,10 @@ public surface only **grows** (additive, recorded in the frozen snapshot).
 ### Fixed
 
 - **Adapter wrapper-stability hazard** — `registerAdapter` now warns when a
-  `Wrapper`-bearing adapter registers *after* `<Editor />` mounts (a late
+  `Wrapper`-bearing adapter registers _after_ `<Editor />` mounts (a late
   Wrapper reshapes the composed wrapper tree and can remount Craft's
   `<Frame>`, wiping the canvas). The contract is documented on `Adapter.Wrapper`
-  + the DEVELOPER_GUIDE adapter recipe.
+  - the DEVELOPER_GUIDE adapter recipe.
 - **Stale architecture docs** — `ARCHITECTURE.md` refreshed from the live
   registry: 48 canonicals (was "Twenty"), the real multi-canvas Pattern B
   (`canvasSlots` → per-slot `<Element canvas>`, used by Card/Table/Tabs/
@@ -772,7 +791,7 @@ If you don't use MUI, import the lean entry instead and install nothing
 extra (shadcn + plain-HTML need no external peers):
 
 ```ts
-import '@crafted-design/editor/core'   // editor + shadcn + html, no MUI
+import "@crafted-design/editor/core"; // editor + shadcn + html, no MUI
 ```
 
 ### Bundle
@@ -780,12 +799,12 @@ import '@crafted-design/editor/core'   // editor + shadcn + html, no MUI
 Measured at `0.7.0` (`npm run check:size` — transitive gzipped per entry,
 externalized peers excluded):
 
-| Entry | Gzipped | Note |
-|---|---|---|
-| `@crafted-design/editor` (`index.js`) | ~253 KB | + MUI/Emotion peers (installed separately) |
-| `@crafted-design/editor/core` (`core.js`) | ~245 KB | shadcn + html, no MUI |
-| `@crafted-design/editor/sdk` (`sdk.js`) | ~44 KB | SDK-only consumers |
-| `index.css` | ~124 KB | |
+| Entry                                     | Gzipped | Note                                       |
+| ----------------------------------------- | ------- | ------------------------------------------ |
+| `@crafted-design/editor` (`index.js`)     | ~253 KB | + MUI/Emotion peers (installed separately) |
+| `@crafted-design/editor/core` (`core.js`) | ~245 KB | shadcn + html, no MUI                      |
+| `@crafted-design/editor/sdk` (`sdk.js`)   | ~44 KB  | SDK-only consumers                         |
+| `index.css`                               | ~124 KB |                                            |
 
 The `0.6.0` "414 KB gz" `index.js` figure **bundled** MUI. Externalizing it
 moves that weight to a peer the host installs only when it uses the MUI
@@ -806,7 +825,7 @@ without its built-in adapters/canonicals registered.
 ### Fixed
 
 - **Published bundle registered no built-ins.** `sideEffects:
-  ["**/*.css"]` told Rollup every JS module was side-effect-free, so the
+["**/*.css"]` told Rollup every JS module was side-effect-free, so the
   dist build tree-shook away the registration side-effect imports
   (`import './adapters/shadcn'`, the canonical barrel, themes, panels,
   templates). The published `dist-lib` rendered an editor with **no
@@ -862,11 +881,11 @@ without its built-in adapters/canonicals registered.
 
 Measured at `0.6.0` (`npm run build:dist`, no minification, with sourcemap):
 
-| Asset | Raw | Gzipped |
-|---|---|---|
-| `dist-lib/index.js` | 1.97 MB | 414 KB |
-| `dist-lib/index.css` | 498 KB | 124 KB |
-| `dist-lib/sdk-*.js` (SDK subpath) | 196 KB | 44 KB |
+| Asset                             | Raw     | Gzipped |
+| --------------------------------- | ------- | ------- |
+| `dist-lib/index.js`               | 1.97 MB | 414 KB  |
+| `dist-lib/index.css`              | 498 KB  | 124 KB  |
+| `dist-lib/sdk-*.js` (SDK subpath) | 196 KB  | 44 KB   |
 
 The `index.js` figure is the honest full editor (both adapter sets + MUI);
 the prior `0.5.0` "≈187 KB gz" number was the broken, under-registered
@@ -937,10 +956,10 @@ see below.)
 
 Measured at `0.5.0` (`npm run build`, no minification, with sourcemap):
 
-| Asset | Raw | Gzipped |
-|---|---|---|
-| `dist/assets/index-*.js` | 621 KB | 187 KB |
-| `dist/assets/index-*.css` | 311 KB | 40 KB |
+| Asset                     | Raw    | Gzipped |
+| ------------------------- | ------ | ------- |
+| `dist/assets/index-*.js`  | 621 KB | 187 KB  |
+| `dist/assets/index-*.css` | 311 KB | 40 KB   |
 
 Delta vs `0.4.0`: ~+13 KB raw JS / +3 KB gzipped (the IndexedDB adapter,
 migration pipeline, and versioning). No external dependency added at
@@ -1005,6 +1024,7 @@ dot navigation, `showChevrons` / `showDots` toggles, and a flex-fill drop
 zone that grows with the carousel's resized height.
 
 **SDK surface** (`@crafted-design/editor/sdk`)
+
 - `useIsEditing()` — true when Craft's `state.options.enabled` is set.
   Overlay-style canonicals branch their render on this (inline + open in
   the editor, real overlay at runtime). Documented adapter contract.
@@ -1029,10 +1049,10 @@ zone that grows with the carousel's resized height.
 
 Measured at `0.4.0` (`npm run build`, no minification, with sourcemap):
 
-| Asset | Raw | Gzipped |
-|---|---|---|
-| `dist/assets/index-*.js` | 608 KB | 184 KB |
-| `dist/assets/index-*.css` | 311 KB | 40 KB |
+| Asset                     | Raw    | Gzipped |
+| ------------------------- | ------ | ------- |
+| `dist/assets/index-*.js`  | 608 KB | 184 KB  |
+| `dist/assets/index-*.css` | 311 KB | 40 KB   |
 
 Delta vs `0.3.0`: ~+5 KB raw JS / +1 KB gzipped despite 28 new canonicals
 × 2 adapters — the per-component files tree-shake well and most lean on
@@ -1109,10 +1129,10 @@ default cleanly for older documents).
 
 Measured at `0.3.0` (`npm run build`, no minification, with sourcemap):
 
-| Asset | Raw | Gzipped |
-|---|---|---|
-| `dist/assets/index-*.js` | 603 KB | 182 KB |
-| `dist/assets/index-*.css` | 308 KB | 39 KB |
+| Asset                     | Raw    | Gzipped |
+| ------------------------- | ------ | ------- |
+| `dist/assets/index-*.js`  | 603 KB | 182 KB  |
+| `dist/assets/index-*.css` | 308 KB | 39 KB   |
 
 Delta vs `0.2.0`: ~+25 KB raw JS / +9 KB gzipped (the Phase 12 panels,
 theme editor, contrast + oklch math). CSS grew ~+87 KB raw / +11 KB
@@ -1182,10 +1202,10 @@ backend. All additive; no breaking changes to the `0.1.x` SDK surface.
 
 Measured at `0.2.0` (`npm run build`, no minification, with sourcemap):
 
-| Asset | Raw | Gzipped |
-|---|---|---|
-| `dist/assets/index-*.js` | 578 KB | 173 KB |
-| `dist/assets/index-*.css` | 221 KB | 28 KB |
+| Asset                     | Raw    | Gzipped |
+| ------------------------- | ------ | ------- |
+| `dist/assets/index-*.js`  | 578 KB | 173 KB  |
+| `dist/assets/index-*.css` | 221 KB | 28 KB   |
 
 Delta vs `0.1.x`: roughly +60 KB raw JS / +16 KB gzipped — the bulk is
 `@tanstack/react-virtual` (layer-tree virtualization) plus the Phase 11
